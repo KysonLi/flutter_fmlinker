@@ -35,7 +35,6 @@ ios/Runner.xcodeproj/project.xcworkspace
 ios/Runner.xcodeproj/xcuserdata
 *.xcworkspace
 *.xcuserdata
-profile
 *.dSYM
 
 # Android 相关
