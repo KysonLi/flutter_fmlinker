@@ -1,0 +1,400 @@
+class ErrorStrings {
+  static const Map<String, Map<String, String>> errorMap = {
+    '00000000': {
+      'cn': '成功',
+      'en': 'Success'
+    },
+    '01000000': {
+      'cn': '成功',
+      'en': 'Success'
+    },
+    '01000001': {
+      'cn': '系统认证失败',
+      'en': 'Fail to verify identification'
+    },
+    '01000010': {
+      'cn': '用户不存在',
+      'en': 'The username does not exist.'
+    },
+    '01010101': {
+      'cn': '帐户查询失败',
+      'en': 'Fail to inquire account'
+    },
+    '01010102': {
+      'cn': '帐户新增失败',
+      'en': 'Fail to add a new account'
+    },
+    '01010103': {
+      'cn': '帐户更新失败',
+      'en': 'Fail to update account'
+    },
+    '01010104': {
+      'cn': '帐户删除失败',
+      'en': 'Fail to delete account'
+    },
+    '01010110': {
+      'cn': '原始密码不正确',
+      'en': 'The original password is incorrect.'
+    },
+    '01010120': {
+      'cn': '帐户不存在',
+      'en': 'The account does not exist.'
+    },
+    '01010121': {
+      'cn': '帐户密码不正确',
+      'en': 'Wrong password'
+    },
+    '01010122': {
+      'cn': '帐户登录成功',
+      'en': 'Login success'
+    },
+    '01010123': {
+      'cn': '帐户密码不正确',
+      'en': 'Wrong password'
+    },
+    '01010124': {
+      'cn': '帐户修改密码错误',
+      'en': 'Fail to change password'
+    },
+    '01020101': {
+      'cn': '请求次数超过限制',
+      'en': 'The number of inquire is exceed'
+    },
+    '01020102': {
+      'cn': '邮箱格式错误',
+      'en': 'Wrong email format'
+    },
+    '01020104': {
+      'cn': '用户名已经存在',
+      'en': 'Username existed'
+    },
+    '01020105': {
+      'cn': '邮箱已经被注册',
+      'en': 'The email has been registered.'
+    },
+    '01020106': {
+      'cn': '电话号码已经被注册',
+      'en': 'The mobile number has been registered.'
+    },
+    '01020107': {
+      'cn': '用户名格式错误',
+      'en': 'Wrong username format'
+    },
+    '01020108': {
+      'cn': '电话号码格式错误',
+      'en': 'Wrong telephone format'
+    },
+    '01020201': {
+      'cn': '帐户不存在',
+      'en': 'The account does not exist.'
+    },
+    '01020202': {
+      'cn': '密码不正确',
+      'en': 'Wrong password'
+    },
+    '01020203': {
+      'cn': '帐户被锁定',
+      'en': 'The account has been locked.'
+    },
+    '01020204': {
+      'cn': '帐户被冻结',
+      'en': 'The account has been frozen.'
+    },
+    '01020205': {
+      'cn': '帐户未激活',
+      'en': 'The account did not activated.'
+    },
+    '01020206': {
+      'cn': '帐户已激活',
+      'en': 'The account is activated.'
+    },
+    '01020207': {
+      'cn': '该设备已经绑定其他帐户',
+      'en': 'The device has been bound by other account.'
+    },
+    '01020208': {
+      'cn': '设备被挂失',
+      'en': 'The device is reported lost.'
+    },
+    '01020209': {
+      'cn': '用户不存在，请注册',
+      'en': 'The account does not exist, please register.'
+    },
+    '01020210': {
+      'cn': '请登录帐户',
+      'en': 'Please login'
+    },
+    '01020211': {
+      'cn': '帐户未绑定任何设备',
+      'en': 'The account did not bind any devices.'
+    },
+    '01020212': {
+      'cn': '帐户未绑定任何设备',
+      'en': 'The account did not bind any devices.'
+    },
+    '01020500': {
+      'cn': '无身份认证信息',
+      'en': 'No valid identification.'
+    },
+    '01020501': {
+      'cn': '身份认证信息已失效',
+      'en': 'The identification is expired.'
+    },
+    '01020502': {
+      'cn': '登录认证信息不正确',
+      'en': 'Incorrect login identification'
+    },
+    '01111111': {
+      'cn': '系统异常',
+      'en': 'System Exceptions'
+    },
+    '01111112': {
+      'cn': '请求失败',
+      'en': 'Fail to request'
+    },
+    '11111111': {
+      'cn': '请求错误',
+      'en': 'Request Error'
+    },
+    '22222222': {
+      'cn': '数据库错误',
+      'en': 'Database Error'
+    },
+    '33333333': {
+      'cn': '用户未登录',
+      'en': 'User does not login'
+    },
+    '44444444': {
+      'cn': '没有访问权限',
+      'en': 'No visit authority'
+    },
+    '88888801': {
+      'cn': '支付验证失败',
+      'en': 'Fail to verify payment'
+    },
+    '88888802': {
+      'cn': '支付凭证已验证',
+      'en': 'Fail to verify payment'
+    },
+    '88888803': {
+      'cn': '余额不足',
+      'en': 'Insufficiant balance'
+    },
+    '88888804': {
+      'cn': '没有找到记录',
+      'en': 'No record is found.'
+    },
+    'POS-000600014': {
+      'cn': '没有找到记录',
+      'en': 'No record is found.'
+    },
+    'POS-11111111': {
+      'cn': '商铺id不能为空',
+      'en': '商铺id不能为空'
+    },
+    'POS-000600006': {
+      'cn': 'UASC数据错误',
+      'en': 'UASC数据错误'
+    },
+    '88888805': {
+      'cn': '用户已经购买',
+      'en': 'User has been brought.'
+    },
+    '88888811': {
+      'cn': '调用微信支付失败',
+      'en': 'Fail to inquire Wechat'
+    },
+    '88888812': {
+      'cn': '支付成功',
+      'en': 'Success payment'
+    },
+    '88888813': {
+      'cn': '支付失败',
+      'en': 'Fail to pay'
+    },
+    '99999999': {
+      'cn': '未知错误',
+      'en': 'Unknown Error'
+    },
+    'LOGIN-00010001': {
+      'cn': '登录失败',
+      'en': 'Fail to login'
+    },
+    'LOGIN-00010002': {
+      'cn': '电话号码格式错误',
+      'en': 'Wrong telephone format'
+    },
+    'LOGIN-00010003': {
+      'cn': '密码错误',
+      'en': 'Incorrect password'
+    },
+    'LOGIN-00010004': {
+      'cn': '用户不存在',
+      'en': 'The user does not exist.'
+    },
+    'LOGIN-00010005': {
+      'cn': '泛媒关联和泛媒阅读共享帐户，该手机号在泛媒阅读已注册，首次登录请用【帐号密码登录】',
+      'en': 'ISLI Reader Users please go to 【login with password】 for your first time login.'
+    },
+    'LOGIN-00010006': {
+      'cn': '登录失败，用户未设置过密码',
+      'en': 'Fail to login, no password has been set.'
+    },
+    'LOGIN-00010007': {
+      'cn': '用户名或密码错误',
+      'en': 'Wrong username or password.'
+    },
+    'LOGIN-00010008': {
+      'cn': '帐号在别处登录，已被迫下线。如非本人操作，建议修改密码',
+      'en': 'Your account is login in other device. We suggest to change password if it is not your login operation.'
+    },
+    'LOGIN-00020001': {
+      'cn': '设置密码失败',
+      'en': 'Fail to set password'
+    },
+    'LOGIN-00020002': {
+      'cn': '密码格式有误，请输入6－16位的密码（由英文字母、数字组成)',
+      'en': 'Invalid password, please enter your password within 6 to 16 digits, including letters and numbers.'
+    },
+    'LOGIN-00020003': {
+      'cn': '手机号码未绑定',
+      'en': 'The account did not bind mobile number.'
+    },
+    'LOGIN-00020004': {
+      'cn': '设置用户名出错',
+      'en': 'Fail to set username'
+    },
+    'LOGIN-00020005': {
+      'cn': '用户名有误,请输入2-10位的用户名（由汉字、英文字母、数字、下滑线组成)',
+      'en': 'Invalid username. Please enter your username within 2 to 10 digits, including chinese characters, English letters, numbers and underlines.'
+    },
+    'LOGIN-00020006': {
+      'cn': '用户名已经被占用',
+      'en': 'This username has been occupied.'
+    },
+    'LOGIN-00020007': {
+      'cn': '用户已经设置过用户名，只允许设置一次',
+      'en': 'You have been changed username which can be changed once.'
+    },
+    'LOGIN-00020008': {
+      'cn': '泛媒关联和泛媒阅读共享帐户，该手机号在泛媒阅读已注册，请前往泛媒阅读APP找回密码',
+      'en': 'Please go to ISLI Reader App to change password.'
+    },
+    'LOGIN-00020009': {
+      'cn': '检测到您是泛媒阅读用户，暂请使用泛媒阅读APP进行修改',
+      'en': 'Please go to ISLI Reader App to change password. '
+    },
+    'LOGIN-00020010': {
+      'cn': '手机号码不匹配',
+      'en': 'The mobile number did not match.'
+    },
+    'LOGIN-00030001': {
+      'cn': '获取验证码失败',
+      'en': 'Fail to get verification code'
+    },
+    'LOGIN-00030002': {
+      'cn': '验证码已过期',
+      'en': 'The verification code is expired.'
+    },
+    'LOGIN-00030003': {
+      'cn': '验证码错误',
+      'en': 'Wrong verification code'
+    },
+    'LOGIN-00030004': {
+      'cn': '验证码未过期',
+      'en': 'The verification code is valid.'
+    },
+    'LOGIN-00030005': {
+      'cn': '泛媒关联和泛媒阅读共享帐户，该手机号在泛媒阅读已注册，首次登录请用【帐号密码登录】',
+      'en': 'ISLI Reader Users please go to 【login with password】 for your first time login.'
+    },
+    'LOGIN-00030006': {
+      'cn': '该手机号已经绑定其他第三方登录应用',
+      'en': 'The mobile number has been bound by other third party application.'
+    },
+    'LOGIN-00030007': {
+      'cn': '验证码获取成功，请于2分钟之内输入',
+      'en': 'Success to get verification code, please enter within 2 min.'
+    },
+    'LOGIN-00030008': {
+      'cn': '验证码获取过于频繁 请稍后再试',
+      'en': 'Too frequent to request verification code, please try later.'
+    },
+    'LOGIN-00040001': {
+      'cn': '绑定手机号失败',
+      'en': 'Fail to bind mobile number.'
+    },
+    'LOGIN-00040002': {
+      'cn': '泛媒关联和泛媒阅读共享帐户，该手机号在泛媒阅读已注册，请先用【帐号密码登录】，再来绑定手机',
+      'en': 'ISLI Reader Users please go to 【login with password】 and bind mobile number later.'
+    },
+    'LOGIN-00040003': {
+      'cn': '绑定手机号失败，该手机号已经绑定',
+      'en': 'Fail to bind mobile number since the mobile number has been bound by other account.'
+    },
+    'LOGIN-0050001': {
+      'cn': '该帐号的注册设备已达上限！',
+      'en': 'The account registed devices limit 5'
+    },
+    'RESOURCE-00050001': {
+      'cn': '获取资源类型失败',
+      'en': 'Fail to request resource type.'
+    },
+    'RESOURCE-00050002': {
+      'cn': '资源类型不存在',
+      'en': 'The resource type does not exist.'
+    },
+    'TARGET-GOODS-00010001': {
+      'cn': '查询目标，编码参数错误',
+      'en': 'Wrong coding value when inquire target.'
+    },
+    'TARGET-GOODS-00020001': {
+      'cn': '推荐目标超过上限10个',
+      'en': 'The recommend target number exceed 10.'
+    },
+    'TARGET-GOODS-00020002': {
+      'cn': '已存在置顶目标',
+      'en': 'The Top target is exist.'
+    },
+    'TARGET-GOODS-00030001': {
+      'cn': '出版物暂停使用',
+      'en': 'The publication is not on the shelf.'
+    },
+    'TARGET-GOODS-00030002': {
+      'cn': '未找到该资源',
+      'en': 'The resource is not found.'
+    },
+    'TARGET-GOODS-00030003': {
+      'cn': '出版物不存在',
+      'en': 'The publication does not exist.'
+    },
+    'TARGET-GOODS-00050001': {
+      'cn': '资源不存在',
+      'en': 'The resources does not exist.'
+    },
+    'TARGET-GOODS-00050002': {
+      'cn': '资源收费策略异常',
+      'en': 'The purchase strategy exceptions.'
+    },
+    'TARGET-GOODS-00050003': {
+      'cn': '没有更多的资源',
+      'en': 'NO_MORE_RESOURCES'
+    },
+    'TARGET-GOODS-00030004': {
+      'en': 'The link code does not exist.',
+      'cn': '链码不存在'
+    },
+    'TARGET-GOODS-00070012': {
+      'en': 'The goods have been deleted.',
+      'cn': '商品已经删除'
+    },
+  };
+
+  /// 根据错误码获取错误信息
+  static String getErrorMsg(String errorCode, {String language = 'cn'}) {
+    if (errorMap.containsKey(errorCode)) {
+      return errorMap[errorCode]![language] ?? errorMap[errorCode]!['cn']!;
+    }
+    return '未知错误';
+  }
+}

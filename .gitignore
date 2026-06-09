@@ -1,0 +1,89 @@
+# Flutter/Dart/Pub 官方标准
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+*.js
+*.js.deps
+*.js.map
+/.dart_tool/
+.packages
+
+# 编译产物
+/android/app/build/
+/android/build/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/ios/Runner.xcworkspace/
+/ios/Runner.xcodeproj/project.xcworkspace/
+/ios/Runner.xcodeproj/xcuserdata/
+/ios/Runner/Assets.xcassets/
+/ios/Runner/Gradle*
+/ios/Runner/Runner-Bridging-Header.h
+/ios/Pods/
+/ios/Runner/Info.plist
+
+# Xcode 相关
+ios/Runner/Info.plist
+ios/Pods/
+ios/Runner.xcworkspace
+ios/Runner.xcodeproj/project.xcworkspace
+ios/Runner.xcodeproj/xcuserdata
+*.xcworkspace
+*.xcuserdata
+profile
+*.dSYM
+
+# Android 相关
+android/app/release
+android/app/debug
+android/app/profile
+android/.gradle
+android/captures
+android/local.properties
+android/keystore.properties
+android/app/keystore/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# 编辑器
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+.DS_Store?
+*.log
+*.pyc
+.cache
+.temp
+.tmp
+
+# 测试/工具
+/test/coverage
+/test/report.html
+
+# 密钥 / 敏感文件
+.env
+.env.local
+.env.production
+keys/
+key.properties
+google-services.json
+GoogleService-Info.plist
+
+# Web
+/web/.dart_tool
+/web/build

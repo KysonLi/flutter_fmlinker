@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1.0,width=device-width, maximum-scale=1.0"/>
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <meta content="yes" name="apple-touch-fullscreen">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black"> 
+        <meta content="telephone=no,email=no" name="format-detection">
+        <meta http-equiv="Cache-Control" content="no-cache" />      
+        <script type="text/javascript">(function(win,lib){var doc=win.document;var docEl=doc.documentElement;var metaEl=doc.querySelector('meta[name="viewport"]');var flexibleEl=doc.querySelector('meta[name="flexible"]');var dpr=0;var scale=0;var tid;var flexible=lib.flexible||(lib.flexible={});if(metaEl){var match=metaEl.getAttribute("content").match(/initial\-scale=([\d\.]+)/);if(match){scale=parseFloat(match[1]);dpr=parseInt(1/scale)}}else{if(flexibleEl){var content=flexibleEl.getAttribute("content");if(content){var initialDpr=content.match(/initial\-dpr=([\d\.]+)/);var maximumDpr=content.match(/maximum\-dpr=([\d\.]+)/);if(initialDpr){dpr=parseFloat(initialDpr[1]);scale=parseFloat((1/dpr).toFixed(2))}if(maximumDpr){dpr=parseFloat(maximumDpr[1]);scale=parseFloat((1/dpr).toFixed(2))}}}}if(!dpr&&!scale){var isAndroid=win.navigator.appVersion.match(/android/gi);var isIPhone=win.navigator.appVersion.match(/iphone/gi);var devicePixelRatio=win.devicePixelRatio;if(isIPhone){if(devicePixelRatio>=3&&(!dpr||dpr>=3)){dpr=3}else{if(devicePixelRatio>=2&&(!dpr||dpr>=2)){dpr=2}else{dpr=1}}}else{dpr=1}scale=1/dpr}docEl.setAttribute("data-dpr",dpr);if(!metaEl){metaEl=doc.createElement("meta");metaEl.setAttribute("name","viewport");metaEl.setAttribute("content","initial-scale="+scale+", maximum-scale="+scale+", minimum-scale="+scale+", user-scalable=no");if(docEl.firstElementChild){docEl.firstElementChild.appendChild(metaEl)}else{var wrap=doc.createElement("div");wrap.appendChild(metaEl);doc.write(wrap.innerHTML)}}function refreshRem(){var width=docEl.getBoundingClientRect().width;if(width/dpr>540){width=540*dpr}var rem=width/10;docEl.style.fontSize=rem+"px";flexible.rem=win.rem=rem}win.addEventListener("resize",function(){clearTimeout(tid);tid=setTimeout(refreshRem,300)},false);win.addEventListener("pageshow",function(e){if(e.persisted){clearTimeout(tid);tid=setTimeout(refreshRem,300)}},false);if(doc.readyState==="complete"){doc.body.style.fontSize=12*dpr+"px"}else{doc.addEventListener("DOMContentLoaded",function(e){doc.body.style.fontSize=12*dpr+"px"},false)}refreshRem();flexible.dpr=win.dpr=dpr;flexible.refreshRem=refreshRem;flexible.rem2px=function(d){var val=parseFloat(d)*this.rem;if(typeof d==="string"&&d.match(/rem$/)){val+="px"}return val};flexible.px2rem=function(d){var val=parseFloat(d)/this.rem;if(typeof d==="string"&&d.match(/px$/)){val+="rem"}return val}})(window,window["lib"]||(window["lib"]={}));</script>
+        <style type="text/css">
+            @charset 'UTF-8';
+            /*cssReset*/
+            html{ color: #000; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%}
+            body,button,code,dd ,div,dl,dt,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,hr,input,legend,li,menu,nav,ol,p,pre,section,td,textarea,th,ul { margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); -webkit-touch-callout:none; -webkit-user-select:none; -khtml-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; font-size:12px;  font-family: PingFang-SC-Medium,HelveticaNeue-Light,'Helvetica Neue Light','Microsoft YaHei',sans-serif;}
+            img { border: 0; display: block; }  
+            a{ text-decoration: none; } 
+            .valign{ width: 100%; box-sizing: border-box; padding: 0 0.4rem; }
+            .valign dl{  padding-bottom: 0.586667rem;}
+            .valign dl dt { padding-top: 0.08rem; padding-bottom: 0.16rem; display: flex;}
+            .valign dl dd { display: flex; }
+            .valign dl dt p{  line-height: 0.613333rem; font-size: 0.426667rem; color: #585959; text-align: justify; font-family: 'PingFang-SC-Medium';}
+            .valign dl dd p{ line-height: 0.64rem; font-size: 0.373333rem; color: #858585; text-align: justify; font-family: 'PingFang-SC-Medium';}
+            .valign dl i{ width: 0.893333rem; margin-right: 0.133333rem;  font-style: normal; color: #00affe; float: left; }
+            .valign dl dt i{ line-height: 0.613333rem; font-size: 0.426667rem; font-family:"PingFang-SC-Medium";}
+            .valign dl dd i{ line-height: 0.64rem; font-size: 0.426667rem; font-family:"PingFang-SC-Medium";}
+            .valign dl dd img { height: 0.64rem; line-height: 0.64rem; display: inline; vertical-align: middle; }
+            .valign dl dd div { margin-left:0.80rem;text-align:center;vertical-align: bottom;}
+            .valign dl dd div img { height: auto;width: 100%; display: inline;}
+            .valign dl dd div p{ line-height: 0.64rem; font-size: 0.303333rem; color: #858585; text-align: center; font-family: 'PingFang-SC-Medium';vertical-align: bottom;}
+            .valign dl dd div f img { margin-left:3.0rem;height: 105px;width: 80px; display: inline; text-align:center}
+            .clearfix:after {
+                visibility: hidden;
+                display: block;
+                font-size: 0;
+                content: " ";
+                clear: both;
+                height: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="valign">
+            <dl>
+                <dt><i>Q1：</i><p>What is MPR publication?</p></dt>
+                <dd><i>A1：</i><p>
+                    The MPR (Multimedia Print Reader) publication is a publication based on unique link codes, which particularly takes matrix MPR two-dimensional codes as machine-readable symbols, to integrate and accurately link various publishing carriers and representations, and develop a Multimedia digital publication based on paper printing.
+                    <br>MPR publications are composed of three basic elements: MPR books and newspapers, MPR digital media documents, and MPR codes which enables accurate links between them.</p></dd>
+            </dl>
+            <dl>
+                <dt><i>Q2：</i><p>What is MPR publication(multi-media version)?</p></dt>
+                <dd><i>A2：</i><p>The MPR publications that printed with "chain code" is the full media version of MPR publication, the MPR (logo) is printed on the cover <img src="./MPRlogo@3x.png">。</p></dd>
+                <dd>
+                    <div style="float:center">
+                        <f><img src="./mpr3@3x.png"></f>
+                    </div>
+                </dd>
+            </dl>
+            <dl>
+                <dt><i>Q3：</i><p>Can the publication with MPR Logo on the cover scan the chain code?</p></dt>
+                <dd><i>A3：</i><p>Only MPR publications (full media version) support scan code.<br>MPR publications fall into two categories:<br>(1) MPR publications (full media version) printed is the chain code, its appearance is similar to double underscore, with mobile phone login device scan chain code can obtain the paper media related graphics, audio, video, 3D, H5 and other formats of digital content.<br>(2) MPR publications (click and read version) print is nearly invisible matrix two-dimensional code, through the link MPR reader click on the MPR code on the publication, play the audio or video multimedia digital content associated with the identified content.</p></dd>
+                <dd>
+                    <div style="float:left;vertical-align: bottom; width:50%">
+                        <img src="./mpr1@3x.png">
+                            <p>MPR publications(multi-media version)</p>
+                            </div>
+                    <div style="float:left;vertical-align: bottom; position:relative; width:50%">
+                        <div class="clearfix" style="position: absolute; bottom:0; width:100%; left: -1.2rem;">
+                            <img src="./mpr2@3x.png">
+                                <p>MPR publication（reading device version）</p>
+                                </div>
+                        
+                    </div>
+                    
+                </dd>
+            </dl>
+            <dl>
+                <dt><i>Q4：</i><p>Why can "link code directory" only view the first two resources, but not all resources?</p></dt>
+                <dd><i>A4：</i><p>Because the chain code resource is related to the printed MPR publication content, the purpose is to read the paper and electricity related, and use the scanning function to view the chain code resource. Depending on the publisher Settings, some publications can play the resource examples associated with the first two link codes.</p></dd>
+            </dl>
+            <dl>
+                <dt><i>Q5：</i><p>Where can I buy MPR publications?</p></dt>
+                <dd><i>A5：</i><p>Please purchase paper books printed with chain code through third-party platforms, such as amazon, jingdong, dangdang, or offline bookstores. Please buy newspapers at the newsstand.<br>To purchase MPR publications (full media version), please first identify the MPR Logo on the book cover <img src="./MPRlogo@3x.png">,and confirm that the code printed in the book is "chain code".<br>MPR publications that support chain code (full media version) can be viewed in the list of APP publications.</p></dd>
+            </dl>
+        </div>
+    </body>
+</html>
