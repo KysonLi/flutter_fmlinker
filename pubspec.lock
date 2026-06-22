@@ -97,6 +97,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "5.1.2"
+  change_app_package_name:
+    dependency: "direct dev"
+    description:
+      name: change_app_package_name
+      sha256: "8e43b754fe960426904d77ed4c62fa8c9834deaf6e293ae40963fa447482c4c5"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.5.0"
   characters:
     dependency: transitive
     description:
@@ -312,6 +320,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluwx:
+    dependency: "direct main"
+    description:
+      name: fluwx
+      sha256: "7e92d2000ee49c5262a88c51ea2d22b91a753d5b29df27cc264bb0a115d65373"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "5.7.5"
   go_router:
     dependency: "direct main"
     description:
