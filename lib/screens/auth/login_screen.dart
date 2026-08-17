@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:fluwx/fluwx.dart';
+import 'package:fmlink/services/third_party_manager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/services/auth_service.dart';
-import 'package:fmlink/services/user_service.dart';
-import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -135,25 +135,26 @@ class _LoginScreenState extends State<LoginScreen> {
           // 重置倒计时
           _countDownSeconds = 60;
           
-          // 登录成功，保存token和用户信息
-          String token = response['data']['token'];
-          Constants.token = token;
+          // // 登录成功，保存token和用户信息
+          // String token = response['data']['token'];
+          // Constants.token = token;
           
-          // 保存token
-          await UserService().saveToken(token);
+          // // 保存token
+          // await UserService().saveToken(token);
           
-          // 保存用户信息
-          UserInfo userInfo = UserInfo(
-            userId: response['data']['userId']?.toString() ?? '',
-            unificationId: response['data']['unificationId']?.toString() ?? '',
-            nickName: response['data']['userName']?.toString() ?? '',
-            phoneNumber: response['data']['phone']?.toString() ?? '',
-            avatarUrl: response['data']['headImgUrl']?.toString() ?? '',
-            gender: response['data']['gender']?.toString() ?? '',
-            hasPassword: response['data']['hasPassword'] == true || response['data']['hasPassword'] == 1,
-            hasSetUserName: response['data']['hasSetUserName'] == true || response['data']['hasSetUserName'] == 1,
-          );
-          await UserService().saveUserInfo(userInfo);
+          // // 保存用户信息
+          // UserInfo userInfo = UserInfo(
+          //   userId: response['data']['userId']?.toString() ?? '',
+          //   unificationId: response['data']['unificationId']?.toString() ?? '',
+          //   nickName: response['data']['userName']?.toString() ?? '',
+          //   phoneNumber: response['data']['phone']?.toString() ?? '',
+          //   avatarUrl: response['data']['headImgUrl']?.toString() ?? '',
+          //   gender: response['data']['gender']?.toString() ?? '',
+          //   hasPassword: response['data']['hasPassword'] == true || response['data']['hasPassword'] == 1,
+          //   hasSetUserName: response['data']['hasSetUserName'] == true || response['data']['hasSetUserName'] == 1,
+          // );
+          // await UserService().saveUserInfo(userInfo);
+          String phoneNumber = response['data']['phone']?.toString() ?? '';
           
           // 保存userId到本地存储
           SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -161,9 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // 显示登录成功提示
           EasyLoading.showToast(response['msg']);
-
+          if (!mounted) return;
           // 非手机验证码登录后判断是否需要绑定手机号
-          if (_loginType != LoginType.sms && userInfo.phoneNumber.isEmpty) {
+          if (_loginType != LoginType.sms && phoneNumber.isEmpty) {
             // 跳转绑定手机号页面
             context.go('/profile/bind-phone');
           } else {
@@ -203,11 +204,52 @@ class _LoginScreenState extends State<LoginScreen> {
     print('打开隐私政策');
   }
 
+  Future<void> _sendThirdPartyLogin(String code, String? openId, String platform) async {
+    String deviceId = await DeviceInfoUtil.getDeviceId();
+    String deviceName = await DeviceInfoUtil.getDeviceName();
+    dynamic response = await AuthService().loginWithThirdParty(platform, openId, code, deviceId, deviceName);
+    
+    if (!mounted) return;
+    
+    if (response['status']) {
+      String phoneNumber = response['data']['phone']?.toString() ?? '';
+      if (phoneNumber.isEmpty) {
+        context.go('/profile/bind-phone');
+      } else {
+        Navigator.pop(context, {'refresh': true});
+      }
+    } else {
+      EasyLoading.showToast(response['msg']);
+    }
+  }
+
   // 第三方登录
-  void _thirdPartyLogin(String platform) {
+  Future<void> _thirdPartyLogin(String platform) async {
     // 这里应该实现第三方登录逻辑
     print('第三方登录: $platform');
-  }
+    if (platform == 'wechat') {
+      // 判断微信是否已安装
+      final isInstalled = await ThirdPartyManager.isWeChatInstalled();
+      if (!isInstalled) {
+        EasyLoading.showToast('请先安装微信');
+        return;
+      }
+      // 微信登录
+      ThirdPartyManager.listenWeChatResult((response) async {
+        if (response is WeChatAuthResponse) {
+          if (response.errCode == 0) {
+           final code = response.code ?? '';
+            // 微信登录成功
+            EasyLoading.showToast('微信登录成功');
+            // 发送登录请求
+            await _sendThirdPartyLogin(code, null, platform);
+            print(response); 
+          } 
+        }
+      });
+      ThirdPartyManager.weChatLogin();
+    }
+   }
 
   @override
   Widget build(BuildContext context) {

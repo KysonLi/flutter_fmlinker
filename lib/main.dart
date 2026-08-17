@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fmlink/routes/app_router.dart';
+import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/themes/app_theme.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +29,9 @@ void main() {
         offset: const Offset(0, 4),
       ),
     ];
+
+  // 初始化微信
+  ThirdPartyManager.initWeChat();
 
   runApp(
     ChangeNotifierProvider(

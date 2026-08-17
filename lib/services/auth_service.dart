@@ -8,6 +8,7 @@ class AuthService {
   
   final ApiService _apiService = ApiService();
   final UserService _userService = UserService();
+
   
   AuthService._internal();
   
@@ -46,11 +47,13 @@ class AuthService {
   }
   
   // 第三方登录
-  Future<Map<String, dynamic>> loginWithThirdParty(String platform, String openid, String accessToken) async {
+  Future<Map<String, dynamic>> loginWithThirdParty(String platform, String? openId, String code, String deviceId, String deviceName) async {
     Map<String, dynamic> result = await _apiService.post('/chain-server/api/link_code_system/login/v2/third_party', data: {
       'platform': platform,
-      'openid': openid,
-      'access_token': accessToken,
+      'openId': openId,
+      'code': code,
+      'deviceId': deviceId,
+      'deviceName': deviceName,
     });
     
     await _handleLoginResult(result);

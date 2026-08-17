@@ -41,6 +41,9 @@ dependencies:
   
   # 状态管理
   provider: ^6.1.2
+
+  # 微信登录
+  fluwx: ^3.13.1
   
   # 路由管理
   go_router:
