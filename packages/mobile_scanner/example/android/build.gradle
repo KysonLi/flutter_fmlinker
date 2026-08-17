@@ -1,0 +1,49 @@
+buildscript {
+    ext.kotlin_version = '1.7.10'
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+// Force every Android module (app + plugin subprojects from the pub cache) to use
+// an installed build-tools revision. Plugin modules don't set buildToolsVersion and
+// fall back to AGP's default (30.0.3), which isn't installed and can't be
+// auto-downloaded because AGP 7.4's SDK XML parser predates the installed
+// command-line tools. 34.0.0 is present on this machine.
+//
+// plugins.withId is used (not afterEvaluate) because evaluationDependsOn(':app')
+// above already evaluates :app during root configuration, so afterEvaluate would
+// throw "Cannot run afterEvaluate when the project is already evaluated".
+subprojects { sub ->
+    sub.plugins.withId('com.android.library') {
+        sub.android.buildToolsVersion = '34.0.0'
+    }
+    sub.plugins.withId('com.android.application') {
+        sub.android.buildToolsVersion = '34.0.0'
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

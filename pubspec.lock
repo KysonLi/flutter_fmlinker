@@ -472,6 +472,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.0.4"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      path: "packages/mobile_scanner"
+      relative: true
+    source: path
+    version: "7.0.1"
   nested:
     dependency: transitive
     description:

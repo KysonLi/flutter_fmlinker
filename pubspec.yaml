@@ -110,6 +110,10 @@ dependencies:
   image_cropper:
     path: packages/fluttertpc_image_cropper/image_cropper
 
+  # 扫码（本地 vendored：ISLI 线码/图标码 native 解码 + 普通条码，含 OHOS 适配）
+  mobile_scanner:
+    path: packages/mobile_scanner
+
   sqflite: any
 dependency_overrides:
   # 本地补丁副本：移除已被 Flutter 3.29+ 删除的 v1 embedding (PluginRegistry.Registrar) 死代码。

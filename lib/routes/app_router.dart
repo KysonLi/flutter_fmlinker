@@ -21,6 +21,7 @@ import 'package:fmlink/screens/profile/device_management_screen.dart';
 import 'package:fmlink/screens/profile/delete_account_screen.dart';
 import 'package:fmlink/screens/profile/my_like_screen.dart';
 import 'package:fmlink/screens/scan/scan_screen.dart';
+import 'package:fmlink/screens/scan/scan_result_screen.dart';
 import 'package:fmlink/screens/scan/scan_help_screen.dart';
 import 'package:fmlink/screens/scan/book_help_screen.dart';
 import 'package:fmlink/screens/webview/webview_screen.dart';
@@ -135,6 +136,16 @@ class AppRouter {
       GoRoute(
         path: '/scan',
         builder: (context, state) => const ScanScreen(),
+      ),
+      GoRoute(
+        path: '/scan/result',
+        builder: (context, state) {
+          final data = state.extra as Map<String, dynamic>?;
+          return ScanResultScreen(
+            isliCode: data?['isliCode'] ?? '',
+            resultData: data?['data'],
+          );
+        },
       ),
       GoRoute(
         path: '/scan/help',
