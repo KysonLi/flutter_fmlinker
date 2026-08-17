@@ -331,7 +331,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                                    strokeCap: StrokeCap.round,
                                   ),
                                 ),
                               )

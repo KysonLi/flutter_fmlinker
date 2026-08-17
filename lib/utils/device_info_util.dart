@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +52,17 @@ class DeviceInfoUtil {
         String model = iosInfo.model ;
         String name = iosInfo.name ;
         return _hashString('$identifierForVendor-$model-$name');
+      } else if (await _isOhos()) {
+        // ohos：通过 device_info_plus_ohos 注册的平台实现获取
+        // TODO(ohos): 确认 device_info_plus_ohos 的字段名后改为强类型访问
+        final m = (await _deviceInfoPlugin.deviceInfo).data;
+        final serial = m['serial'] as String?;
+        if (serial != null && serial.isNotEmpty) return serial;
+        final udid = m['udid'] as String?;
+        if (udid != null && udid.isNotEmpty) return udid;
+        final model = m['model'] as String? ?? '';
+        final brand = m['brand'] as String? ?? '';
+        return _hashString('$model|$brand');
       } else {
         // 其他平台生成随机ID
         return _generateRandomId();
@@ -92,6 +104,10 @@ class DeviceInfoUtil {
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         return iosInfo.name ;
+      } else if (await _isOhos()) {
+        // TODO(ohos): 优先 marketingName，确认字段名后改为强类型访问
+        final m = (await _deviceInfoPlugin.deviceInfo).data;
+        return (m['marketingName'] as String?) ?? (m['model'] as String?) ?? 'OHOS Device';
       } else {
         return 'Unknown Device';
       }
@@ -109,6 +125,9 @@ class DeviceInfoUtil {
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         return iosInfo.model ;
+      } else if (await _isOhos()) {
+        final m = (await _deviceInfoPlugin.deviceInfo).data;
+        return (m['model'] as String?) ?? 'Unknown Model';
       } else {
         return 'Unknown Model';
       }
@@ -126,6 +145,10 @@ class DeviceInfoUtil {
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         return iosInfo.systemVersion ;
+      } else if (await _isOhos()) {
+        // TODO(ohos): 确认 osFullName/sdkApiVersion 字段名后改为强类型访问
+        final m = (await _deviceInfoPlugin.deviceInfo).data;
+        return (m['osFullName'] as String?) ?? (m['sdkApiVersion']?.toString()) ?? 'Unknown Version';
       } else {
         return 'Unknown Version';
       }
@@ -153,4 +176,7 @@ class DeviceInfoUtil {
       return false;
     }
   }
+
+  /// 检查是否为OHOS（鸿蒙）平台
+  static Future<bool> _isOhos() async => Platform.isOhos;
 }

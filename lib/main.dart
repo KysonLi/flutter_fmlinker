@@ -16,13 +16,13 @@ void main() {
     ..backgroundColor = Colors.white
     ..indicatorColor = Color(0xFF409EFF)
     ..textColor = Color(0xFF333333)
-    ..maskColor = Color(0xFF409EFF).withValues(alpha: 0.1)
+    ..maskColor = Color(0xFF409EFF).withOpacity(0.1)
     ..textStyle = const TextStyle(color: Color(0xFF333333), fontSize: 12.0)
     ..userInteractions = true
     ..dismissOnTap = false
     ..boxShadow = [
       BoxShadow(
-        color: const Color(0xFF409EFF).withValues(alpha: 0.15),
+        color: const Color(0xFF409EFF).withOpacity(0.15),
         blurRadius: 20,
         spreadRadius: 2,
         offset: const Offset(0, 4),

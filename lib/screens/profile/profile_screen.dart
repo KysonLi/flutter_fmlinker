@@ -143,8 +143,8 @@ class _MyScreenState extends State<MyScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF2376E3).withValues(alpha: _appBarOpacity),
-                      const Color(0xFF4DA6FF).withValues(alpha: _appBarOpacity),
+                      const Color(0xFF2376E3).withOpacity(_appBarOpacity),
+                      const Color(0xFF4DA6FF).withOpacity(_appBarOpacity),
                     ],
                   ),
                 ),

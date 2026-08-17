@@ -4,7 +4,7 @@ import 'package:fmlink/services/discover_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:fmlink/widgets/icon_text_widgets.dart';
-import 'package:skeletonizer/skeletonizer.dart';
+import 'package:fmlink/widgets/skeletonizer.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 

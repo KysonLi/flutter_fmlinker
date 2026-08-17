@@ -148,7 +148,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
     if (icon != null) {
       return Positioned.fill(
         child: Container(
-          color: Colors.black.withValues(alpha: 0.3),
+          color: Colors.black.withOpacity(0.3),
           child: Center(
             child: icon,
           ),
@@ -443,7 +443,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: Colors.black.withOpacity(0.1),
                             blurRadius: 3,
                             offset: const Offset(0, -1),
                           ),

@@ -8,7 +8,6 @@ import 'package:fmlink/screens/publish/publication_detail_screen.dart';
 import 'package:fmlink/screens/publish/publication_desc_screen.dart';
 import 'package:fmlink/screens/publish/publisher_detail_screen.dart';
 import 'package:fmlink/screens/publish/publication_source_list_screen.dart';
-import 'package:fmlink/models/publisher_model.dart';
 import 'package:fmlink/screens/resource/resource_list_screen.dart';
 import 'package:fmlink/screens/history/history_screen.dart';
 import 'package:fmlink/screens/history/link_management_screen.dart';

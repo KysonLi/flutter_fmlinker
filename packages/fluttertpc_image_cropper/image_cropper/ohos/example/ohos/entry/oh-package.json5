@@ -1,0 +1,13 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:../har/flutter.har",
+    "imagecropper_ohos": "file:..\\har\\imagecropper_ohos.har",
+    "image_picker_ohos": "file:..\\har\\image_picker_ohos.har"
+  }
+}

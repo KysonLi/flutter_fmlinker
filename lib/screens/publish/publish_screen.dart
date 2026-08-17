@@ -743,6 +743,7 @@ class _PublishScreenState extends State<PublishScreen> {
     // 检查多个可能的图片URL字段
     if (publication.containsKey('goodsImage') &&
         publication['goodsImage'] != null) {
+          print('Found goodsImage: ${publication['goodsImage']}');
       return publication['goodsImage'];
     } else if (publication.containsKey('image_url') &&
         publication['image_url'] != null) {
@@ -758,7 +759,7 @@ class _PublishScreenState extends State<PublishScreen> {
   }
 
   Widget _buildPublicationListTile(dynamic publication) {
-    String? goodsId = publication['goodsId']?.toString();
+    String? goodsId = publication['goodsId']?.toString(); 
     return GestureDetector(
       onTap: () {
         if (goodsId != null) {

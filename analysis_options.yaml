@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # 本地 vendored Fork（image_cropper 系列）属第三方代码，其构建期错误由 flutter build 兜底；
+    # 此处排除以避免其 info 级 lint（unnecessary_this 等）干扰主工程分析。
+    - packages/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

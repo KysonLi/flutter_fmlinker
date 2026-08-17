@@ -193,6 +193,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     } else {
       if (Platform.isAndroid) {
         permission = Permission.storage;
+      } else if (Platform.isOhos) {
+        // ohos：相册访问走 storage（permission_handler_ohos 映射）
+        permission = Permission.storage;
       } else {
         permission = Permission.photos;
       }
@@ -254,18 +257,28 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Future<void> _openAppSettings() async {
     try {
-      const String url = 'app-settings:';
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
+      if (Platform.isOhos) {
+        // TODO(ohos): 确认 url_launcher_ohos 是否支持打开应用设置页；
+        // 若不支持，需在 EntryAbility 增加 platform channel 调用系统 AbilityContext.startAbility。
+        final opened = await launchUrl(Uri.parse('app-settings:'));
+        if (!opened) {
+          EasyLoading.showToast('无法打开设置页面');
+        }
+      } else if (Platform.isIOS) {
+        const String url = 'app-settings:';
+        if (await canLaunchUrl(Uri.parse(url))) {
+          await launchUrl(Uri.parse(url));
+        } else {
+          throw '无法打开设置页面';
+        }
       } else {
-        throw '无法打开设置页面';
+        await launchUrl(
+          Uri.parse('package:com.isli.fmlink'),
+          mode: LaunchMode.externalApplication,
+        );
       }
     } catch (e) {
-      try {
-        await launchUrl(Uri.parse('package:com.example.fmlink'), mode: LaunchMode.externalApplication);
-      } catch (e2) {
-        EasyLoading.showToast('无法打开设置页面');
-      }
+      EasyLoading.showToast('无法打开设置页面');
     }
   }
 
@@ -301,6 +314,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             title: '裁剪头像',
             minimumAspectRatio: 1.0,
           ),
+          // TODO(ohos): image_cropper v11 ohos Fork 若暴露 OhosUiSettings，在此追加：
+          //   if (Platform.isOhos) OhosUiSettings(title: '裁剪头像'),
         ],
       );
 

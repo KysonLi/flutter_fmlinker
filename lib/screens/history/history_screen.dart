@@ -230,7 +230,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (icon != null) {
       return Positioned.fill(
         child: Container(
-          color: Colors.black.withValues(alpha: 0.3),
+          color: Colors.black.withOpacity(0.3),
           child: Center(child: icon),
         ),
       );
@@ -577,9 +577,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         borderRadius: BorderRadius.circular(10),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.grey.withValues(
-                                              alpha: 0.2,
-                                            ),
+                                            color: Colors.grey.withOpacity(0.2),
                                             spreadRadius: 2,
                                             blurRadius: 5,
                                             offset: const Offset(0, 3),

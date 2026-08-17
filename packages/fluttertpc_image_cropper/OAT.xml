@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2021 Huawei Device Co., Ltd.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+
+    This is the configuration file template for OpenHarmony OSS Audit Tool, please copy it to your project root dir and modify it refer to OpenHarmony/tools_oat/README.
+
+-->
+
+<configuration>
+    <oatconfig>
+        <licensefile></licensefile>
+        <policylist>
+            <policy
+                    desc=""
+                    name="projectPolicy">
+                <policyitem
+                        desc="Developed By OpenValley Digital Co., Ltd."
+                        filefilter="copyrightPolicyFilter"
+                        group="defaultGroup"
+                        name="Hunan OpenValley Digital Industry Development Co., Ltd."
+                        path=".*"
+                        rule="may"
+                        type="copyright"/>
+            </policy>
+            <policy name="projectPolicy" desc="">
+                <policyitem type="license" name="MIT" path=".*" group="defaultGroup" filefilter="defaultPolicyFilter" desc="当前项目兼容此协议" />
+                <policyitem type="compatibility" name="MIT" path=".*" desc="不影响兼容性"/>
+                <policyitem type="compatibility" name="Apache-2.0" path=".*" desc="不影响兼容性"/>
+            </policy>
+        </policylist>
+        <filefilterlist>
+            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
+               <filteritem type="filename" name="buildEnv.sh" desc="项目工程构建脚本"/>
+                <filteritem type="filename" name="LICENSE" desc="开源库代码（或原库代码文件），原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/ohos/log/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper_for_web/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper_platform_interface/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/ios/.*" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/android/.*" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="macos/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.dart" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.yaml" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.lock" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="*.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="ohos/example/.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.json5" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/ohos/hvigorfile.ts" desc="hvigor本地插件,不影响兼容性"/>
+                <filteritem type="filepath" name="image_cropper/ohos/.metadata" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+            </filefilter>
+            <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
+               <filteritem type="filename" name="buildEnv.sh" desc="项目工程构建脚本"/>
+                <filteritem type="filename" name="LICENSE" desc="开源库代码（或原库代码文件），原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/ohos/log/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/example/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper_for_web/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper_platform_interface/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/ios/.*" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/android/.*" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="macos/.*" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.dart" desc="开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.yaml" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.lock" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="*.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filepath" name="ohos/example/.metadata" desc="配置文件，原本就无版权头，不做侵入式修改"/>
+                <filteritem type="filename" name="*.json5" desc="配置文件，原本就无协议头，不做侵入式修改"/>
+                <filteritem type="filepath" name="image_cropper/imagecropper_ohos/ohos/hvigorfile.ts" desc="hvigor本地插件,不影响兼容性"/>
+                <filteritem type="filename" name="buildEnv.sh" desc="构建环境脚本"/>
+                <filteritem type="filepath" name="image_cropper/ohos/.metadata" desc="原库代码文件，原本就无协议头，不做侵入式修改"/>
+            </filefilter>
+            <filefilter name="binaryFileTypePolicyFilter" desc="Filters for binary file policies">
+                <filteritem type="filename" name="*.pdf|*.png|*.txt|*.docx|*.gif" desc="desc files"/>
+                <filteritem type="filename" name="*.jar|*.so|*.aar" desc='二进制文件,不影响兼容性'/>
+                <filteritem type="filename" name="*.dart" desc='开源库代码（或原库代码文件），原本就无协议头，不做侵入式修改'/>
+            </filefilter>
+
+        </filefilterlist>
+    </oatconfig>
+</configuration>

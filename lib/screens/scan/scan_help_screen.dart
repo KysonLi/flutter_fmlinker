@@ -59,7 +59,7 @@ class ScanHelpScreen extends StatelessWidget {
                 imagePath: 'assets/images/scan_help_6_1.png',
                 imageCaption: '标志码示例',
                 additionalImages: [
-                  (
+                  _HelpImage(
                     'assets/images/scan_help_6_2.png',
                     '如下图所示的ISLI标志码，仅支持识读器点读识别：',
                   ),
@@ -83,7 +83,7 @@ class ScanHelpScreen extends StatelessWidget {
     required String answer,
     String? imagePath,
     String? imageCaption,
-    List<(String, String)>? additionalImages,
+    List<_HelpImage>? additionalImages,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class ScanHelpScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 12),
                   Text(
-                    item.$2,
+                    item.caption,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black87,
@@ -155,7 +155,7 @@ class ScanHelpScreen extends StatelessWidget {
                       border: Border.all(color: const Color(0xFFEEEEEE)),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Image.asset(item.$1, fit: BoxFit.contain),
+                    child: Image.asset(item.path, fit: BoxFit.contain),
                   ),
                 ],
               ),
@@ -164,4 +164,10 @@ class ScanHelpScreen extends StatelessWidget {
       ],
     );
   }
+}
+
+class _HelpImage {
+  final String path;
+  final String caption;
+  const _HelpImage(this.path, this.caption);
 }
