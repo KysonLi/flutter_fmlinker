@@ -525,7 +525,8 @@ static int decode_waves2(tl::buffer<Byte>& wave1, tl::buffer<Byte>& wave2, char 
 // row0Y and row1Y are the row center positions (in image coordinates).
 // If row1Y <= 0, defaults to H/6 and 5*H/6 are used.
 static int decode_clean_flat_ex(TImage* gray_img, int row0Y, int row1Y,
-    char isli_code[20], unsigned char corrected_bits[ILD_BIT_COUNT])
+    char isli_code[20], unsigned char corrected_bits[ILD_BIT_COUNT],
+    short feax[2], short feay[2])
 {
     int W = gray_img->w, H = gray_img->h;
     if (W < 71 || H < 10) return 0;
@@ -569,15 +570,26 @@ static int decode_clean_flat_ex(TImage* gray_img, int row0Y, int row1Y,
             data112[i] = raw142[lut[i]];
     }
 
-    if (ild_bits_decode2(data112, isli_code, corrected_bits)) return 1;
-    if (ild_bits_decode_inverted(data112, isli_code, corrected_bits)) return 1;
+    int flat_ok = ild_bits_decode2(data112, isli_code, corrected_bits);
+    if (!flat_ok) flat_ok = ild_bits_decode_inverted(data112, isli_code, corrected_bits);
+    if (flat_ok) {
+        // 特征点近似值：该快路径没有定位过程，取两条采样行的整幅宽度两端
+        // （与 decode_from_binary 输出的"左右端点、分属两行"形态一致）。
+        // clean_flat 在原图上解码，坐标即输入帧坐标，无需 unmap。
+        feax[0] = (short)(0.5 * bw + 0.5);
+        feay[0] = (short)row0Y;
+        feax[1] = (short)(70.5 * bw + 0.5);
+        feay[1] = (short)row1Y;
+        return 1;
+    }
     return 0;
 }
 
 static int decode_clean_flat(TImage* gray_img,
-    char isli_code[20], unsigned char corrected_bits[ILD_BIT_COUNT])
+    char isli_code[20], unsigned char corrected_bits[ILD_BIT_COUNT],
+    short feax[2], short feay[2])
 {
-    return decode_clean_flat_ex(gray_img, -1, -1, isli_code, corrected_bits);
+    return decode_clean_flat_ex(gray_img, -1, -1, isli_code, corrected_bits, feax, feay);
 }
 
 // Shared pre-crop: subsampled row projection → two-band detection → vertical crop.
@@ -777,6 +789,29 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     return 0;
 }
 
+// 把 decode_from_binary 输出的特征点从 enlarged 坐标系反算回输入 image 坐标系。
+// decode_landscape 的正向变换链（依次作用在坐标上）：
+//   1) deskew（|tiltD|>=6 时）：deskewed(x,y) = 原图(x - y*tiltD/H, y)
+//   2) pre_crop + sync_crop：src 视图首行位于 workImg 的 srcY0 行
+//   3) interpolation_image：2× 垂直插值，enlarged 行 2y/2y+1 均来自 src 行 y
+// 不反算时 feax/feay 是"放大 + 多次裁剪后小图"里的坐标，而调用方
+// （JNI/NAPI/darwin 桥）期望的是传入帧的坐标，定位点会整体偏移。
+static void unmap_feature_points(short feax[2], short feay[2], int srcY0,
+    int deskewTilt, int imgW, int imgH)
+{
+    for (int i = 0; i < 2; ++i) {
+        double y = feay[i] * 0.5 + srcY0;                        // enlarged -> workImg
+        double x = feax[i];
+        if (deskewTilt != 0) x -= y * (double)deskewTilt / imgH; // deskewed -> 原图
+        if (x < 0) x = 0; if (x > imgW - 1) x = imgW - 1;
+        if (y < 0) y = 0; if (y > imgH - 1) y = imgH - 1;
+        feax[i] = (short)(x + 0.5);
+        feay[i] = (short)(y + 0.5);
+    }
+    ILD_LOGD("feature points unmapped to image frame: (%d,%d)-(%d,%d)",
+        feax[0], feay[0], feax[1], feay[1]);
+}
+
 static int decode_landscape(TImage *image, char isli_code[20], short feax[2], short feay[2],
     int *is_blur, unsigned char corrected_bits[ILD_BIT_COUNT])
 {
@@ -794,7 +829,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
         s_frames_since_attempt = 0;
         bool ok;
         { auto _t0 = std::chrono::steady_clock::now();
-        ok = decode_clean_flat(image, isli_code, corrected_bits) != 0;
+        ok = decode_clean_flat(image, isli_code, corrected_bits, feax, feay) != 0;
         auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
         ILD_LOGI("stage(clean_flat) took %lldus", (long long)_ms); }
         if (ok) {
@@ -817,8 +852,12 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     // Deskew full image if tilted.
     TImage deskewed;
     TImage* workImg = image;
+    // 特征点反算用的 deskew 位移量。必须在此保存：下面的重裁剪
+    // pre_crop_vertical(workImg, ...) 会用 deskewed 图的残余倾角覆写 tiltD。
+    int deskewTilt = 0;
     auto _ds_t0 = std::chrono::steady_clock::now();
     if (abs(tiltD) >= 6) {
+        deskewTilt = tiltD;
         deskewed.allocate(image->w, image->h);
         double invH = 1.0 / image->h;
         for (int y = 0; y < image->h; ++y) {
@@ -848,11 +887,13 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     // into workImg's buffer with adjusted dimensions. No allocation, no copy.
     TImage banded;
     TImage* src = workImg;
+    int srcY0 = 0; // src 视图首行在 workImg 中的行号（特征点反算用）
     if (cropH < workImg->h) {
         // View into workImg: start at row cropY0, height cropH, same bpl.
         banded = TImage(workImg->pixel + (size_t)cropY0 * workImg->bpl,
                         workImg->w, cropH, workImg->bpl);
         src = &banded;
+        srcY0 = cropY0;
     }
 
     // Second-pass crop via sync-code matching (S1=101 template).
@@ -930,6 +971,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
                 banded = TImage(banded.pixel + (size_t)y0 * banded.bpl,
                                 cw, y1 - y0 + 1, banded.bpl);
                 src = &banded;
+                srcY0 += y0;
             }
             skip_sync:;
         }
@@ -954,6 +996,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     ILD_LOGI("stage(gaussian_binarize) took %lldus", (long long)_ms); }
 
     if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits)) {
+        unmap_feature_points(feax, feay, srcY0, deskewTilt, image->w, image->h);
         ILD_LOGI("decode OK via GAUSSIAN code=%s", isli_code);
         return 1;
     }
@@ -967,6 +1010,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     {
         ild_gaussian_rethreshold(enlarged, bin_img, -5);
         if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits)) {
+            unmap_feature_points(feax, feay, srcY0, deskewTilt, image->w, image->h);
             ILD_LOGI("decode OK via GAUSSIAN bias-retry code=%s", isli_code);
             return 1;
         }
@@ -1002,6 +1046,14 @@ int isli_line_decoder_do_image_decode(IMAGE *image, char isli_code[20], short *f
     int *brightness, int *is_blur)
 {
     ILD_LOGI("decode image %dx%d bpl=%d", image->w, image->h, image->bpl);
+
+    // is_blur is now only "too dark" (the FFT blur detector was removed; see
+    // decode_landscape's `(void)is_blur`). It is read below at the inversion
+    // fallback (`*is_blur != 1`) even though the normal-brightness path never
+    // writes it — so initialize it here, otherwise callers that pass an
+    // uninitialized out-param read garbage and the flag flips 0<->1
+    // non-deterministically.
+    *is_blur = 0;
 
     TImage orig(image->pixel, image->w, image->h, image->bpl);
     *brightness = get_avg_brightness(&orig);
