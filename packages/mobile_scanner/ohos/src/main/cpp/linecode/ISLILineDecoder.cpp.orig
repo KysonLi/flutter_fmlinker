@@ -990,117 +990,7 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
         const double yGapE = seed->yGap * scaleY + (scaleY - 1) * 0.5;
         const double slopeE = seed->slope * scaleY;
         const double rowOff = seed->module * scaleY;
-        int xCode0 = 4, xCode1 = W - 4;
-        // 2026-08-25: A1 seeded 码横向范围裁剪（2026-08-27 移出 ILD_WASM 门，Android 级联同步）。
-        // 真机 A1 seeded 全宽采样 → 码只占条带部分宽度（真机 ~30%，如 00069 码宽
-        // 178/584）→ 639-sample wave 铺满全宽 → 码区样本密度不足 → 112-bit 帧间距
-        // 约束(spb≈9.4)内 sync 段 < thr=93 样本 → BCH 永不触发（真机 0/288）。
-        // 主路径 decode OK 靠 bar_locating 把 bar 限制到码范围（x=[200,378]）。
-        // 这里沿 C1 码带做列投影（每列带内最暗值 < 自适应阈值），取最长暗带为码
-        // 范围，仅在此范围内合成采样点 → wave 只含码，帧间距通过（对齐主路径）。
-        {
-            int yTop = (int)(yGapE - rowOff - 3.0 + 0.5); if (yTop < 0) yTop = 0;
-            int yBot = (int)(yGapE + rowOff + 3.0 + 0.5); if (yBot >= enlarged->h) yBot = enlarged->h - 1;
-            if (yBot > yTop) {
-                const int step = 2;                       // 与 C1 采样同密度
-                long long mn = 255, sm = 0; int cn = 0;
-                for (int x = 4; x < W - 4; x += step) {
-                    unsigned char cmin = 255;
-                    for (int yy = yTop; yy <= yBot; ++yy) {
-                        int X = x, Y = yy + (int)(slopeE * x + 0.5);
-                        if (X < 0) X = 0; if (X >= W) X = W - 1;
-                        if (Y < 0) Y = 0; if (Y >= enlarged->h) Y = enlarged->h - 1;
-                        unsigned char v = enlarged->pixel[(size_t)Y * enlarged->bpl + (size_t)X];
-                        if (v < cmin) cmin = v;
-                    }
-                    if (cmin < mn) mn = cmin;
-                    sm += cmin; ++cn;
-                }
-                // 2026-08-25 两线结构守卫（00070_none FP 修复）。
-                // FP 机制：ILD_FLT=1 时 flt_decode 先裁 FLT 条带（00070 实线
-                // y=[402,494]），decode_landscape 跑在条带上；A1 几何把实线边缘当
-                // "码行对"，种子 C1 把实心规则线当码（两行都采在实线上）→ 波形过
-                // 帧间距 + pos-retry → BCH 误纠出 2702（0-FP 纪律违反）。
-                // 真码对 = 两条暗线 + 中间亮隙；实心规则线 = 单条连续暗带。
-                // 判据：C1 三行剖面（enlarged 坐标）上/下行应暗（码线）、行心应亮
-                // （白隙）。行心不比上下行亮 → 实心带/文字带 → 拒，回退全宽
-                // （种子失败，不产生 FP）。
-                // 阈值：带内列最暗值的 min + 0.45×(mean-min)。码线强暗(≈40-100)，
-                // 背景亮(≈210)，thr 居中分离。
-                const double thr = (cn > 0) ? (mn + (sm / (double)cn - mn) * 0.45) : 128.0;
-                int runStart = -1, runLen = 0, bestStart = -1, bestLen = 0;
-                for (int x = 4; x < W - 4; x += step) {
-                    unsigned char cmin = 255;
-                    for (int yy = yTop; yy <= yBot; ++yy) {
-                        int X = x, Y = yy + (int)(slopeE * x + 0.5);
-                        if (X < 0) X = 0; if (X >= W) X = W - 1;
-                        if (Y < 0) Y = 0; if (Y >= enlarged->h) Y = enlarged->h - 1;
-                        unsigned char v = enlarged->pixel[(size_t)Y * enlarged->bpl + (size_t)X];
-                        if (v < cmin) cmin = v;
-                    }
-                    if (cmin < thr) {
-                        if (runStart < 0) runStart = x;
-                        runLen += step;
-                        if (runLen > bestLen) { bestLen = runLen; bestStart = runStart; }
-                    } else { runStart = -1; runLen = 0; }
-                }
-                // 码宽门槛：≥12px（≈6 单元×2×放大），低于视为文字/噪声，不裁剪。
-                if (bestLen >= 12) {
-                    // ── 两线结构守卫（00070_none FP 修复，2026-08-25）──
-                    // 真码对 = 两条暗线 + 中间亮隙（行心亮、上下行暗）。
-                    // 实心规则线/页眉 = 单条连续暗带；若种子三行都落在暗带上（或
-                    // 带上下边缘），行心不比上下行亮 → 拒（回退全宽，种子失败 →
-                    // 不产生 FP）。用三行灰度均值（跟随 slopeE）而非 min，避免
-                    // extent 端部余量里的单个暗像素误杀真码。
-                    int yTop_ = (int)(yGapE - rowOff + 0.5);
-                    int yMid_ = (int)(yGapE + 0.5);
-                    int yBot_ = (int)(yGapE + rowOff + 0.5);
-                    if (yTop_ < 0) yTop_ = 0; if (yTop_ >= enlarged->h) yTop_ = enlarged->h - 1;
-                    if (yMid_ < 0) yMid_ = 0; if (yMid_ >= enlarged->h) yMid_ = enlarged->h - 1;
-                    if (yBot_ < 0) yBot_ = 0; if (yBot_ >= enlarged->h) yBot_ = enlarged->h - 1;
-                    long long topS = 0, midS = 0, botS = 0; int gN = 0;
-                    for (int x = bestStart; x < bestStart + bestLen; x += 2) {
-                        int X = x; if (X < 0) X = 0; if (X >= W) X = W - 1;
-                        int Yt = yTop_ + (int)(slopeE * x + 0.5);
-                        int Ym = yMid_ + (int)(slopeE * x + 0.5);
-                        int Yb = yBot_ + (int)(slopeE * x + 0.5);
-                        if (Yt < 0) Yt = 0; if (Yt >= enlarged->h) Yt = enlarged->h - 1;
-                        if (Ym < 0) Ym = 0; if (Ym >= enlarged->h) Ym = enlarged->h - 1;
-                        if (Yb < 0) Yb = 0; if (Yb >= enlarged->h) Yb = enlarged->h - 1;
-                        topS += enlarged->pixel[(size_t)Yt * enlarged->bpl + (size_t)X];
-                        midS += enlarged->pixel[(size_t)Ym * enlarged->bpl + (size_t)X];
-                        botS += enlarged->pixel[(size_t)Yb * enlarged->bpl + (size_t)X];
-                        ++gN;
-                    }
-                    if (gN > 0) {
-                        double topM = (double)topS / gN, midM = (double)midS / gN, botM = (double)botS / gN;
-                        double edgeMax = (topM > botM) ? topM : botM;
-                        bool gapOk = (midM > edgeMax + 15.0) && (midM > edgeMax * 1.15) &&
-                                     (topM < 200.0) && (botM < 200.0) && (midM > 130.0);
-                        ILD_LOGI("A1 seeded C1 extent guard: top=%.0f mid=%.0f bot=%.0f -> %s",
-                                 topM, midM, botM, gapOk ? "line-gap OK" : "SOLID/no-gap REJECT");
-                        if (!gapOk) {
-                            ILD_LOGI("A1 seeded C1 extent: no line-gap structure -> keep full width (guard)");
-                            xCode0 = 4; xCode1 = W - 4;
-                            bestLen = 0;
-                        }
-                    }
-                }
-                if (bestLen >= 12) {
-                    xCode0 = bestStart;
-                    xCode1 = bestStart + bestLen;
-                    // 端部余量：码首/尾单元可能偏亮，各扩半 module（enlarged）
-                    int margin = (int)(seed->module * scaleY * 0.5) + 2;
-                    xCode0 -= margin; if (xCode0 < 4) xCode0 = 4;
-                    xCode1 += margin; if (xCode1 > W - 4) xCode1 = W - 4;
-                    ILD_LOGI("A1 seeded C1 extent: x=[%d,%d] len=%d thr=%.0f (code-limited)",
-                             xCode0, xCode1, bestLen, thr);
-                } else {
-                    ILD_LOGD("A1 seeded C1 extent: no strong band len=%d (<12) keep full width", bestLen);
-                }
-            }
-        }
-        for (int x = xCode0; x < xCode1; x += 2) {   // 步长 2，与 bar_locating 同密度
+        for (int x = 4; x < W - 4; x += 2) {   // 步长 2，与 bar_locating 同密度
             bar1_vec.push_back({(double)x, yGapE - rowOff + slopeE * x, seed->avgW, logicalPattern});
             bar2_vec.push_back({(double)x, yGapE + rowOff + slopeE * x, seed->avgW, logicalPattern});
         }
@@ -1137,25 +1027,6 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
         ILD_REJ(4);
         ILD_LOGW("fit_and_sample_one_curve empty wave1=%zu wave2=%zu", wave1.size(), wave2.size());
         return 0;
-    }
-
-    // A1 种子波实心守卫（2026-08-27 自 wasm 移出 ILD_WASM 门，Android 级联新增防线）：
-    // 书页实线对/密排文字行的几何采样波形 ~95% 暗、暗游程≤3（近实心），BCH cap≤6+再编码
-    // 仍可误纠出合法码字（00070→2702、00180→2702）。任一波暗游程≤3 → 拒。仅 seed 路径。
-    if (seed) {
-        auto ild_wave_dark_runs = [](const tl::buffer<unsigned char>& wv) {
-            int runs = 0; bool in = false;
-            for (size_t k = 0; k < wv.size(); ++k) {
-                if (wv[k] < 128) { if (!in) { in = true; ++runs; } }
-                else in = false;
-            }
-            return runs;
-        };
-        int r1 = ild_wave_dark_runs(wave1), r2 = ild_wave_dark_runs(wave2);
-        if (r1 <= 3 || r2 <= 3) {
-            ILD_LOGI("A1 seeded wave guard: solid line (dark runs w1=%d w2=%d) -> reject", r1, r2);
-            return 0;
-        }
     }
 
     if (decode_waves(wave1, wave2, isli_code, corrected_bits))
@@ -1613,38 +1484,14 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     // A1 几何裁剪重试：主路径失败且行投影找到可信码行对时，用几何带对紧裁剪再试
     // 一次（救"文字行距嵌码"帧：主路径最暗带/全图直通定位被文字行干扰）。仅失败后
     // 触发 → 主路径 0 回归 by construction；正确性由 BCH cap≤6 + 真值重编码守卫兜底。
-    // R1（2026-08-27 wasm 移植）：A1 行投影空(geoY=[-1,-1])时回退 tensor 码对先验——
-    // 紧条带/书页文字行均值贴近 accept 阈值时 A1 带对枚举系统性失效，而 tensor_locate
-    // 结构张量定位更稳（wasm console11 45 帧 16 帧 A1 空、tensor 同帧 42/45 命中且行心
-    // 精确）。旧路径不跑 FLT standalone，故这里现场调用 tensor_locate（仅 A1 空帧触发，
-    // 不增加主路径负担）：外缘=aY0/aY1（重试裁剪）、行心=种子 yGap/rowOff、bw=module。
-    // A1 命中帧行为不变（bit-exact）；正确性由 BCH cap≤6 + 重编码守卫 + R1 格式守卫兜底。
-    int aY0 = gY0, aY1 = gY1;
-    bool r1Prior = false;
-    double r1c0 = 0.0, r1c1 = 0.0, r1Mod = 0.0, r1Tilt = 0.0;
-    if (aY0 < 0) {
-        IldTensorLoc tloc;
-        ild_tensor_locate(workImg, &tloc);
-        if (tloc.found && tloc.nPairs >= 1) {
-            const double bw = fabs((double)(tloc.pairY1[0] - tloc.pairY0[0])) * 0.5;
-            if (bw >= 1.0) {
-                aY0 = tloc.pairY0[0] - (int)(bw + 0.5);
-                aY1 = tloc.pairY1[0] + (int)(bw + 0.5);
-                r1c0 = tloc.pairY0[0]; r1c1 = tloc.pairY1[0];
-                r1Mod = bw; r1Tilt = tloc.tiltD;
-                r1Prior = true;
-                ILD_LOGI("A1 geoY empty -> R1 tensor pair prior y=[%d,%d]", aY0, aY1);
-            }
-        }
-    }
-    if (aY0 >= 0 && aY1 > aY0) {
-        int ext = aY1 - aY0 + 1;
+    if (gY0 >= 0 && gY1 > gY0) {
+        int ext = gY1 - gY0 + 1;
         int m = ext / 4 + 8;
         if (m < 12) m = 12; if (m > 48) m = 48;
         int t = tiltD < 0 ? -tiltD : tiltD;
         m += t * 3 / 2;                      // 倾角余量（几何对来自倾斜补偿投影）
-        int g0 = aY0 - m; if (g0 < 0) g0 = 0;
-        int g1 = aY1 + m; if (g1 >= workImg->h) g1 = workImg->h - 1;
+        int g0 = gY0 - m; if (g0 < 0) g0 = 0;
+        int g1 = gY1 + m; if (g1 >= workImg->h) g1 = workImg->h - 1;
         if (g1 > g0) {
 #ifdef ILD_BENCH_DIAG
             g_ild_retry_ran = 1;
@@ -1658,7 +1505,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
             // 抗真机低分辨打印纹理游程不均；th1 是绝对 px，放大按比例放大游程，同一
             // 相对噪声在大档容差内）。Y-only scaleY（X 放大无效，省面积）。仅失败帧触发。
             const int stripH = g1 - g0 + 1;
-            const double pairHc = (double)(aY1 - aY0 + 1);
+            const double pairHc = (double)(gY1 - gY0 + 1);
             const double modulec = pairHc / 3.0;      // 码行对 ≈ 3 模块
             int scaleY = 2;
             if (modulec >= 2.0) {
@@ -1681,7 +1528,7 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
             // 定位级：yGap=码对中线、slope=tiltD/W、avgW=K×scaleY×module（FL3 标定）。
             // 单配置（性能约束"只能放大一次"）：K=3.24/sy=2（FL3 362 样本标定）。
             // 仅单次放大也失败后触发 → 放大已解码帧 0 回归；正确性由 BCH cap≤6 + 重编码守卫兜底。
-            const double pairH = (double)(aY1 - aY0 + 1);
+            const double pairH = (double)(gY1 - gY0 + 1);
             const double geoMod = pairH / 3.0;      // 码行对 = 行1+白隔+行2 ≈ 3 模块
             // 几何对尺度门：拦"文字带误当码"（真机 A1 曾找到 module 20+ 而码实 ~9px，
             // 种子解文字 → BCH 失败）。优先用 FLT barW（本条带实测条宽）做参考——
@@ -1700,31 +1547,18 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
             if (modOk) {   // PERF-2026-08-24 恢复：A1 seeded 保留（几何墙 pt_vec<7 兜底）
                 // module 优先用 FLT barW（真实码 module）：真机 A1 行投影几何的
                 // geoMod≈barW/2（码行内细纹理带），C1 行偏移用错 → 采样在真实行外。
-                // R1 先验时用 tensor 条宽（loc.bw≈条厚，console11 实测 5.8 vs 真值 5.5）。
-                const double module =
-                    (g_ild_flt_barw > 1.0) ? g_ild_flt_barw :
-                    (r1Prior && r1Mod > 0.5) ? r1Mod :
-                    geoMod;
+                const double module = (g_ild_flt_barw > 1.0) ? g_ild_flt_barw : geoMod;
                 const double k = 3.24;
                 const int sy = 2;
                 IldSeed seed;
-                // R1 先验用 tensor 行心（白隔中线精确），A1 用几何对中线。
-                // R1 slope 用 tensor 倾角（A1 空时其投影倾角可能不准）。
-                seed.yGap = r1Prior ? (r1c0 + r1c1) * 0.5 - g0 : (aY0 + aY1) * 0.5 - g0;
-                seed.slope = r1Prior ? r1Tilt / workImg->w : (double)tiltD / workImg->w;
+                seed.yGap = (gY0 + gY1) * 0.5 - g0;
+                seed.slope = (double)tiltD / workImg->w;
                 seed.avgW = k * sy * module;
                 seed.module = module;   // C1 直接行心采样：行心 = yGap ± module
-                ILD_LOGI("A1 seeded retry%s: yGap=%.1f module=%.1f avgW=%.1f K=%.2f scaleY=%d imgW=%d expMod=%.1f",
-                         r1Prior ? "(R1)" : "", seed.yGap, module, seed.avgW, k, sy, image->w, expMod);
+                ILD_LOGI("A1 seeded retry: yGap=%.1f module=%.1f avgW=%.1f K=%.2f scaleY=%d imgW=%d expMod=%.1f",
+                         seed.yGap, module, seed.avgW, k, sy, image->w, expMod);
                 if (run_gaussian_pipeline(&gView, g0, deskewTilt, image,
                                           isli_code, feax, feay, corrected_bits, &seed, sy)) {
-                    // R1 格式守卫：R1 先验（A1 空→tensor 对）无独立几何佐证，文字带上
-                    // 误捕可误解出非法码。真实码全语料均以 "00000000" 开头；不符判伪
-                    //（仅 R1 新增路径，A1 帧 0 回归）。
-                    if (r1Prior && memcmp(isli_code, "00000000", 8) != 0) {
-                        ILD_LOGI("R1 format guard: code=%s lacks ISLI prefix -> miss", isli_code);
-                        return 0;
-                    }
                     ILD_LOGI("decode OK via A1 seeded retry code=%s", isli_code);
                     return 1;
                 }
@@ -1947,12 +1781,6 @@ static int flt_decode(TImage *image, char isli_code[20], short feax[2], short fe
         if (barW > 20) S = 0;
         else
 #endif
-#if defined(ILD_WASM)
-        // 2026-08-25：FLT 检测质量——barW>20 为文字/阴影误检（放大后 vertical_locating
-        // pt_vec<7 仍失败），不放大（省误检放大浪费 + 提速）
-        if (barW > 20) S = 0;
-        else
-#endif
         if (S < 2 && strip.h < ILD_FLT_SMALL_STRIP_H) {
             // 单次放大（性能约束：只能放大一次，不做 ×2→×4 级联）。
             // 目标 = 码结构 3·barW·S 落进大档 RLE 门 [90,9999]（th1=12 绝对容差最宽松）：
@@ -2042,15 +1870,8 @@ int isli_line_decoder_do_image_decode(IMAGE *image, char isli_code[20], short *f
         ILD_LOGI("decode OK code=%s", isli_code);
         return 1;
     }
-    // 级联（2026-08-27）：FLT standalone 曾"失败即终"——换取 cache4 类真机小码高救援
-    //（结构张量定位）+13 帧，却丢旧路径能解的 cache1 类 GT 41 帧（换失败分布、无净收益）。
-    // 改级联：FLT 失败回落 decode_landscape（旧路径），兼得 FLT 高救援 + 旧路径 GT 保留。
-    // 旧路径 0 回归 by construction（FLT 成功帧提前 return，行为不变）；级联新增帧受
-    // BCH cap≤6 + 重编码守卫 + R1 格式守卫兜底。
-    // 复位 FLT 全局：FLT 失败帧可能写了 g_ild_flt_barw（旧路径 A1 seed scale gate 读），
-    // 残留会污染旧路径判定（wasm 级联验证曾丢 2 帧）。
-    g_ild_flt_barw = 0.0;
-    ILD_LOGI("FLT miss -> cascade to legacy decode_landscape");
+    ILD_LOGW("decode FAILED (FLT standalone, no fallback)");
+    return 0;
 #endif
     int ok = decode_landscape(&orig, isli_code, feax, feay, is_blur, corrected_bits);
     if (ok) {

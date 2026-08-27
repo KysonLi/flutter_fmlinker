@@ -10,6 +10,8 @@
 #include "GaussianBinarization.h"
 #include "BarLocator.h"
 #include "LineCodeSpec.h"
+#include "LineLocator.h"
+#include "LineTensor.h"
 #include "buffer.h"
 #include <algorithm>
 #include <assert.h>
@@ -23,6 +25,33 @@
 
 bch_control*   __bch_ctrl127 = 0;
 bch_control*   __bch_ctrl64 = 0;
+
+// FL-1 诊断（仅 bench_diag 构建 /DILD_BENCH_DIAG）：记录本帧解码死在哪个拒绝点。
+// C1/种子：FLT 条带检测的码条宽（px）。真机 A1 行投影几何常找到码行内细纹理带
+//（module≈barW/2），C1 行偏移用错 → 采样在真实行外。flt_decode 检测到条带后在此
+// 写入 barW（0=非 FLT 路径/未检测，回退几何 module）。thread_local 防并发。
+// 需在所有构建可见（release/FLT 都走 decode_landscape/flt_decode），故在宏块外。
+static thread_local double g_ild_flt_barw = 0.0;
+
+// 本帧平均亮度（do_image_decode 入口记录；decode_waves 的 inv 反色路径读）。
+// 收紧 pos-retry(inv)（2026-08-24 log4 首个 FP）：inv=反色极性假设，对正常暗码
+// （书页深色横线）是错误极性，BCH 在错误极性上解出的码多为"噪声碰巧对应的合法
+// 码字"——三会话累计 0 真码救援、1 FP（frame #141 pos-retry(inv) delta=1 →
+// 016702，真码 01902）。仅在整帧亮度>240（白底黑条强信号）才尝试 inv。
+static int g_ild_brightness = 0;
+
+// 拒绝点编号：0=成功/未拒 1=vertical_locating pt_vec<7 2=span<64 3=bar1/bar2<10
+//             4=空波形 5=二值域全阶段耗尽 6=全管线未中 7=亮度门
+// 发布库不定义此宏，ILD_REJ 为空语句，零开销。
+#ifdef ILD_BENCH_DIAG
+int g_ild_reject_stage = 0;
+#define ILD_REJ(STAGE) do { g_ild_reject_stage = (STAGE); } while (0)
+// A1 诊断（ILD_BENCH_DIAG）：几何重试是否执行 + 其失败拒绝点（0=未执行/成功）
+int g_ild_retry_ran = 0;
+int g_ild_retry_reject = 0;
+#else
+#define ILD_REJ(STAGE) do {} while (0)
+#endif
 
 
 int isli_line_decoder_init()
@@ -117,6 +146,11 @@ static void fit_and_sample_one_curve(TImage *image, std::vector<point_t> &bar_ve
     if (len <= 0)
         return;
     wave.resize(len);
+    ILD_LOGD("curvefit[%s]: n=%zu x=[%.0f..%.0f] xlen=%.1f coef=[%.2f %.4f %.2g %.2g] w0-7=%d,%d,%d,%d,%d,%d,%d,%d",
+             graph_name, px.size(), px[0], px[px.size()-1], x_len,
+             c_bar1[0], c_bar1[1], c_bar1[2], c_bar1[3],
+             len > 0 ? wave[0] : -1, len > 1 ? wave[1] : -1, len > 2 ? wave[2] : -1, len > 3 ? wave[3] : -1,
+             len > 4 ? wave[4] : -1, len > 5 ? wave[5] : -1, len > 6 ? wave[6] : -1, len > 7 ? wave[7] : -1);
     
     //DrawWave(1, "color=0xff0000", graph_name, &wave[0], len);
 
@@ -362,7 +396,10 @@ static int decode_waves(tl::buffer<Byte>& wave1, tl::buffer<Byte>& wave2, char i
         if (ret1 && ret2)
         {
             decode_count++;
-            if (ild_bits_decode_inverted(bits.data(), isli_code, corrected_bits)) {
+            // inv 反色路径收紧（2026-08-24，与 pos-retry(inv) 同源 FP 风险）：
+            // 仅整帧亮度>240（白底黑条强信号）尝试；对正常暗码是错误极性，
+            // BCH 误解出合法码字（log4 frame #141 FP）。
+            if (g_ild_brightness > 240 && ild_bits_decode_inverted(bits.data(), isli_code, corrected_bits)) {
                 return 1;
             }
             if (decode_count > 300)
@@ -402,18 +439,22 @@ static int decode_waves(tl::buffer<Byte>& wave1, tl::buffer<Byte>& wave2, char i
                         ILD_LOGI("decode OK via decode_waves(112) pos-retry delta=%d code=%s", delta, isli_code);
                         return 1;
                     }
-                    if (decode_count > 450) { ILDLOG("jitter decode_count: %d (cap->mean-retry)", decode_count); cap_hit = true; break; }
+                    if (decode_count > 150) { ILDLOG("jitter decode_count: %d (cap->mean-retry)", decode_count); cap_hit = true; break; }
                 }
-                // 极性2（同主路径 pass-2，反转）
-                bits.clear();
-                if (ild_wave2bits112(wave1, bits, h1R, t1R, syncBuf, "CurveJ") &&
-                    ild_wave2bits112(wave2, bits, h2R, t2R, syncBuf, "Curve2J")) {
-                    ++decode_count;
-                    if (ild_bits_decode_inverted(bits.data(), isli_code, corrected_bits)) {
-                        ILD_LOGI("decode OK via decode_waves(112) pos-retry(inv) delta=%d code=%s", delta, isli_code);
-                        return 1;
+                // 极性2（同主路径 pass-2，反转）。收紧（2026-08-24）：inv 反色极性
+                // 仅当整帧亮度>240（白底黑条强信号）才尝试——对正常暗码是错误极性，
+                // BCH 误解出合法码字（log4 frame #141 FP 016702），三会话 0 真码救援。
+                if (g_ild_brightness > 240) {
+                    bits.clear();
+                    if (ild_wave2bits112(wave1, bits, h1R, t1R, syncBuf, "CurveJ") &&
+                        ild_wave2bits112(wave2, bits, h2R, t2R, syncBuf, "Curve2J")) {
+                        ++decode_count;
+                        if (ild_bits_decode_inverted(bits.data(), isli_code, corrected_bits)) {
+                            ILD_LOGI("decode OK via decode_waves(112) pos-retry(inv) delta=%d code=%s", delta, isli_code);
+                            return 1;
+                        }
+                        if (decode_count > 150) { ILDLOG("jitter decode_count: %d (cap->mean-retry)", decode_count); cap_hit = true; break; }
                     }
-                    if (decode_count > 450) { ILDLOG("jitter decode_count: %d (cap->mean-retry)", decode_count); cap_hit = true; break; }
                 }
             }
         }
@@ -440,17 +481,62 @@ static int decode_waves(tl::buffer<Byte>& wave1, tl::buffer<Byte>& wave2, char i
                     ILD_LOGI("decode OK via decode_waves(112) mean-thr code=%s", isli_code);
                     return 1;
                 }
-                if (decode_count > 3000) { ILDLOG("mean decode_count: %d", decode_count); return 0; }
+                if (decode_count > 1500) { ILDLOG("mean decode_count: %d", decode_count); return 0; }
             }
             bits.clear();
-            if (ild_wave2bits112(wave1, bits, h1R, t1R, sync, "CurveM", MEAN) &&
+            if (g_ild_brightness > 240 &&   // inv 收紧（2026-08-24，同 pos-retry(inv) FP 源）
+                ild_wave2bits112(wave1, bits, h1R, t1R, sync, "CurveM", MEAN) &&
                 ild_wave2bits112(wave2, bits, h2R, t2R, sync, "Curve2M", MEAN)) {
                 ++decode_count;
                 if (ild_bits_decode_inverted(bits.data(), isli_code, corrected_bits)) {
                     ILD_LOGI("decode OK via decode_waves(112) mean-thr(inv) code=%s", isli_code);
                     return 1;
                 }
-                if (decode_count > 3000) { ILDLOG("mean decode_count: %d", decode_count); return 0; }
+                if (decode_count > 1500) { ILDLOG("mean decode_count: %d", decode_count); return 0; }
+            }
+        }
+    }
+
+    // ── soft-decision Chase-2 兜底（2026-08-20）：主路径+pos-retry+mean-thr 均失败后，
+    // 用带置信度的采样（|bin| 离阈值距离），翻转 2 个最低置信位产生 4 个比特假设，
+    // 逐个 BCH 试。救"真实错误>cap(6) 但集中在低置信位"的边界帧。
+    // 收益依据：cache4 err=7（差1位）出现 2037 次、全语料 2520 次（DR-2 时代 ~130 帧级未救池）。
+    // FP 安全：ild_bits_decode2 有再编码守卫 + 零码拒绝 + known-false 拒绝（DR-2/4 同理）。
+    // 纯增量：已解码帧提前 return 不进入此块；只作用于全部硬判决路径失败后。
+    {
+        int h1S, t1S, h2S, t2S;
+        ild_trim_head_tail(wave1, peak1, valley1, IldOrientation::SyncOnLeft, h1S, t1S, "CurveS");
+        ild_trim_head_tail(wave2, peak2, valley2, IldOrientation::NoSync,     h2S, t2S, "Curve2S");
+        tl::buffer<int> conf;
+        conf.reserve(ILD_BIT_COUNT);
+        int chase_count = 0;
+        for (auto &sync : combinations) {
+            bits.clear(); conf.clear();
+            if (!ild_wave2bits112(wave1, bits, h1S, t1S, sync, "CurveS", false, &conf) ||
+                !ild_wave2bits112(wave2, bits, h2S, t2S, sync, "Curve2S", false, &conf)) continue;
+            if (conf.size() < 2) continue;
+            // 找 2 个最低置信位（最小 |bin|）
+            int b1 = 0, b2 = 1;
+            int c1 = conf[0], c2 = conf[1];
+            if (c1 > c2) { int t = c1; c1 = c2; c2 = t; int tb = b1; b1 = b2; b2 = tb; }
+            for (int i = 2; i < (int)conf.size(); ++i) {
+                int c = conf[i];
+                if (c < c1) { c2 = c1; b2 = b1; c1 = c; b1 = i; }
+                else if (c < c2) { c2 = c; b2 = i; }
+            }
+            // 4 种翻转组合试 BCH
+            for (int mask = 0; mask < 4; ++mask) {
+                unsigned char tryb[ILD_BIT_COUNT];
+                memcpy(tryb, bits.data(), ILD_BIT_COUNT);
+                if (mask & 1) tryb[b1] ^= 0xff;
+                if (mask & 2) tryb[b2] ^= 0xff;
+                ++chase_count;
+                if (ild_bits_decode2(tryb, isli_code, corrected_bits)) {
+                    ILD_LOGI("decode OK via Chase-2 soft mask=%d b1=%d b2=%d code=%s",
+                             mask, b1, b2, isli_code);
+                    return 1;
+                }
+                if (chase_count > 200) return 0;
             }
         }
     }
@@ -571,7 +657,9 @@ static int decode_clean_flat_ex(TImage* gray_img, int row0Y, int row1Y,
     }
 
     int flat_ok = ild_bits_decode2(data112, isli_code, corrected_bits);
-    if (!flat_ok) flat_ok = ild_bits_decode_inverted(data112, isli_code, corrected_bits);
+    // inv 收紧（2026-08-24，同 pos-retry(inv) FP 源）：反色路径仅亮度>240 尝试。
+    if (!flat_ok && g_ild_brightness > 240)
+        flat_ok = ild_bits_decode_inverted(data112, isli_code, corrected_bits);
     if (flat_ok) {
         // 特征点近似值：该快路径没有定位过程，取两条采样行的整幅宽度两端
         // （与 decode_from_binary 输出的"左右端点、分属两行"形态一致）。
@@ -598,7 +686,11 @@ static int decode_clean_flat(TImage* gray_img,
 // band can't be found, cropY0=0 and cropH=H (no cropping).
 // Tilt-adaptive pre-crop: estimates tilt via top/bottom row cross-correlation,
 // computes sheared projection for sharp band detection, returns tiltD for deskew.
-static void pre_crop_vertical(TImage* image, int& cropY0, int& cropH, int& tiltD)
+// A1: gY0/gY1 = 几何码行对外扩界（行投影枚举暗带按"矮+等高+白隙≈行高"选对）。
+// 不参与主裁剪（主路径逐字节不变）；仅作主路径解码失败后的重试裁剪（decode_landscape）。
+// 未找到可信码行对时为 -1/-1。
+static void pre_crop_vertical(TImage* image, int& cropY0, int& cropH, int& tiltD,
+                              int& gY0, int& gY1)
 {
     int W = image->w, H = image->h;
     cropY0 = 0; cropH = H; tiltD = 0;
@@ -657,11 +749,57 @@ static void pre_crop_vertical(TImage* image, int& cropY0, int& cropH, int& tiltD
         }
     }
 
-    // --- Find two darkest bands ---
+    // --- A1 码行对几何搜索（书页"文字行距嵌码"场景）---
+    // 码自签名：两条"矮 + 等高 + 白隙≈行高"的暗带（行心距恰 2 模块，中隔 1 模块）。
+    // 文字行也是暗带且比码行高得多（字形高度 ≈ 5-10× 模块），"两个最暗带"
+    // 会抓到文字行而非码行 → 裁剪错位（locating 拒绝主因之一）。
+    // 这里枚举全部暗带按几何选对：eq(等高)/gap(白隙)/thick(相对第二小带高的厚度惩罚)。
+    // 不覆盖主裁剪（主路径逐字节不变）：几何码行对外扩界只经 gY0/gY1 报给
+    // decode_landscape，作主路径解码失败后的重试裁剪（救"文字嵌入"帧）。
     double rmin = rm[0], rmax = rm[0];
     for (int y = 1; y < H; ++y) { if (rm[y] < rmin) rmin = rm[y]; if (rm[y] > rmax) rmax = rm[y]; }
     double bg = rmin + (rmax - rmin) * 0.85;
     double accept = bg - 0.15 * (bg - rmin);
+
+    gY0 = gY1 = -1;
+    {
+        tl::buffer<int> b0, b1;   // 各暗带首/末行（含）
+        b0.reserve(64); b1.reserve(64);
+        for (int y = 0; y < H;) {
+            if (rm[y] >= accept) { ++y; continue; }
+            int st = y;
+            while (y < H && rm[y] < accept) ++y;
+            b0.push_back(st); b1.push_back(y - 1);
+        }
+        const int nB = (int)b0.size();
+        if (nB >= 2 && nB <= 200) {
+            // 第二小带高作为"典型码行高"参照（抗单条薄噪声带；文字带高数倍 → thick 大）
+            tl::buffer<int> hs; hs.reserve(nB);
+            for (int i = 0; i < nB; ++i) hs.push_back(b1[i] - b0[i] + 1);
+            std::sort(&hs[0], &hs[0] + nB);
+            int hRef = hs[1];                       // nB>=2 保证
+            if (hRef < 1) hRef = 1;
+            double bestSc = 1e18; int pA = -1, pB = -1;
+            for (int i = 0; i < nB; ++i) {
+                const int hi = b1[i] - b0[i] + 1;
+                for (int j = i + 1; j < nB; ++j) {
+                    const int hj = b1[j] - b0[j] + 1;
+                    const int hAvg = ((hi + hj) / 2 < 1) ? 1 : (hi + hj) / 2;
+                    const int sep = b0[j] - b1[i] - 1;                 // 白隙（码 ≈ 1 模块）
+                    const double eq = fabs((double)(hi - hj)) / (double)hAvg;
+                    const double gap = fabs((double)sep - (double)hAvg) / (double)(hAvg + 1);
+                    const double thick = (hAvg > hRef) ? (double)(hAvg - hRef) / (double)hRef : 0.0;
+                    const double sc = eq + gap + thick;
+                    if (sc < bestSc) { bestSc = sc; pA = i; pB = j; }
+                }
+            }
+            if (bestSc < 0.7) {
+                gY0 = b0[pA]; gY1 = b1[pB];   // pA<pB，b0[pA]<b0[pB] 恒成立
+            }
+        }
+    }
+
+    // --- Find two darkest bands（主裁剪，逐字节不变）---
     int ya = 0; for (int y = 1; y < H; ++y) if (rm[y] < rm[ya]) ya = y;
     int b0 = ya, b1 = ya;
     while (b0 > 0 && rm[b0-1] < accept) --b0;
@@ -683,25 +821,135 @@ static void pre_crop_vertical(TImage* image, int& cropY0, int& cropH, int& tiltD
     }
 }
 
+// FL-3 种子（灰度 LineLocator 检测结果换算到裁剪坐标系）：
+//   yGap  = 两行间白隔中线在 src(裁剪)坐标的 y（x=0 参考）
+//   slope = 中线斜率 dy/dx（src 坐标；= tiltD/W）
+//   avgW  = 合成点的 width（enlarged 坐标）= ILD_FL_AVGW_K·2·bw，
+//           K=3.24 由 362 个 legacy avg_width 样本标定（纹理图案跨上行+白隔+下行）
+//   module = 码模块宽（src 坐标，= 码行对/3）。C1 直接行心采样用它定位两条数据行
+//           （行心 = yGap ± module）。
+struct IldSeed { double yGap; double slope; double avgW; double module; };
+
+// ── 方向C 竖核闭运算（2026-08-24）：二值图条带内垂直方向形态学闭。
+// 条码横条在垂直方向是连续暗带（高≈avg_width），文字笔画散碎。竖核（高 kh 宽 1）
+// 闭运算：膨胀把被文字打断的横条垂直连通，腐蚀抹平孤立文字点。纯兜底（主路径失败后）。
+// O(w·h·kh)，kh=avg_width 比例（2-16），条带小区域可接受。
+static void morph_close_vertical(TImage* bin, int kh)
+{
+    const int W = bin->w, H = bin->h;
+    if (kh < 2 || W < 8 || H < 8) return;
+    const int half = kh / 2;
+    tl::buffer<unsigned char> tmp; tmp.resize((size_t)W * H);
+    const int bpl = bin->bpl;
+    // 膨胀（竖 OR）
+    for (int x = 0; x < W; ++x) {
+        for (int y = 0; y < H; ++y) {
+            int y0 = y - half; if (y0 < 0) y0 = 0;
+            int y1 = y + half; if (y1 >= H) y1 = H - 1;
+            unsigned char v = 255;
+            for (int yy = y0; yy <= y1; ++yy)
+                if (bin->pixel[(size_t)yy * bpl + x] == 0) { v = 0; break; }
+            tmp[(size_t)y * W + x] = v;
+        }
+    }
+    // 腐蚀（竖 AND）
+    for (int x = 0; x < W; ++x) {
+        for (int y = 0; y < H; ++y) {
+            int y0 = y - half; if (y0 < 0) y0 = 0;
+            int y1 = y + half; if (y1 >= H) y1 = H - 1;
+            unsigned char v = 0;
+            for (int yy = y0; yy <= y1; ++yy)
+                if (tmp[(size_t)yy * W + x] == 255) { v = 255; break; }
+            bin->pixel[(size_t)y * bpl + x] = v;
+        }
+    }
+}
+
+// ── 方向A 条带内 X 向 1D 局部重二值化（2026-08-24）：文字是离散竖笔（X 向短突变），
+// 条码是连续横条（X 向平滑）。对条带 [y0,y1] 用 X 向滑动窗口（宽 win）局部阈值
+// 重二值化——窗口内文字突变被平均掉，恢复条码明暗比例。前缀和 O(w)/行。
+// 带外区域保留原 bin。纯兜底（主路径失败后）。
+static void rebinarize_x1d(const TImage* gray, TImage* bin, int y0, int y1, int win, int bias)
+{
+    const int W = gray->w, H = gray->h;
+    if (win < 3) win = 3;
+    if (win > W) win = W;
+    const int half = win / 2;
+    tl::buffer<int> pre; pre.resize(W + 1);
+    for (int y = y0; y <= y1 && y < H; ++y) {
+        if (y < 0) continue;
+        const unsigned char* r = gray->pixel + (size_t)y * gray->bpl;
+        unsigned char* o = bin->pixel + (size_t)y * bin->bpl;
+        pre[0] = 0;
+        for (int x = 0; x < W; ++x) pre[x + 1] = pre[x] + r[x];
+        for (int x = 0; x < W; ++x) {
+            int x0 = x - half; if (x0 < 0) x0 = 0;
+            int x1 = x + half; if (x1 >= W) x1 = W - 1;
+            const int sum = pre[x1 + 1] - pre[x0];
+            const int n = x1 - x0 + 1;
+            const int thr = sum / n - bias;
+            o[x] = (r[x] < thr) ? 0 : 255;
+        }
+    }
+}
+
+// ── 方向D 垂直梯度边缘图（2026-08-24）：条码上下缘是强垂直梯度（全宽连续），
+// 文字是实心块（内部无边缘）。垂直梯度 > thr 处标记边缘（暗），喂 bar_locating
+// 的 RLE 匹配（边缘-空隙-边缘 = 条码行上下缘）。纯兜底（主路径失败后）。
+// ── 方向D 垂直梯度边缘图（2026-08-24）：条码上下缘是强垂直梯度（全宽连续），
+// 文字是实心块（内部无边缘）。垂直梯度 > thr 处标记边缘（暗），喂 bar_locating
+// 的 RLE 匹配（边缘-空隙-边缘 = 条码行上下缘）。纯兜底（主路径失败后）。
+static void edge_map_vertical(const TImage* gray, TImage* edge, int thr)
+{
+    const int W = gray->w, H = gray->h;
+    for (int y = 0; y < H; ++y) {
+        unsigned char* o = edge->pixel + (size_t)y * edge->bpl;
+        const unsigned char* r0 = gray->pixel + (size_t)(y > 0 ? y - 1 : 0) * gray->bpl;
+        const unsigned char* r1 = gray->pixel + (size_t)(y + 1 < H ? y + 1 : H - 1) * gray->bpl;
+        for (int x = 0; x < W; ++x) {
+            int d = (int)r1[x] - (int)r0[x];
+            if (d < 0) d = -d;
+            o[x] = (d > thr) ? 0 : 255;
+        }
+    }
+}
+
 // 在已二值化的 bin_img（及灰度 enlarged）上跑“定位 -> 曲线拟合 -> 单条定位 -> 采样 -> 波形解码”
 // 完整下游流水线。enlarged=2× 放大灰度图（采样用），bin_img=与之同尺寸的二值图，
-// src=放大前的裁剪灰度图。成功返回 1 并填充结果。
+// src=放大前的裁剪灰度图。seed 非 NULL 时（FL-3）跳过 vertical_locating 的纹理
+// 匹配 + 角度扫描，直接以白隔中线合成点列播种（救 pt_vec<7 拒绝池）；
+// NULL 时行为与历史版本逐字节一致。
 static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     char isli_code[20], short feax[2], short feay[2],
-    unsigned char corrected_bits[ILD_BIT_COUNT])
+    unsigned char corrected_bits[ILD_BIT_COUNT], const IldSeed *seed = 0,
+    int scaleY = 2)
 {
     // 清空上一次（Otsu/Gaussian）尝试可能残留的半解码结果，保证 FAILED 日志干净。
     memset(isli_code, 0, 20);
 
     std::vector<point_t> pt_vec;
     point_t center;
-    { auto _t0 = std::chrono::steady_clock::now();
-    ild_do_vertical_locating(bin_img, pt_vec, center);
-    auto _t1 = std::chrono::steady_clock::now();
-    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
-    ILD_LOGI("stage(vertical_locating) took %lldus", (long long)_ms); }
-    ILD_LOGD("vertical_locating: pt_vec=%zu center=(%g,%g)", pt_vec.size(), center.x, center.y);
+    if (seed) {
+        const int W = enlarged->w;
+        const double yGapE = seed->yGap * scaleY + (scaleY - 1) * 0.5;  // src → enlarged(scaleY×)
+        const double slopeE = seed->slope * scaleY;
+        for (int x = 12; x < W - 12; x += 8) {                // 8 == SCAN_LINE_DIS
+            double y = yGapE + slopeE * x;
+            pt_vec.push_back({(double)x, y, seed->avgW, logicalPattern});
+        }
+        center = {(double)W * 0.5, yGapE + slopeE * (W * 0.5), seed->avgW, logicalPattern};
+        ILD_LOGD("seeded: n=%zu yGapE=%.1f avgW=%.1f scaleY=%d (skip vertical_locating)",
+                 pt_vec.size(), yGapE, seed->avgW, scaleY);
+    } else {
+        { auto _t0 = std::chrono::steady_clock::now();
+        ild_do_vertical_locating(bin_img, pt_vec, center);
+        auto _t1 = std::chrono::steady_clock::now();
+        auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
+        ILD_LOGI("stage(vertical_locating) took %lldus", (long long)_ms); }
+        ILD_LOGD("vertical_locating: pt_vec=%zu center=(%g,%g)", pt_vec.size(), center.x, center.y);
+    }
     if (pt_vec.size() < 7) {
+        ILD_REJ(1);
         ILD_LOGW("rejected: vertical locating pt_vec=%zu (<7)", pt_vec.size());
         return 0;
     }
@@ -713,6 +961,7 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     double span = point_distance(pt_vec[0], pt_vec[pt_vec.size() - 1]);
     if (span < 64)
     {
+        ILD_REJ(2);
         ILD_LOGW("rejected: feature point_distance=%.1f (<64)", span);
         return 0;
     }
@@ -732,15 +981,143 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     std::vector<point_t> bar2_vec;
     bar1_vec.reserve(500);
     bar2_vec.reserve(500);
-    { auto _t0 = std::chrono::steady_clock::now();
-    ild_locate_single_bar(enlarged, bin_img, coefficient, center, avg_width * 0.8, bar1_vec, bar2_vec);
-    auto _t1 = std::chrono::steady_clock::now();
-    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
-    ILD_LOGI("stage(bar_locating) took %lldus", (long long)_ms); }
-    ILD_LOGD("locate_single_bar: bar1=%zu bar2=%zu", bar1_vec.size(), bar2_vec.size());
+    if (seed && seed->module >= 1.0) {
+        // C1 直接行心采样（用户诊断 2026-08-21：文字嵌入码解码难，bar_locating 的 RLE
+        // 在文字附近找错行 → 波形噪声 → BCH 失败）。几何已给码行精确位置，直接合成
+        // 两条行心曲线（行心 = yGap ± module，enlarged 偏移 module×scaleY）喂采样，
+        // 绕开 bar_locating 的二值 RLE 文字混淆。灰度采样（enlarged）不受文字影响。
+        const int W = enlarged->w;
+        const double yGapE = seed->yGap * scaleY + (scaleY - 1) * 0.5;
+        const double slopeE = seed->slope * scaleY;
+        const double rowOff = seed->module * scaleY;
+        int xCode0 = 4, xCode1 = W - 4;
+        // 2026-08-25: A1 seeded 码横向范围裁剪（2026-08-27 移出 ILD_WASM 门，Android 级联同步）。
+        // 真机 A1 seeded 全宽采样 → 码只占条带部分宽度（真机 ~30%，如 00069 码宽
+        // 178/584）→ 639-sample wave 铺满全宽 → 码区样本密度不足 → 112-bit 帧间距
+        // 约束(spb≈9.4)内 sync 段 < thr=93 样本 → BCH 永不触发（真机 0/288）。
+        // 主路径 decode OK 靠 bar_locating 把 bar 限制到码范围（x=[200,378]）。
+        // 这里沿 C1 码带做列投影（每列带内最暗值 < 自适应阈值），取最长暗带为码
+        // 范围，仅在此范围内合成采样点 → wave 只含码，帧间距通过（对齐主路径）。
+        {
+            int yTop = (int)(yGapE - rowOff - 3.0 + 0.5); if (yTop < 0) yTop = 0;
+            int yBot = (int)(yGapE + rowOff + 3.0 + 0.5); if (yBot >= enlarged->h) yBot = enlarged->h - 1;
+            if (yBot > yTop) {
+                const int step = 2;                       // 与 C1 采样同密度
+                long long mn = 255, sm = 0; int cn = 0;
+                for (int x = 4; x < W - 4; x += step) {
+                    unsigned char cmin = 255;
+                    for (int yy = yTop; yy <= yBot; ++yy) {
+                        int X = x, Y = yy + (int)(slopeE * x + 0.5);
+                        if (X < 0) X = 0; if (X >= W) X = W - 1;
+                        if (Y < 0) Y = 0; if (Y >= enlarged->h) Y = enlarged->h - 1;
+                        unsigned char v = enlarged->pixel[(size_t)Y * enlarged->bpl + (size_t)X];
+                        if (v < cmin) cmin = v;
+                    }
+                    if (cmin < mn) mn = cmin;
+                    sm += cmin; ++cn;
+                }
+                // 2026-08-25 两线结构守卫（00070_none FP 修复）。
+                // FP 机制：ILD_FLT=1 时 flt_decode 先裁 FLT 条带（00070 实线
+                // y=[402,494]），decode_landscape 跑在条带上；A1 几何把实线边缘当
+                // "码行对"，种子 C1 把实心规则线当码（两行都采在实线上）→ 波形过
+                // 帧间距 + pos-retry → BCH 误纠出 2702（0-FP 纪律违反）。
+                // 真码对 = 两条暗线 + 中间亮隙；实心规则线 = 单条连续暗带。
+                // 判据：C1 三行剖面（enlarged 坐标）上/下行应暗（码线）、行心应亮
+                // （白隙）。行心不比上下行亮 → 实心带/文字带 → 拒，回退全宽
+                // （种子失败，不产生 FP）。
+                // 阈值：带内列最暗值的 min + 0.45×(mean-min)。码线强暗(≈40-100)，
+                // 背景亮(≈210)，thr 居中分离。
+                const double thr = (cn > 0) ? (mn + (sm / (double)cn - mn) * 0.45) : 128.0;
+                int runStart = -1, runLen = 0, bestStart = -1, bestLen = 0;
+                for (int x = 4; x < W - 4; x += step) {
+                    unsigned char cmin = 255;
+                    for (int yy = yTop; yy <= yBot; ++yy) {
+                        int X = x, Y = yy + (int)(slopeE * x + 0.5);
+                        if (X < 0) X = 0; if (X >= W) X = W - 1;
+                        if (Y < 0) Y = 0; if (Y >= enlarged->h) Y = enlarged->h - 1;
+                        unsigned char v = enlarged->pixel[(size_t)Y * enlarged->bpl + (size_t)X];
+                        if (v < cmin) cmin = v;
+                    }
+                    if (cmin < thr) {
+                        if (runStart < 0) runStart = x;
+                        runLen += step;
+                        if (runLen > bestLen) { bestLen = runLen; bestStart = runStart; }
+                    } else { runStart = -1; runLen = 0; }
+                }
+                // 码宽门槛：≥12px（≈6 单元×2×放大），低于视为文字/噪声，不裁剪。
+                if (bestLen >= 12) {
+                    // ── 两线结构守卫（00070_none FP 修复，2026-08-25）──
+                    // 真码对 = 两条暗线 + 中间亮隙（行心亮、上下行暗）。
+                    // 实心规则线/页眉 = 单条连续暗带；若种子三行都落在暗带上（或
+                    // 带上下边缘），行心不比上下行亮 → 拒（回退全宽，种子失败 →
+                    // 不产生 FP）。用三行灰度均值（跟随 slopeE）而非 min，避免
+                    // extent 端部余量里的单个暗像素误杀真码。
+                    int yTop_ = (int)(yGapE - rowOff + 0.5);
+                    int yMid_ = (int)(yGapE + 0.5);
+                    int yBot_ = (int)(yGapE + rowOff + 0.5);
+                    if (yTop_ < 0) yTop_ = 0; if (yTop_ >= enlarged->h) yTop_ = enlarged->h - 1;
+                    if (yMid_ < 0) yMid_ = 0; if (yMid_ >= enlarged->h) yMid_ = enlarged->h - 1;
+                    if (yBot_ < 0) yBot_ = 0; if (yBot_ >= enlarged->h) yBot_ = enlarged->h - 1;
+                    long long topS = 0, midS = 0, botS = 0; int gN = 0;
+                    for (int x = bestStart; x < bestStart + bestLen; x += 2) {
+                        int X = x; if (X < 0) X = 0; if (X >= W) X = W - 1;
+                        int Yt = yTop_ + (int)(slopeE * x + 0.5);
+                        int Ym = yMid_ + (int)(slopeE * x + 0.5);
+                        int Yb = yBot_ + (int)(slopeE * x + 0.5);
+                        if (Yt < 0) Yt = 0; if (Yt >= enlarged->h) Yt = enlarged->h - 1;
+                        if (Ym < 0) Ym = 0; if (Ym >= enlarged->h) Ym = enlarged->h - 1;
+                        if (Yb < 0) Yb = 0; if (Yb >= enlarged->h) Yb = enlarged->h - 1;
+                        topS += enlarged->pixel[(size_t)Yt * enlarged->bpl + (size_t)X];
+                        midS += enlarged->pixel[(size_t)Ym * enlarged->bpl + (size_t)X];
+                        botS += enlarged->pixel[(size_t)Yb * enlarged->bpl + (size_t)X];
+                        ++gN;
+                    }
+                    if (gN > 0) {
+                        double topM = (double)topS / gN, midM = (double)midS / gN, botM = (double)botS / gN;
+                        double edgeMax = (topM > botM) ? topM : botM;
+                        bool gapOk = (midM > edgeMax + 15.0) && (midM > edgeMax * 1.15) &&
+                                     (topM < 200.0) && (botM < 200.0) && (midM > 130.0);
+                        ILD_LOGI("A1 seeded C1 extent guard: top=%.0f mid=%.0f bot=%.0f -> %s",
+                                 topM, midM, botM, gapOk ? "line-gap OK" : "SOLID/no-gap REJECT");
+                        if (!gapOk) {
+                            ILD_LOGI("A1 seeded C1 extent: no line-gap structure -> keep full width (guard)");
+                            xCode0 = 4; xCode1 = W - 4;
+                            bestLen = 0;
+                        }
+                    }
+                }
+                if (bestLen >= 12) {
+                    xCode0 = bestStart;
+                    xCode1 = bestStart + bestLen;
+                    // 端部余量：码首/尾单元可能偏亮，各扩半 module（enlarged）
+                    int margin = (int)(seed->module * scaleY * 0.5) + 2;
+                    xCode0 -= margin; if (xCode0 < 4) xCode0 = 4;
+                    xCode1 += margin; if (xCode1 > W - 4) xCode1 = W - 4;
+                    ILD_LOGI("A1 seeded C1 extent: x=[%d,%d] len=%d thr=%.0f (code-limited)",
+                             xCode0, xCode1, bestLen, thr);
+                } else {
+                    ILD_LOGD("A1 seeded C1 extent: no strong band len=%d (<12) keep full width", bestLen);
+                }
+            }
+        }
+        for (int x = xCode0; x < xCode1; x += 2) {   // 步长 2，与 bar_locating 同密度
+            bar1_vec.push_back({(double)x, yGapE - rowOff + slopeE * x, seed->avgW, logicalPattern});
+            bar2_vec.push_back({(double)x, yGapE + rowOff + slopeE * x, seed->avgW, logicalPattern});
+        }
+        ILD_LOGI("C1 direct row sampling: bar1=%zu bar2=%zu rowOff=%.1f (skip bar_locating)",
+                 bar1_vec.size(), bar2_vec.size(), rowOff);
+    } else {
+        { auto _t0 = std::chrono::steady_clock::now();
+        ild_locate_single_bar(enlarged, bin_img, coefficient, center, avg_width * 0.8, bar1_vec, bar2_vec);
+        auto _t1 = std::chrono::steady_clock::now();
+        auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
+        ILD_LOGI("stage(bar_locating) took %lldus", (long long)_ms); }
+        ILD_LOGD("locate_single_bar: bar1=%zu bar2=%zu", bar1_vec.size(), bar2_vec.size());
+    }
 
     if (bar1_vec.size() < 10 || bar2_vec.size() < 10)
     {
+        ILD_REJ(3);
         ILD_LOGW("rejected: locate_single_bar bar1=%zu bar2=%zu (<10)", bar1_vec.size(), bar2_vec.size());
         return 0;
     }
@@ -757,8 +1134,28 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
 
     if (wave1.size() == 0 || wave2.size() == 0)
     {
+        ILD_REJ(4);
         ILD_LOGW("fit_and_sample_one_curve empty wave1=%zu wave2=%zu", wave1.size(), wave2.size());
         return 0;
+    }
+
+    // A1 种子波实心守卫（2026-08-27 自 wasm 移出 ILD_WASM 门，Android 级联新增防线）：
+    // 书页实线对/密排文字行的几何采样波形 ~95% 暗、暗游程≤3（近实心），BCH cap≤6+再编码
+    // 仍可误纠出合法码字（00070→2702、00180→2702）。任一波暗游程≤3 → 拒。仅 seed 路径。
+    if (seed) {
+        auto ild_wave_dark_runs = [](const tl::buffer<unsigned char>& wv) {
+            int runs = 0; bool in = false;
+            for (size_t k = 0; k < wv.size(); ++k) {
+                if (wv[k] < 128) { if (!in) { in = true; ++runs; } }
+                else in = false;
+            }
+            return runs;
+        };
+        int r1 = ild_wave_dark_runs(wave1), r2 = ild_wave_dark_runs(wave2);
+        if (r1 <= 3 || r2 <= 3) {
+            ILD_LOGI("A1 seeded wave guard: solid line (dark runs w1=%d w2=%d) -> reject", r1, r2);
+            return 0;
+        }
     }
 
     if (decode_waves(wave1, wave2, isli_code, corrected_bits))
@@ -768,6 +1165,90 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     }
     ILD_LOGD("decode_waves(112-bit) miss -> try 64-bit path");
 
+    // ── P2 级联 D→A→C（D 主力优先，A/C 辅助，失败依次）──
+    // ── 方向D 垂直梯度边缘图兜底（2026-08-24）：条码上下缘强边缘 vs 文字实心块无边缘。
+    // 边缘图喂 bar_locating（RLE 匹配边缘线对）。thr=40 经验值（可调）。
+    if (!seed) {
+        TImage edgeE;
+        edgeE.allocate(bin_img->w, bin_img->h);
+        edgeE.bpl = bin_img->w;
+        edge_map_vertical(enlarged, &edgeE, 40);
+        std::vector<point_t> b1e, b2e;
+        b1e.reserve(500); b2e.reserve(500);
+        ild_locate_single_bar(enlarged, &edgeE, coefficient, center, avg_width * 0.8, b1e, b2e);
+        if (b1e.size() >= 10 && b2e.size() >= 10) {
+            // ── 方向A X 向 1D 局部二值化兜底（2026-08-24）：对条带区域（bar1/bar2 行范围）
+    // X 向滑动窗口重二值化（抗文字竖笔）→ 重跑 bar_locating + 采样 + decode。
+    if (!seed) {
+        int yBand0 = enlarged->h, yBand1 = -1;
+        for (size_t i = 0; i < bar1_vec.size(); ++i) {
+            int yy = (int)bar1_vec[i].y; if (yy < yBand0) yBand0 = yy; if (yy > yBand1) yBand1 = yy;
+            yy = (int)bar2_vec[i].y; if (yy < yBand0) yBand0 = yy; if (yy > yBand1) yBand1 = yy;
+        }
+        if (yBand1 > yBand0) {
+            int margin = (int)(avg_width * 1.5) + 2;
+            int y0 = yBand0 - margin; if (y0 < 0) y0 = 0;
+            int y1 = yBand1 + margin; if (y1 >= enlarged->h) y1 = enlarged->h - 1;
+            int win = (int)(avg_width * 1.5); if (win < 5) win = 5;
+            TImage binA;
+            binA.allocate(bin_img->w, bin_img->h);
+            memcpy(binA.pixel, bin_img->pixel, (size_t)bin_img->w * bin_img->h);
+            binA.bpl = bin_img->w;
+            rebinarize_x1d(enlarged, &binA, y0, y1, win, -5);
+            std::vector<point_t> b1a, b2a;
+            b1a.reserve(500); b2a.reserve(500);
+            ild_locate_single_bar(enlarged, &binA, coefficient, center, avg_width * 0.8, b1a, b2a);
+            if (b1a.size() >= 10 && b2a.size() >= 10) {
+                wave1.clear(); wave2.clear();
+                fit_and_sample_one_curve(enlarged, b1a, wave1, "Curve-a");
+                fit_and_sample_one_curve(enlarged, b2a, wave2, "Curve2-a");
+                if (wave1.size() > 0 && wave2.size() > 0 &&
+                    decode_waves(wave1, wave2, isli_code, corrected_bits)) {
+                    ILD_LOGI("decode OK via x1d-rebinarize code=%s", isli_code);
+                    return 1;
+                }
+            }
+        }
+    }
+
+    // ── 方向C 竖核闭运算兜底（2026-08-24）：主路径全重试失败后，形态学处理
+    // bin_img（连横条抹文字）→ 重跑 bar_locating + 采样 + decode_waves。
+    // 副本 binM 不污染原始（64-bit 路径输入不变）。0 回归 by construction。
+    if (!seed) {
+        TImage binM;
+        binM.allocate(bin_img->w, bin_img->h);
+        memcpy(binM.pixel, bin_img->pixel, (size_t)bin_img->w * bin_img->h);
+        binM.bpl = bin_img->w;
+        int kh = (int)(avg_width * 0.8); if (kh < 2) kh = 2; if (kh > 16) kh = 16;
+        morph_close_vertical(&binM, kh);
+        std::vector<point_t> b1m, b2m;
+        b1m.reserve(500); b2m.reserve(500);
+        ild_locate_single_bar(enlarged, &binM, coefficient, center, avg_width * 0.8, b1m, b2m);
+        if (b1m.size() >= 10 && b2m.size() >= 10) {
+            wave1.clear(); wave2.clear();
+            fit_and_sample_one_curve(enlarged, b1m, wave1, "Curve-m");
+            fit_and_sample_one_curve(enlarged, b2m, wave2, "Curve2-m");
+            if (wave1.size() > 0 && wave2.size() > 0 &&
+                decode_waves(wave1, wave2, isli_code, corrected_bits)) {
+                ILD_LOGI("decode OK via morph-close code=%s", isli_code);
+                return 1;
+            }
+        }
+    }
+
+    wave1.clear(); wave2.clear();
+            fit_and_sample_one_curve(enlarged, b1e, wave1, "Curve-e");
+            fit_and_sample_one_curve(enlarged, b2e, wave2, "Curve2-e");
+            if (wave1.size() > 0 && wave2.size() > 0 &&
+                decode_waves(wave1, wave2, isli_code, corrected_bits)) {
+                ILD_LOGI("decode OK via edge-map code=%s", isli_code);
+                return 1;
+            }
+        }
+    }
+
+    wave1.clear(); wave2.clear();
+
     wave1.clear(); wave2.clear();
 
     fit_and_sample_one_curve2(enlarged, bar1_vec, avg_width, wave1, "Curve");
@@ -775,6 +1256,7 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     ILD_LOGD("sample(curve2): wave1=%zu wave2=%zu", wave1.size(), wave2.size());
     if (wave1.size() == 0 || wave2.size() == 0)
     {
+        ILD_REJ(4);
         ILD_LOGW("fit_and_sample_one_curve2 empty wave1=%zu wave2=%zu", wave1.size(), wave2.size());
         return 0;
     }
@@ -785,6 +1267,7 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
     }
 
     ILD_LOGD("decode_from_binary: all stages exhausted");
+    ILD_REJ(5);
 
     return 0;
 }
@@ -797,10 +1280,10 @@ static int decode_from_binary(TImage *enlarged, TImage *bin_img, TImage *src,
 // 不反算时 feax/feay 是"放大 + 多次裁剪后小图"里的坐标，而调用方
 // （JNI/NAPI/darwin 桥）期望的是传入帧的坐标，定位点会整体偏移。
 static void unmap_feature_points(short feax[2], short feay[2], int srcY0,
-    int deskewTilt, int imgW, int imgH)
+    int deskewTilt, int imgW, int imgH, double invScaleY = 0.5)
 {
     for (int i = 0; i < 2; ++i) {
-        double y = feay[i] * 0.5 + srcY0;                        // enlarged -> workImg
+        double y = feay[i] * invScaleY + srcY0;                  // enlarged -> workImg
         double x = feax[i];
         if (deskewTilt != 0) x -= y * (double)deskewTilt / imgH; // deskewed -> 原图
         if (x < 0) x = 0; if (x > imgW - 1) x = imgW - 1;
@@ -812,8 +1295,111 @@ static void unmap_feature_points(short feax[2], short feay[2], int srcY0,
         feax[0], feay[0], feax[1], feay[1]);
 }
 
+// 行向水平剪切 deskew：deskewed(x,y) = src(x - y·tiltD/H, y)，双线性插值，
+// 界外填白（255）。tiltD 约定与 pre_crop_vertical 的投影剪切互逆。
+// 注意：这是行向剪切，只纠正近竖直结构的倾角；横线自身的纵向漂移
+// （LineLocator 的 tiltD 约定）不能用它纠正。
+static void deskew_image(const TImage* src, TImage* dst, int tiltD)
+{
+    const int W = src->w, H = src->h;
+    double invH = 1.0 / H;
+    for (int y = 0; y < H; ++y) {
+        double ox = -(double)y * invH * tiltD;
+        int oxi = (int)ox; double frac = ox - oxi;
+        unsigned char* dstRow = dst->pixel + (size_t)y * dst->bpl;
+        const unsigned char* srcRow = src->pixel + (size_t)y * src->bpl;
+        for (int x = 0; x < W; ++x) {
+            int sx = x + oxi;
+            double v = (sx >= 0 && sx < W) ? srcRow[sx] : 255.0;
+            if (frac != 0.0 && sx + 1 >= 0 && sx + 1 < W)
+                v = v * (1.0 - frac) + srcRow[sx + 1] * frac;
+            if (v < 0) v = 0; if (v > 255) v = 255;
+            dstRow[x] = (unsigned char)v;
+        }
+    }
+}
+
+// s× 垂直放大（FL-4）：s=2 走 NEON 快路径（= 历史主路径），s>=3 标量线性
+// 插值（紧裁剪后面积小，标量可负担）。行 y' = y/s 复制，中间行按 frac 线性。
+static void interpolation_image_scale(TImage &input, TImage &output, int s)
+{
+    if (s <= 2) { interpolation_image(input, output); return; }
+    const int w = input.w, h = input.h;
+    const int bpl_i = input.bpl, bpl_o = output.bpl;
+    const unsigned char* pi = input.pixel;
+    unsigned char* po = output.pixel;
+    for (int y = 0; y < h; ++y) {
+        const unsigned char* r0 = pi + (size_t)y * bpl_i;
+        const unsigned char* r1 = (y + 1 < h) ? (r0 + bpl_i) : r0;
+        for (int k = 0; k < s; ++k) {
+            if ((size_t)y * s + k >= (size_t)output.h) break;
+            unsigned char* ro = po + ((size_t)y * s + k) * bpl_o;
+            if (k == 0) {
+                for (int x = 0; x < w; ++x) ro[x] = r0[x];
+            } else {
+                int f = (k * 255) / s;
+                for (int x = 0; x < w; ++x)
+                    ro[x] = (unsigned char)((r0[x] * (255 - f) + r1[x] * f + 127) / 255);
+            }
+        }
+    }
+}
+
+// decode_landscape 尾段（自 crop B 之后）：
+//   scaleY× 纵向放大 → 高斯二值化 → decode_from_binary → 失败时 DR-6
+//   bias=-5 重阈值化重跑（复用主路径 g_blur，仅重阈值比较循环）。
+// 成功时 unmap 特征点（enlarged→workImg→原图坐标链）并返回 1。
+// srcY0 = src 视图首行在 workImg 中的行号；deskewTilt = 行向剪切量（0=未 deskew）。
+// scaleY：旧路径恒 2（历史行为逐字节不变）；FL-4 置信路径实验 3/4。
+// FL 置信路径与旧路径共用此尾段（Phase 2a 抽取）。
+static int run_gaussian_pipeline(TImage* src, int srcY0, int deskewTilt,
+    TImage* frame, char isli_code[20], short feax[2], short feay[2],
+    unsigned char corrected_bits[ILD_BIT_COUNT], const IldSeed* seed = 0,
+    int scaleY = 2, bool allowBiasRetry = true)
+{
+    // scaleY x vertical interpolation for better row resolution.
+    TImage enlarged;
+    enlarged.allocate(src->w, src->h * scaleY);
+    { auto _t0 = std::chrono::steady_clock::now();
+    interpolation_image_scale(*src, enlarged, scaleY);
+    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
+    ILD_LOGI("stage(interpolation) took %lldus", (long long)_ms); }
+
+    TImage bin_img;
+    bin_img.allocate(enlarged.w, enlarged.h);
+    { auto _t0 = std::chrono::steady_clock::now();
+    ild_gaussian_binarization(enlarged, bin_img);
+    auto _t1 = std::chrono::steady_clock::now();
+    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
+    ILD_LOGI("stage(gaussian_binarize) took %lldus", (long long)_ms); }
+
+    if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits, seed, scaleY)) {
+        unmap_feature_points(feax, feay, srcY0, deskewTilt, frame->w, frame->h, 1.0 / scaleY);
+        ILD_LOGI("decode OK via GAUSSIAN%s code=%s", seed ? "(seeded)" : "", isli_code);
+        return 1;
+    }
+
+    // DR-6: 主路径(bias=0)二值化解码失败时，复用主路径已算好的高斯 blur(g_blur)，用更低
+    // 阈值(bias=-5 → 更多白/更细条)重新阈值化 enlarged 并重跑 decode_from_binary。复用 blur
+    // 跳过高斯模糊(占二值化 ~75%)，兜底仅多一个阈值比较循环。主路径逐字节不变（已解码帧提前
+    // return，0 回归 by construction）；救援弱对比帧（高斯阈值下塌缩的条）。FP 由下游 BCH cap≤6
+    // + 真值重编码守卫兜底（不变）。ceiling A/B：bias=-5 rescue44/regress32/mismatch0；兜底仅
+    // 作用于 bias=0 失败帧，回收 rescue 集（regress 帧已由主路径解码）。
+    // FLT 弱迹象条带（转移 15-39，多为干扰）传 allowBiasRetry=false 跳过此兜底，
+    // 免付重阈值化（对无真码的干扰条带是纯浪费）。
+    if (allowBiasRetry) {
+        ild_gaussian_rethreshold(enlarged, bin_img, -5);
+        if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits, seed, scaleY)) {
+            unmap_feature_points(feax, feay, srcY0, deskewTilt, frame->w, frame->h, 1.0 / scaleY);
+            ILD_LOGI("decode OK via GAUSSIAN bias-retry%s code=%s", seed ? "(seeded)" : "", isli_code);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int decode_landscape(TImage *image, char isli_code[20], short feax[2], short feay[2],
-    int *is_blur, unsigned char corrected_bits[ILD_BIT_COUNT])
+    int *is_blur, unsigned char corrected_bits[ILD_BIT_COUNT], bool allowBiasRetry = true)
 {
     // FFT 模糊检测已移除：它在 ROI 定位前对每帧开销 ~1.5ms 且过度拒绝可解码图
     // （误拒 HIT_00006/08/20）。真正的不可解码过滤由 ild_do_vertical_locating
@@ -841,13 +1427,65 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
         ILD_LOGD("clean_flat miss (streak=%d) -> full pipeline", s_clean_miss_streak);
     }
 
+#if defined(ILD_FL2)
+    // FL-2 置信路径：灰度域双横线检测（LineLocator）→ 紧裁剪（e0..e3±margin，
+    // 替代 crop A+B 的位置裁剪）→ 共用尾段 run_gaussian_pipeline。
+    // 级联兜底：检测置信不足或置信路径解码失败时，原样回落下方旧路径
+    //（pre_crop → deskew → sync_crop → 尾段），旧路径逐字节不变 → 解码回归
+    // 结构性不可能。误检只浪费一次紧裁剪上的小面积尾段（gaussian 面积 ↓），
+    // 正确性由 BCH cap≤6 + 真值重编码守卫兜底。
+    // 不做行向 deskew：倾斜已计入裁剪 margin（|tiltD|）；横线纵向漂移用
+    // 行向剪切本就纠不了（见 LineLocator.h 头注释），残留倾角由
+    // vertical_locating 的角度扫描处理。
+    {
+        IldLineLoc loc;
+        { auto _t0 = std::chrono::steady_clock::now();
+        ild_locate_two_lines(image, &loc);
+        auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
+        ILD_LOGI("stage(line_locate) took %lldus", (long long)_ms); }
+        if (loc.found) {
+            int fy0, fy1;
+            ild_line_loc_crop(&loc, image->w, image->h, &fy0, &fy1);
+            ILD_LOGD("FL2 confident crop: y=[%d,%d] rows=%d bw=%.1f tilt=%d",
+                     fy0, fy1, fy1 - fy0 + 1, loc.bw, loc.tiltD);
+            TImage flView(image->pixel + (size_t)fy0 * image->bpl,
+                          image->w, fy1 - fy0 + 1, image->bpl);
+#if defined(ILD_FL3)
+            // FL-3：检测几何直接播种（跳过 vertical_locating 纹理匹配+角度扫描，
+            // 救 pt_vec<7 拒绝池）。种子几何换算到裁剪坐标（x=0 参考）。
+            // FL-4：置信路径放大倍率 ILD_FL_SCALE（默认 2；旧路径恒 2 不变）。
+#ifndef ILD_FL_SCALE
+#define ILD_FL_SCALE 2
+#endif
+            IldSeed seed;
+            seed.yGap = (loc.yRow0 + loc.yRow1) * 0.5 - fy0;
+            seed.slope = (double)loc.tiltD / image->w;
+            seed.avgW = 3.24 * (double)ILD_FL_SCALE * loc.bw;   // ILD_FL_AVGW_K，362 样本标定
+            seed.module = loc.bw;   // C1 直接行心采样：行心 = yGap ± module
+            if (run_gaussian_pipeline(&flView, fy0, 0, image,
+                                      isli_code, feax, feay, corrected_bits, &seed,
+                                      ILD_FL_SCALE)) {
+                return 1;
+            }
+#else
+            if (run_gaussian_pipeline(&flView, fy0, 0, image,
+                                      isli_code, feax, feay, corrected_bits)) {
+                return 1;
+            }
+#endif
+            ILD_LOGD("FL2 confident path miss -> legacy fallback");
+        }
+    }
+#endif
+
     // Pre-crop with tilt estimation.
     int cropY0 = 0, cropH = image->h, tiltD = 0;
+    int gY0 = -1, gY1 = -1;   // A1 几何码行对（主路径失败后的重试裁剪）
     { auto _t0 = std::chrono::steady_clock::now();
-    pre_crop_vertical(image, cropY0, cropH, tiltD);
+    pre_crop_vertical(image, cropY0, cropH, tiltD, gY0, gY1);
     auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
     ILD_LOGI("stage(pre_crop) took %lldus", (long long)_ms); }
-    ILD_LOGD("pre_crop: cropY0=%d cropH=%d tiltD=%d", cropY0, cropH, tiltD);
+    ILD_LOGD("pre_crop: cropY0=%d cropH=%d tiltD=%d geoY=[%d,%d]", cropY0, cropH, tiltD, gY0, gY1);
 
     // Deskew full image if tilted.
     TImage deskewed;
@@ -859,25 +1497,11 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     if (abs(tiltD) >= 6) {
         deskewTilt = tiltD;
         deskewed.allocate(image->w, image->h);
-        double invH = 1.0 / image->h;
-        for (int y = 0; y < image->h; ++y) {
-            double ox = -(double)y * invH * tiltD;
-            int oxi = (int)ox; double frac = ox - oxi;
-            unsigned char* dstRow = deskewed.pixel + (size_t)y * deskewed.bpl;
-            const unsigned char* srcRow = image->pixel + (size_t)y * image->bpl;
-            for (int x = 0; x < image->w; ++x) {
-                int sx = x + oxi;
-                double v = (sx >= 0 && sx < image->w) ? srcRow[sx] : 255.0;
-                if (frac != 0.0 && sx+1 >= 0 && sx+1 < image->w)
-                    v = v * (1.0 - frac) + srcRow[sx+1] * frac;
-                if (v < 0) v = 0; if (v > 255) v = 255;
-                dstRow[x] = (unsigned char)v;
-            }
-        }
+        deskew_image(image, &deskewed, tiltD);
         workImg = &deskewed;
         // Re-crop on deskewed image.
-        pre_crop_vertical(workImg, cropY0, cropH, tiltD);
-        ILD_LOGD("pre_crop(deskewed): cropY0=%d cropH=%d", cropY0, cropH);
+        pre_crop_vertical(workImg, cropY0, cropH, tiltD, gY0, gY1);
+        ILD_LOGD("pre_crop(deskewed): cropY0=%d cropH=%d geoY=[%d,%d]", cropY0, cropH, gY0, gY1);
     }
     { auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _ds_t0).count();
       ILD_LOGI("stage(deskew) took %lldus", (long long)_ms); }
@@ -979,44 +1603,144 @@ static int decode_landscape(TImage *image, char isli_code[20], short feax[2], sh
     { auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _sc_t0).count();
       ILD_LOGI("stage(sync_crop) took %lldus", (long long)_ms); }
 
-    // 2x vertical interpolation for better row resolution.
-    TImage enlarged;
-    enlarged.allocate(src->w, src->h * 2);
-    { auto _t0 = std::chrono::steady_clock::now();
-    interpolation_image(*src, enlarged);
-    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
-    ILD_LOGI("stage(interpolation) took %lldus", (long long)_ms); }
-
-    TImage bin_img;
-    bin_img.allocate(enlarged.w, enlarged.h);
-    { auto _t0 = std::chrono::steady_clock::now();
-    ild_gaussian_binarization(enlarged, bin_img);
-    auto _t1 = std::chrono::steady_clock::now();
-    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
-    ILD_LOGI("stage(gaussian_binarize) took %lldus", (long long)_ms); }
-
-    if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits)) {
-        unmap_feature_points(feax, feay, srcY0, deskewTilt, image->w, image->h);
-        ILD_LOGI("decode OK via GAUSSIAN code=%s", isli_code);
+    // 尾段（放大→二值化→解码→DR-6 重试）已抽取为 run_gaussian_pipeline
+    // （FL 置信路径与旧路径共用；Phase 2a 纯重构，行为不变）。
+    if (run_gaussian_pipeline(src, srcY0, deskewTilt, image,
+                              isli_code, feax, feay, corrected_bits, 0, 2, allowBiasRetry)) {
         return 1;
     }
 
-    // DR-6: 主路径(bias=0)二值化解码失败时，复用主路径已算好的高斯 blur(g_blur)，用更低
-    // 阈值(bias=-5 → 更多白/更细条)重新阈值化 enlarged 并重跑 decode_from_binary。复用 blur
-    // 跳过高斯模糊(占二值化 ~75%)，兜底仅多一个阈值比较循环。主路径逐字节不变（已解码帧提前
-    // return，0 回归 by construction）；救援弱对比帧（高斯阈值下塌缩的条）。FP 由下游 BCH cap≤6
-    // + 真值重编码守卫兜底（不变）。ceiling A/B：bias=-5 rescue44/regress32/mismatch0；兜底仅
-    // 作用于 bias=0 失败帧，回收 rescue 集（regress 帧已由主路径解码）。
-    {
-        ild_gaussian_rethreshold(enlarged, bin_img, -5);
-        if (decode_from_binary(&enlarged, &bin_img, src, isli_code, feax, feay, corrected_bits)) {
-            unmap_feature_points(feax, feay, srcY0, deskewTilt, image->w, image->h);
-            ILD_LOGI("decode OK via GAUSSIAN bias-retry code=%s", isli_code);
-            return 1;
+    // A1 几何裁剪重试：主路径失败且行投影找到可信码行对时，用几何带对紧裁剪再试
+    // 一次（救"文字行距嵌码"帧：主路径最暗带/全图直通定位被文字行干扰）。仅失败后
+    // 触发 → 主路径 0 回归 by construction；正确性由 BCH cap≤6 + 真值重编码守卫兜底。
+    // R1（2026-08-27 wasm 移植）：A1 行投影空(geoY=[-1,-1])时回退 tensor 码对先验——
+    // 紧条带/书页文字行均值贴近 accept 阈值时 A1 带对枚举系统性失效，而 tensor_locate
+    // 结构张量定位更稳（wasm console11 45 帧 16 帧 A1 空、tensor 同帧 42/45 命中且行心
+    // 精确）。旧路径不跑 FLT standalone，故这里现场调用 tensor_locate（仅 A1 空帧触发，
+    // 不增加主路径负担）：外缘=aY0/aY1（重试裁剪）、行心=种子 yGap/rowOff、bw=module。
+    // A1 命中帧行为不变（bit-exact）；正确性由 BCH cap≤6 + 重编码守卫 + R1 格式守卫兜底。
+    int aY0 = gY0, aY1 = gY1;
+    bool r1Prior = false;
+    double r1c0 = 0.0, r1c1 = 0.0, r1Mod = 0.0, r1Tilt = 0.0;
+    if (aY0 < 0) {
+        IldTensorLoc tloc;
+        ild_tensor_locate(workImg, &tloc);
+        if (tloc.found && tloc.nPairs >= 1) {
+            const double bw = fabs((double)(tloc.pairY1[0] - tloc.pairY0[0])) * 0.5;
+            if (bw >= 1.0) {
+                aY0 = tloc.pairY0[0] - (int)(bw + 0.5);
+                aY1 = tloc.pairY1[0] + (int)(bw + 0.5);
+                r1c0 = tloc.pairY0[0]; r1c1 = tloc.pairY1[0];
+                r1Mod = bw; r1Tilt = tloc.tiltD;
+                r1Prior = true;
+                ILD_LOGI("A1 geoY empty -> R1 tensor pair prior y=[%d,%d]", aY0, aY1);
+            }
+        }
+    }
+    if (aY0 >= 0 && aY1 > aY0) {
+        int ext = aY1 - aY0 + 1;
+        int m = ext / 4 + 8;
+        if (m < 12) m = 12; if (m > 48) m = 48;
+        int t = tiltD < 0 ? -tiltD : tiltD;
+        m += t * 3 / 2;                      // 倾角余量（几何对来自倾斜补偿投影）
+        int g0 = aY0 - m; if (g0 < 0) g0 = 0;
+        int g1 = aY1 + m; if (g1 >= workImg->h) g1 = workImg->h - 1;
+        if (g1 > g0) {
+#ifdef ILD_BENCH_DIAG
+            g_ild_retry_ran = 1;
+#endif
+            TImage gView(workImg->pixel + (size_t)g0 * workImg->bpl,
+                         workImg->w, g1 - g0 + 1, workImg->bpl);
+
+            // ── 小码救援：单次放大（性能约束"只能放大一次"，替代原 scaleY=2/3/4 级联）──
+            // vertical_locating 列 RLE 吃带高不吃条宽，行高小 → pt_vec<7。放大目标 =
+            // 码结构 3·module·scaleY 落进大档 RLE 门 [90,9999]（th1=12 绝对容差最宽松，
+            // 抗真机低分辨打印纹理游程不均；th1 是绝对 px，放大按比例放大游程，同一
+            // 相对噪声在大档容差内）。Y-only scaleY（X 放大无效，省面积）。仅失败帧触发。
+            const int stripH = g1 - g0 + 1;
+            const double pairHc = (double)(aY1 - aY0 + 1);
+            const double modulec = pairHc / 3.0;      // 码行对 ≈ 3 模块
+            int scaleY = 2;
+            if (modulec >= 2.0) {
+                int sL = (int)((90.0 + 3.0 * modulec - 1.0) / (3.0 * modulec));  // ceil(90/(3·module))
+                if (sL < 2) sL = 2;
+                if (sL > 4) sL = 4;                   // A1 放大上限 4（面积成本）
+                scaleY = sL;
+            }
+            ILD_LOGI("A1 geometry retry: y=[%d,%d] rows=%d scaleY=%d (main failed)",
+                     g0, g1, stripH, scaleY);
+            if (run_gaussian_pipeline(&gView, g0, deskewTilt, image,
+                                      isli_code, feax, feay, corrected_bits, 0, scaleY)) {
+                ILD_LOGI("decode OK via A1 geometry retry code=%s", isli_code);
+                return 1;
+            }
+
+            // ── Seeded 兜底（绕过 vertical_locating，救真机 pt_vec<7 墙）──
+            // 真机 8px 模块上 vertical_locating 列 RLE 系统性 pt_vec=3，Y 放大无效；
+            // A1 几何已给码行真实边界 → 合成 IldSeed 曲线种子（FL3 机制），直接跳过
+            // 定位级：yGap=码对中线、slope=tiltD/W、avgW=K×scaleY×module（FL3 标定）。
+            // 单配置（性能约束"只能放大一次"）：K=3.24/sy=2（FL3 362 样本标定）。
+            // 仅单次放大也失败后触发 → 放大已解码帧 0 回归；正确性由 BCH cap≤6 + 重编码守卫兜底。
+            const double pairH = (double)(aY1 - aY0 + 1);
+            const double geoMod = pairH / 3.0;      // 码行对 = 行1+白隔+行2 ≈ 3 模块
+            // 几何对尺度门：拦"文字带误当码"（真机 A1 曾找到 module 20+ 而码实 ~9px，
+            // 种子解文字 → BCH 失败）。优先用 FLT barW（本条带实测条宽）做参考——
+            // 不依赖"码满宽"假设（语料有码只占 ~40% 宽的帧，W/71 高估模块 → 误拒
+            // 真码对）：A1 亚带收缩可至 ~1.5×barW、整对 ~3×barW、文字带误捕 >4.5×barW。
+            // 无 barW（非 FLT 路径）退回 geoMod ∈ [0.25, 1.35]×(W/71)（PC 满宽码标定）。
+            //（image->w 是当前解码图宽：原生条带 584 或 2/3× 放大；barW 已随条带
+            //  放大同步 ×S，与本图坐标一致。）
+            const double expMod = (double)image->w / 71.0;
+            const bool modOk = (g_ild_flt_barw > 1.0)
+                ? (pairH >= 1.0 * g_ild_flt_barw && pairH <= 4.5 * g_ild_flt_barw)
+                : (geoMod >= 0.25 * expMod && geoMod <= 1.35 * expMod);
+            if (!modOk)
+                ILD_LOGI("A1 seed skip (scale gate): pairH=%.1f barW=%.1f expMod=%.1f imgW=%d",
+                         pairH, g_ild_flt_barw, expMod, image->w);
+            if (modOk) {   // PERF-2026-08-24 恢复：A1 seeded 保留（几何墙 pt_vec<7 兜底）
+                // module 优先用 FLT barW（真实码 module）：真机 A1 行投影几何的
+                // geoMod≈barW/2（码行内细纹理带），C1 行偏移用错 → 采样在真实行外。
+                // R1 先验时用 tensor 条宽（loc.bw≈条厚，console11 实测 5.8 vs 真值 5.5）。
+                const double module =
+                    (g_ild_flt_barw > 1.0) ? g_ild_flt_barw :
+                    (r1Prior && r1Mod > 0.5) ? r1Mod :
+                    geoMod;
+                const double k = 3.24;
+                const int sy = 2;
+                IldSeed seed;
+                // R1 先验用 tensor 行心（白隔中线精确），A1 用几何对中线。
+                // R1 slope 用 tensor 倾角（A1 空时其投影倾角可能不准）。
+                seed.yGap = r1Prior ? (r1c0 + r1c1) * 0.5 - g0 : (aY0 + aY1) * 0.5 - g0;
+                seed.slope = r1Prior ? r1Tilt / workImg->w : (double)tiltD / workImg->w;
+                seed.avgW = k * sy * module;
+                seed.module = module;   // C1 直接行心采样：行心 = yGap ± module
+                ILD_LOGI("A1 seeded retry%s: yGap=%.1f module=%.1f avgW=%.1f K=%.2f scaleY=%d imgW=%d expMod=%.1f",
+                         r1Prior ? "(R1)" : "", seed.yGap, module, seed.avgW, k, sy, image->w, expMod);
+                if (run_gaussian_pipeline(&gView, g0, deskewTilt, image,
+                                          isli_code, feax, feay, corrected_bits, &seed, sy)) {
+                    // R1 格式守卫：R1 先验（A1 空→tensor 对）无独立几何佐证，文字带上
+                    // 误捕可误解出非法码。真实码全语料均以 "00000000" 开头；不符判伪
+                    //（仅 R1 新增路径，A1 帧 0 回归）。
+                    if (r1Prior && memcmp(isli_code, "00000000", 8) != 0) {
+                        ILD_LOGI("R1 format guard: code=%s lacks ISLI prefix -> miss", isli_code);
+                        return 0;
+                    }
+                    ILD_LOGI("decode OK via A1 seeded retry code=%s", isli_code);
+                    return 1;
+                }
+            }
+#ifdef ILD_BENCH_DIAG
+            g_ild_retry_reject = g_ild_reject_stage;   // 记录最后一次重试失败拒绝点
+#endif
         }
     }
 
     ILD_LOGW("decode FAILED (all stages missed)");
+#ifdef ILD_BENCH_DIAG
+    // 仅在二值域未记录任何拒绝点时才标记 6（不覆写 1..5 的细分信息）。
+    // 未达到 decode_from_binary（clean_flat 未中即全管线未中）也落在这里。
+    if (g_ild_reject_stage == 0) g_ild_reject_stage = 6;
+#endif
     return 0;
 }
 
@@ -1042,6 +1766,240 @@ static unsigned char get_avg_brightness(TImage *image)
     return (unsigned char)(sum / len);
 }
 
+#if defined(ILD_FLT)
+// FL-T 独立解码（用户架构决定 2026-08-20）：结构张量找双横线 → top-3 候对
+// 逐对紧裁剪 → 条带视图上跑标准管线（clean_flat..BCH）→ 首个非零码成功。
+// 失败即终，不回落旧路径——每帧只付一次检测+≤3 次条带解码（无失败帧双付）。
+// PC bench 1798 图验证：456 解码 vs 旧管线全帧 375（净 +81：救援 138 / 丢失 57
+// 含 35 GT 帧——已知取舍）；FP 4 / mismatch 2。
+// 零码守卫：全零比特串是 BCH 合法码字，空白条带会"成功"解出全零码
+// （bench 实测 141/596 假成功），必须拒绝。
+// 2026-08-20 性能：失败帧 1.5x 慢于成功帧（成功提前退出 vs 失败穷举 K=3 +
+// 每次条带内 bias-retry 浪费）→ 无码条带快速拒绝（转移数预检）分流：
+//   无迹象(<15)  → 直接跳过（不解码）
+//   弱迹象(15-39) → 解码但跳过 bias-retry（多为干扰，重阈值也解不出）
+//   强迹象(≥40)  → 完整解码 + bias-retry（真码，重试有价值）
+static bool flt_strip_promising(const TImage* strip, int* transOut)
+{
+    const int w = strip->w, h = strip->h;
+    int best = 0;
+    long sum = 0; int rows = 0;
+    for (int y = 0; y < h; y += 4) {
+        const unsigned char* r = strip->pixel + (size_t)y * strip->bpl;
+        int t = 0;
+        for (int x = 0; x + 1 < w; ++x) {
+            int d = r[x+1] - r[x]; if (d < 0) d = -d;
+            if (d > 25) ++t;
+        }
+        if (t > best) best = t;
+        sum += t; ++rows;
+    }
+    if (transOut) *transOut = best;
+    return best >= 15;
+}
+
+// ---- FLT 条带级自适应放大（小/远条码救援）----
+// 结构张量已把候选条码裁剪成条带（flt_decode 内），但条带内条宽太细（小/远条码）
+// 时，原生分辨率 vertical_locating 竖条候选 <7 拒绝。放大整帧双线性+gauss 数十 ms
+// 太慢；只把条带 X 向放大（Y 向已由 run_gaussian_pipeline 的 scaleY 纵向插值处理）
+// 让竖条变粗再解。重试-only：原生尺寸已解出的帧提前 return，此路径对既有帧零影响。
+#define ILD_FLT_THIN_BAR   6    // 条宽 <6px 视为细条，触发放大重试
+                                // （实测 5px 条宽 vertical_locating 仅 pt_vec=5 <7 拒）
+#define ILD_FLT_TARGET_BAR 12   // 放大后目标条宽（px）
+#define ILD_FLT_SMALL_STRIP_H 80  // 条带高 <80px 视为小码条带（列结构小→pt_vec<7），
+                                // 即便条宽不细也 2D x2 重试兜底
+#define ILD_FLT_MAX_SCALE  4    // 放大上限（限制条带面积成本）
+
+// 条带 2D 整数放大（S×S，双线性）。关键在 Y 向放大：vertical_locating 在
+// 列方向（Y）做 RLE 模式匹配，条带高度小 = 列轮廓的同步线/间隙结构小，
+// 匹配命中数不足（pt_vec<7）；Y 放大直接加高列结构越过尺寸门限（实测失败帧
+// 30% 死在 pt_vec=5-6，仅差 1-2 点）。X 放大同时加粗竖条，利于下游 bar 采样。
+// 仅 X 放大不改变列轮廓，对 pt_vec<7 无效（早期实现实测 0 救援）。
+static void flt_strip_upscale_2d(const TImage* src, TImage* dst, int S)
+{
+    const int sw = src->w, sh = src->h;
+    const int dw = sw * S, dh = sh * S;
+    dst->allocate(dw, dh);
+    const unsigned char* in = src->pixel;
+    unsigned char* out = dst->pixel;
+    for (int y = 0; y < dh; ++y) {
+        int sy = y / S;
+        int frY = (y % S) * 255 / S;
+        const unsigned char* r0 = in + (size_t)sy * src->bpl;
+        const unsigned char* r1 = (sy + 1 < sh) ? r0 + src->bpl : r0;
+        unsigned char* ro = out + (size_t)y * dst->bpl;
+        for (int x = 0; x < dw; ++x) {
+            int sx = x / S;
+            int frX = (x % S) * 255 / S;
+            int v00 = r0[sx];
+            int v01 = (sx + 1 < sw) ? r0[sx + 1] : v00;
+            int v10 = r1[sx];
+            int v11 = (sx + 1 < sw) ? r1[sx + 1] : v10;
+            int vt = (v00 * (255 - frX) + v01 * frX + 127) / 255;
+            int vb = (v10 * (255 - frX) + v11 * frX + 127) / 255;
+            ro[x] = (unsigned char)((vt * (255 - frY) + vb * frY + 127) / 255);
+        }
+    }
+}
+
+// 条带平均条宽（px，X 向暗段宽）：抽样行 p25/p75 阈值分割暗/亮段，取暗段平均宽
+// 最大行。返回 0 = 没识别出条码（flt_strip_promising 已保证有结构，此处只是兜底）。
+static int flt_strip_bar_width(const TImage* strip)
+{
+    const int w = strip->w, h = strip->h;
+    int best = 0;
+    int stepY = h / 16; if (stepY < 1) stepY = 1;
+    for (int y = 0; y < h; y += stepY) {
+        const unsigned char* r = strip->pixel + (size_t)y * strip->bpl;
+        int hist[256] = {0};
+        for (int x = 0; x < w; ++x) ++hist[r[x]];
+        int acc = 0, lo = 0, hi = 0;
+        int t25 = w / 4, t75 = w * 3 / 4;
+        for (int k = 0; k < 256; ++k) {
+            acc += hist[k];
+            if (lo == 0 && acc >= t25) lo = k;
+            if (acc >= t75) { hi = k; break; }
+        }
+        if (hi - lo < 20) continue;                  // 该行无明暗分离（非条码行）
+        int thr = (lo + hi) >> 1;
+        int runs = 0, sumLen = 0, inDark = 0, len = 0;
+        for (int x = 0; x < w; ++x) {
+            if (r[x] < thr) { if (!inDark) { inDark = 1; len = 1; } else ++len; }
+            else if (inDark) { sumLen += len; ++runs; inDark = 0; }
+        }
+        if (inDark) { sumLen += len; ++runs; }
+        if (runs < 3) continue;                      // 段太少（不是条码）
+        int avg = sumLen / runs;
+        if (avg > best) best = avg;
+    }
+    return best;
+}
+
+static int flt_decode(TImage *image, char isli_code[20], short feax[2], short feay[2],
+    unsigned char corrected_bits[ILD_BIT_COUNT])
+{
+    IldTensorLoc loc;
+    { auto _t0 = std::chrono::steady_clock::now();
+    ild_tensor_locate(image, &loc);
+    auto _ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _t0).count();
+    ILD_LOGI("stage(tensor_locate) took %lldus", (long long)_ms); }
+
+    const int ARB_K = 2;                  // K=2（用户2026-08-20定：K1 太激进掉码多、
+                                          // K3 失败帧太贵；K2 平衡命中 75.8%）
+                                          // 只试 top-2 候选对
+    for (int pi = 0; pi < loc.nPairs && pi < ARB_K; ++pi) {
+        IldLineLoc ll;
+        ll.yRow0 = loc.pairY0[pi];
+        ll.yRow1 = loc.pairY1[pi];
+        ll.bw = fabs((double)(ll.yRow1 - ll.yRow0)) * 0.5;
+        if (ll.bw < 1) ll.bw = 1;
+        ll.e0 = ll.yRow0 - (int)(ll.bw + 0.5);      // 带两侧整 bw（放宽边界）
+        ll.e3 = ll.yRow1 + (int)(ll.bw + 0.5);
+        ll.tiltD = loc.tiltD;
+        int cy0, cy1;
+        ild_line_loc_crop(&ll, image->w, image->h, &cy0, &cy1);
+        if (cy1 <= cy0) continue;
+        TImage strip(image->pixel + (size_t)cy0 * image->bpl,
+                     image->w, cy1 - cy0 + 1, image->bpl);
+        // 无码条带快速拒绝：候选带可能裁到干扰线/空白，转移数预检分流。
+        // 弱迹象只做主解码（skip bias-retry），强迹象完整走。
+        int trans = 0;
+        if (!flt_strip_promising(&strip, &trans)) {
+            ILD_LOGD("FLT pair=%d skip (trans=%d<15)", pi, trans);
+            continue;
+        }
+        // 提前算条宽并写入全局：真机 A1 行投影几何的 module≈barW/2（码行内细纹理带），
+        // C1/种子需用 FLT 的 barW（真实码 module）做行偏移/avgW。
+        g_ild_flt_barw = flt_strip_bar_width(&strip);
+        bool strong = trans >= 40;
+        char code2[20] = {0};
+        short fx[2] = {0, 0}, fy[2] = {0, 0};
+        int ib = 0;
+        if (decode_landscape(&strip, code2, fx, fy, &ib, corrected_bits, strong)) {
+            bool zero = true;
+            for (int i = 0; i < 19; ++i) if (code2[i] && code2[i] != '0') { zero = false; break; }
+            if (zero) continue;                     // 零码陷阱
+            memcpy(isli_code, code2, 20);
+            for (int i = 0; i < 2; ++i) {           // 条带坐标 → 原图坐标
+                int y = fy[i] + cy0;
+                if (y < 0) y = 0; if (y >= image->h) y = image->h - 1;
+                feay[i] = (short)y;
+                feax[i] = fx[i];
+            }
+            ILD_LOGI("decode OK via FLT pair=%d y=[%d,%d] code=%s",
+                     pi, cy0, cy1, isli_code);
+            return 1;
+        }
+        // 小码救援：原生尺寸解不出且条带偏小（小/远条码：条带高度小或条宽细）→
+        // 条带 2D 放大后重试。vertical_locating 在列方向做 RLE 模式匹配，条带
+        // 高度小 = 同步线/间隙结构小，易撞 min_size=12 门限（pt_vec<7 最常见拒绝点，
+        // 实测失败帧 30% 死在 pt_vec=5-6）；2D 放大同时加高列结构、加粗竖条。
+        // 只在此刻才放大：结构张量已定位裁剪到条带，面积远小于整帧；既有可解码帧
+        // 在上一段提前 return，本路径对它们零影响（bit-exact）。
+        int barW = flt_strip_bar_width(&strip);
+        int S = 0;
+        if (barW > 0 && barW < ILD_FLT_THIN_BAR) {
+            S = ILD_FLT_TARGET_BAR / barW;   // 细条：目标模块 12px（结构 3·12=36 中档）
+        }
+#if defined(ILD_WASM)
+        // 2026-08-25：FLT 检测质量——barW>20 为文字/阴影误检（放大后 vertical_locating
+        // pt_vec<7 仍失败），不放大（省误检放大浪费 + 提速）
+        if (barW > 20) S = 0;
+        else
+#endif
+        if (S < 2 && strip.h < ILD_FLT_SMALL_STRIP_H) {
+            // 单次放大（性能约束：只能放大一次，不做 ×2→×4 级联）。
+            // 目标 = 码结构 3·barW·S 落进大档 RLE 门 [90,9999]（th1=12 绝对容差最宽松）：
+            // th1 是绝对 px 容差，放大把游程按比例放大，同一相对噪声（如 2/5/2px）在
+            // 大档（|20-8|=12≤12）落在容差内，而中档 th1=4 / 小档 th1=2 拒。真机低分辨
+            // 打印纹理游程不均正是此因（×2 中档 pt_vec=3-5 系统性）。设备 barW≈9 → S=4
+            //（结构 108 大档）；达不到大档则退中档（barW<7.5）。
+            int sLarge = (barW > 0) ? (90 + 3 * barW - 1) / (3 * barW) : 0;  // ceil(90/(3·barW))
+            int sMed   = (barW > 0) ? (30 + 3 * barW - 1) / (3 * barW) : 0;  // ceil(30/(3·barW))
+            S = sLarge > 0 ? sLarge : 2;
+            if (S > ILD_FLT_MAX_SCALE && sMed > 0) S = sMed;   // 大档达不到 → 中档
+            if (S < 2) S = 2;
+        }
+#if defined(ILD_WASM)
+        if (S >= 2) {   // wasm native 条带放大（2026-08-25 小程序细码，非 JS 插值）
+#else
+        if (0 && S >= 2) {   // PERF-2026-08-24：性能优先，砍 strip upscale（真机书页 0 价值）
+#endif
+#if defined(ILD_WASM)
+            if (S > 2) S = 2;   // wasm 限 x2（x3 大图 1902x210 gauss 32ms 太慢）
+#else
+            if (S > ILD_FLT_MAX_SCALE) S = ILD_FLT_MAX_SCALE;
+#endif
+            TImage up;
+            flt_strip_upscale_2d(&strip, &up, S);
+            // 本图坐标的 barW：条带 2D 放大后条宽 = S×barW。A1 种子 module/C1 rowOff
+            // 吃当前解码图尺度，不乘 S 时 S=3 条带的行偏移错 1.5×（采样落行外）。
+            g_ild_flt_barw = (double)barW * S;
+            ILD_LOGI("FLT pair=%d thin barW=%dpx stripH=%d -> strip upscale 2d x%d (%dx%d)",
+                     pi, barW, strip.h, S, up.w, up.h);
+            if (decode_landscape(&up, code2, fx, fy, &ib, corrected_bits, strong)) {
+                bool zero = true;
+                for (int i = 0; i < 19; ++i) if (code2[i] && code2[i] != '0') { zero = false; break; }
+                if (zero) continue;
+                memcpy(isli_code, code2, 20);
+                for (int i = 0; i < 2; ++i) {           // 放大条带坐标 → 原图坐标
+                    int y = (fy[i] + S / 2) / S + cy0;
+                    if (y < 0) y = 0; if (y >= image->h) y = image->h - 1;
+                    int x = (fx[i] + S / 2) / S;
+                    if (x < 0) x = 0; if (x >= image->w) x = image->w - 1;
+                    feay[i] = (short)y;
+                    feax[i] = (short)x;
+                }
+                ILD_LOGI("decode OK via FLT pair=%d thin-bar upscale x%d code=%s",
+                         pi, S, isli_code);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+#endif
+
 int isli_line_decoder_do_image_decode(IMAGE *image, char isli_code[20], short *feax, short *feay,
     int *brightness, int *is_blur)
 {
@@ -1057,13 +2015,37 @@ int isli_line_decoder_do_image_decode(IMAGE *image, char isli_code[20], short *f
 
     TImage orig(image->pixel, image->w, image->h, image->bpl);
     *brightness = get_avg_brightness(&orig);
+    g_ild_brightness = *brightness;   // inv 反色路径门控（pos-retry(inv) 收紧）
     ILD_LOGD("avg brightness=%d", *brightness);
+#ifdef ILD_BENCH_DIAG
+    g_ild_reject_stage = 0;   // FL-1：帧入口复位
+    g_ild_retry_ran = 0;      // A1：几何重试诊断复位
+    g_ild_retry_reject = 0;
+    g_ild_min_bch_err = 100;  // rej=5 桶诊断复位（100=不可纠）
+#endif
     if (*brightness < ILD_MIN_BRIGHTNESS) {
         *is_blur = 1;
+        ILD_REJ(7);
         ILD_LOGW("rejected: brightness=%d < MIN_BRIGHTNESS=%d (too dark/blur)", *brightness, ILD_MIN_BRIGHTNESS);
         return 0;
     }
     unsigned char corrected_bits[ILD_BIT_COUNT] = {};
+#if defined(ILD_FLT)
+    // FL-T 独立版：失败即终，不回落旧路径（用户架构决定）。
+    if (flt_decode(&orig, isli_code, feax, feay, corrected_bits)) {
+        ILD_LOGI("decode OK code=%s", isli_code);
+        return 1;
+    }
+    // 级联（2026-08-27）：FLT standalone 曾"失败即终"——换取 cache4 类真机小码高救援
+    //（结构张量定位）+13 帧，却丢旧路径能解的 cache1 类 GT 41 帧（换失败分布、无净收益）。
+    // 改级联：FLT 失败回落 decode_landscape（旧路径），兼得 FLT 高救援 + 旧路径 GT 保留。
+    // 旧路径 0 回归 by construction（FLT 成功帧提前 return，行为不变）；级联新增帧受
+    // BCH cap≤6 + 重编码守卫 + R1 格式守卫兜底。
+    // 复位 FLT 全局：FLT 失败帧可能写了 g_ild_flt_barw（旧路径 A1 seed scale gate 读），
+    // 残留会污染旧路径判定（wasm 级联验证曾丢 2 帧）。
+    g_ild_flt_barw = 0.0;
+    ILD_LOGI("FLT miss -> cascade to legacy decode_landscape");
+#endif
     int ok = decode_landscape(&orig, isli_code, feax, feay, is_blur, corrected_bits);
     if (ok) {
         ILD_LOGI("decode OK code=%s", isli_code);
