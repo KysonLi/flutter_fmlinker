@@ -25,6 +25,9 @@ class IconTextWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      // 默认 mainAxisSize.max 会让 Row 撑满父容器宽度、内容靠左，
+      // 在 crossAxisAlignment.center 的 Column 里无法居中；改用 min 收缩到内容宽。
+      mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
           iconPath,

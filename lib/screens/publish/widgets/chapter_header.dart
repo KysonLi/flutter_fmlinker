@@ -22,7 +22,7 @@ class ChapterHeader extends StatelessWidget {
     }
 
     if (chapter != '0' && chapter.isNotEmpty) {
-      chapterNum = ' 第${chapter}章';
+      chapterNum = ' 第$chapter章';
     }
 
     return '$articleNum$chapterNum$title';

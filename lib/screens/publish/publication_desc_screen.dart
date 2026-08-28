@@ -30,7 +30,7 @@ class _PublicationDescScreenState extends State<PublicationDescScreen> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView error: ${error.description}');
+            debugPrint('WebView error: ${error.description}');
             setState(() {
               _isLoading = false;
             });

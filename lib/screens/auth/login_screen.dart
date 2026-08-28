@@ -195,13 +195,13 @@ class _LoginScreenState extends State<LoginScreen> {
   // 打开用户协议
   void _openUserAgreement() {
     // 这里应该导航到用户协议页面
-    print('打开用户协议');
+    debugPrint('打开用户协议');
   }
 
   // 打开隐私政策
   void _openPrivacyPolicy() {
     // 这里应该导航到隐私政策页面
-    print('打开隐私政策');
+    debugPrint('打开隐私政策');
   }
 
   Future<void> _sendThirdPartyLogin(String code, String? openId, String platform) async {
@@ -226,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // 第三方登录
   Future<void> _thirdPartyLogin(String platform) async {
     // 这里应该实现第三方登录逻辑
-    print('第三方登录: $platform');
+    debugPrint('第三方登录: $platform');
     if (platform == 'wechat') {
       // 判断微信是否已安装
       final isInstalled = await ThirdPartyManager.isWeChatInstalled();
@@ -243,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
             EasyLoading.showToast('微信登录成功');
             // 发送登录请求
             await _sendThirdPartyLogin(code, null, platform);
-            print(response); 
+            debugPrint(response.toString()); 
           } 
         }
       });
@@ -609,24 +609,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       // 分割线
                       Row(
-                        children: [
+                        children: const [
                           Expanded(
                             child: Divider(
-                              color: const Color(0xFFE0E0E0),
+                              color: Color(0xFFE0E0E0),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          const Text(
+                          SizedBox(width: 10),
+                          Text(
                             '第三方账号登录',
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: Divider(
-                              color: const Color(0xFFE0E0E0),
+                              color: Color(0xFFE0E0E0),
                             ),
                           ),
                         ],

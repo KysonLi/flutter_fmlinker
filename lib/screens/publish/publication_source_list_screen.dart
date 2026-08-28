@@ -5,7 +5,6 @@ import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/screens/publish/widgets/book_info_card.dart';
 import 'package:fmlink/screens/publish/widgets/chapter_header.dart';
 import 'package:fmlink/screens/publish/widgets/source_item.dart';
@@ -343,7 +342,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
               textStyle: TextStyle(fontSize: 12, color: Colors.white),
               messageText: '更新于 %T',
               messageStyle: TextStyle(fontSize: 10, color: Colors.white),
-              iconTheme: const IconThemeData(color: Colors.white),
+              iconTheme: IconThemeData(color: Colors.white),
               triggerOffset: 70,
             ),
             footer: const ClassicFooter(

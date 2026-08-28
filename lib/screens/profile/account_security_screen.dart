@@ -43,6 +43,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Future<void> _logout() async {
     await _userService.clearUserInfo();
     _needRefresh = true;
+    if (!mounted) return;
     Navigator.pop(context, {'refresh': true});
   }
 
@@ -81,18 +82,18 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '4-20个字符',
-                    border: const OutlineInputBorder(
+                    border: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFEEEEEE)),
                     ),
-                    enabledBorder: const OutlineInputBorder(
+                    enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFEEEEEE)),
                     ),
-                    focusedBorder: const OutlineInputBorder(
+                    focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFF2376E3)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     counterText: '',
                   ),
                   maxLength: 20,
@@ -343,19 +344,6 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     } finally {
       EasyLoading.dismiss();
     }
-  }
-
-  Widget _buildInfoRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: <Widget>[
-          Text(title, style: const TextStyle(fontSize: 13)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-        ],
-      ),
-    );
   }
 
   Widget _buildArrowRow(String title) {

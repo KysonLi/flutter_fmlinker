@@ -111,7 +111,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         });
       }
     } catch (e) {
-      print('加载扫码历史失败: $e');
+      debugPrint('加载扫码历史失败: $e');
       EasyLoading.showToast('加载失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
@@ -135,23 +135,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     });
     _pageIndex = 1;
     _loadScanHistory(isRefresh: true);
-  }
-
-  String _getSourceName(dynamic item) {
-    String fragment = item['sourceFragment']?.toString() ?? '';
-    if (fragment.isNotEmpty) {
-      return fragment;
-    }
-
-    String service = item['serviceCode']?.toString() ?? '';
-    String prefix = item['prefixCode']?.toString() ?? '';
-    String suffix = item['suffixCode']?.toString() ?? '';
-
-    if (service.isEmpty && prefix.isEmpty && suffix.isEmpty) {
-      return '链码';
-    }
-
-    return ISLICodeUtil.buildISLICode(service, prefix, suffix);
   }
 
   void _toggleManageMode() {
@@ -257,7 +240,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         EasyLoading.showError(response['msg'] ?? '删除失败');
       }
     } catch (e) {
-      print('删除失败: $e');
+      debugPrint('删除失败: $e');
       EasyLoading.showError('删除失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
@@ -418,7 +401,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           isFree: item['free'] == true,
           isSelectable: _isManageMode,
           isSelected: isSelected,
-          onTap: _isManageMode && itemId != null ? () => _toggleItemSelection(itemId!) : null,
+          onTap: _isManageMode && itemId != null ? () => _toggleItemSelection(itemId) : null,
         );
       }).toList(),
     );

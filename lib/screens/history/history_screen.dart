@@ -21,7 +21,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   bool _isLoggedIn = false;
   List<dynamic> _linkHistory = [];
-  int _linkCount = 0;
 
   @override
   void initState() {
@@ -49,7 +48,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
       }
     } catch (e) {
-      print('检查登录状态失败: $e');
+      debugPrint('检查登录状态失败: $e');
       setState(() {
         _isLoggedIn = false;
         _isLoading = false;
@@ -86,22 +85,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
               data['linkInfoList'] is List) {
             linkInfoList = data['linkInfoList'];
           }
-          // 获取linkCount
-          int linkCount = 0;
-          if (data.containsKey('linkCount')) {
-            linkCount = int.tryParse(data['linkCount'].toString()) ?? 0;
-          }
-
           setState(() {
             _linkHistory = linkInfoList;
-            _linkCount = linkCount;
           });
         }
       } else {
         EasyLoading.showError(response['msg']);
       }
     } catch (e) {
-      print('加载历史关联数据失败: $e');
+      debugPrint('加载历史关联数据失败: $e');
       EasyLoading.showError('加载失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
@@ -114,7 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // 跳转到扫码帮助页面
   void _goToScanHelp() {
     // TODO: 实现扫码帮助页面
-    print('跳转到扫码帮助页面');
+    debugPrint('跳转到扫码帮助页面');
   }
 
   // 根据资源类型构建图标
@@ -150,7 +142,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // 如果没有资源类型，显示默认图标
     if (icons.isEmpty) {
-      icons.add(Icon(Icons.insert_drive_file, size: 16, color: Colors.grey));
+      icons.add(const Icon(Icons.insert_drive_file, size: 16, color: Colors.grey));
     }
 
     return icons;
@@ -197,7 +189,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           height: 16,
         );
       default:
-        return Icon(Icons.insert_drive_file, size: 16, color: Colors.grey);
+        return const Icon(Icons.insert_drive_file, size: 16, color: Colors.grey);
     }
   }
 
@@ -267,103 +259,101 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Container(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 顶部标题
-              const Text(
-                '泛媒关联',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 顶部标题
+            const Text(
+              '泛媒关联',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 40),
 
-              // 中间图片
-              Container(
-                width: 160,
-                height: 160,
-                child: Image.asset(
-                  'assets/images/link_unlogin.png',
-                  fit: BoxFit.contain,
-                ),
+            // 中间图片
+            SizedBox(
+              width: 160,
+              height: 160,
+              child: Image.asset(
+                'assets/images/link_unlogin.png',
+                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 30),
+            ),
+            const SizedBox(height: 30),
 
-              // Tips提示
-              GestureDetector(
-                onTap: _goToScanHelp,
-                child: const Text(
-                  'Tips: 扫描链码添加关联 ?',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+            // Tips提示
+            GestureDetector(
+              onTap: _goToScanHelp,
+              child: const Text(
+                'Tips: 扫描链码添加关联 ?',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
-              const SizedBox(height: 30),
+            ),
+            const SizedBox(height: 30),
 
-              // 查看支持扫链码的出版物按钮
-              Center(
-                child: Container(
-                  width: 280, // 固定宽度，确保两个按钮宽度一致
-                  child: OutlinedButton(
-                    onPressed: () {
-                      // 进入出版页面
-                      Provider.of<TabProvider>(
-                        context,
-                        listen: false,
-                      ).switchTab(1);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      side: const BorderSide(color: Colors.blue),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20), // 半圆角
-                      ),
+            // 查看支持扫链码的出版物按钮
+            Center(
+              child: SizedBox(
+                width: 280, // 固定宽度，确保两个按钮宽度一致
+                child: OutlinedButton(
+                  onPressed: () {
+                    // 进入出版页面
+                    Provider.of<TabProvider>(
+                      context,
+                      listen: false,
+                    ).switchTab(1);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
                     ),
-                    child: const Text(
-                      '查看支持扫链码的出版物',
-                      style: TextStyle(color: Colors.blue, fontSize: 14),
-                      textAlign: TextAlign.center,
+                    side: const BorderSide(color: Colors.blue),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20), // 半圆角
                     ),
+                  ),
+                  child: const Text(
+                    '查看支持扫链码的出版物',
+                    style: TextStyle(color: Colors.blue, fontSize: 14),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // 登录按钮
-              Center(
-                child: Container(
-                  width: 280, // 固定宽度，确保两个按钮宽度一致
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // 正常全屏进入登录页面
-                      context.push('/login').then((value) {
-                        // 登录成功后刷新页面
-                        _checkLoginStatus();
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20), // 半圆角
-                      ),
+            // 登录按钮
+            Center(
+              child: SizedBox(
+                width: 280, // 固定宽度，确保两个按钮宽度一致
+                child: ElevatedButton(
+                  onPressed: () {
+                    // 正常全屏进入登录页面
+                    context.push('/login').then((value) {
+                      // 登录成功后刷新页面
+                      _checkLoginStatus();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
                     ),
-                    child: const Text(
-                      '[登录] 同步关联数据',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                      textAlign: TextAlign.center,
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20), // 半圆角
                     ),
+                  ),
+                  child: const Text(
+                    '[登录] 同步关联数据',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-              const SizedBox(height: 20), // 添加底部间距，确保内容不会紧贴底部
-            ],
-          ),
+            ),
+            const SizedBox(height: 20), // 添加底部间距，确保内容不会紧贴底部
+          ],
         ),
       ),
     );
@@ -371,8 +361,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // 已登录状态的UI
   Widget _buildLoggedInUI() {
-    return Container(
-      child: Column(
+    return Column(
         children: [
           // 标题
           Padding(
@@ -427,7 +416,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           const SizedBox(height: 40),
 
                           // 中间图片
-                          Container(
+                          SizedBox(
                             width: 160,
                             height: 160,
                             child: Image.asset(
@@ -452,7 +441,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                           // 查看支持扫链码的出版物按钮
                           Center(
-                            child: Container(
+                            child: SizedBox(
                               width: 280, // 固定宽度，确保两个按钮宽度一致
                               child: OutlinedButton(
                                 onPressed: () {
@@ -489,7 +478,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                           // 去扫码按钮
                           Center(
-                            child: Container(
+                            child: SizedBox(
                               width: 280, // 固定宽度，确保两个按钮宽度一致
                               child: ElevatedButton(
                                 onPressed: () {
@@ -706,7 +695,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
           ),
         ],
-      ),
     );
   }
 }

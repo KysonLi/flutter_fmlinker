@@ -31,7 +31,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..addJavaScriptChannel(
         'Flutter',
         onMessageReceived: (JavaScriptMessage message) {
-          print('JavaScript message: ${message.message}');
+          debugPrint('JavaScript message: ${message.message}');
         },
       )
       ..setNavigationDelegate(
@@ -47,10 +47,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
             return NavigationDecision.navigate;
           },
           onPageStarted: (String url) {
-            print('Page started loading: $url');
+            debugPrint('Page started loading: $url');
           },
           onPageFinished: (String url) {
-            print('Page finished loading: $url');
+            debugPrint('Page finished loading: $url');
             setState(() {
               _isLoading = false;
               _loadFailed = false;
@@ -64,7 +64,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView resource error: ${error.description}, code: ${error.errorCode}, url: ${error.url}');
+            debugPrint('WebView resource error: ${error.description}, code: ${error.errorCode}, url: ${error.url}');
             
             if (!_pageLoaded) {
               setState(() {
@@ -114,11 +114,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        print('Cannot launch URL: $url');
+        debugPrint('Cannot launch URL: $url');
         EasyLoading.showError('无法打开此链接');
       }
     } catch (e) {
-      print('Failed to launch URL: $e');
+      debugPrint('Failed to launch URL: $e');
       EasyLoading.showError('打开链接失败');
     }
   }
@@ -132,10 +132,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
       }
       
       final uri = Uri.parse(url);
-      print('Loading URL: $uri');
+      debugPrint('Loading URL: $uri');
       _controller.loadRequest(uri);
     } catch (e) {
-      print('Error loading URL: $e');
+      debugPrint('Error loading URL: $e');
       setState(() {
         _isLoading = false;
         _loadFailed = true;

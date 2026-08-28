@@ -104,7 +104,7 @@ class _PublishScreenState extends State<PublishScreen> {
         page: _publicationPage,
         pageSize: Constants.pageSize,
       );
-      print('Publications response: $publicationsResponse');
+      debugPrint('Publications response: $publicationsResponse');
       if (publicationsResponse['status']) {
         // 处理数据结构
         dynamic data = publicationsResponse['data'];
@@ -131,14 +131,14 @@ class _PublishScreenState extends State<PublishScreen> {
         });
       } else {
         String errorMessage = publicationsResponse['msg'] ?? '加载出版物失败';
-        print('Failed to load publications: $errorMessage');
+        debugPrint('Failed to load publications: $errorMessage');
         setState(() {
           _hasErrorPublications = true;
           _errorMessagePublications = errorMessage;
         });
       }
     } catch (e) {
-      print('Error loading publications: $e');
+      debugPrint('Error loading publications: $e');
       setState(() {
         _hasErrorPublications = true;
         _errorMessagePublications = '加载数据失败，请稍后重试';
@@ -171,7 +171,7 @@ class _PublishScreenState extends State<PublishScreen> {
         page: _publisherPage,
         pageSize: Constants.pageSize,
       );
-      print('Publishers response: $publishersResponse');
+      debugPrint('Publishers response: $publishersResponse');
       if (publishersResponse['status']) {
         // 处理数据结构
         dynamic data = publishersResponse['data'];
@@ -201,14 +201,14 @@ class _PublishScreenState extends State<PublishScreen> {
         });
       } else {
         String errorMessage = publishersResponse['msg'] ?? '加载出版者失败';
-        print('Failed to load publishers: $errorMessage');
+        debugPrint('Failed to load publishers: $errorMessage');
         setState(() {
           _hasErrorPublishers = true;
           _errorMessagePublishers = errorMessage;
         });
       }
     } catch (e) {
-      print('Error loading publishers: $e');
+      debugPrint('Error loading publishers: $e');
       setState(() {
         _hasErrorPublishers = true;
         _errorMessagePublishers = '加载数据失败，请稍后重试';
@@ -270,7 +270,9 @@ class _PublishScreenState extends State<PublishScreen> {
       });
       await _loadPublishers();
       _refreshController.finishLoad(
-        _hasMorePublishersList ? IndicatorResult.success : IndicatorResult.noMore,
+        _hasMorePublishersList
+            ? IndicatorResult.success
+            : IndicatorResult.noMore,
       );
     }
   }
@@ -283,14 +285,13 @@ class _PublishScreenState extends State<PublishScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Container(
+        title: SizedBox(
           width: double.infinity,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width:
-                    MediaQuery.of(context).size.width *
+              SizedBox(
+                width: MediaQuery.of(context).size.width *
                     1 /
                     2, // 整体只占整个导航栏的2/3宽度
                 child: Row(
@@ -310,10 +311,9 @@ class _PublishScreenState extends State<PublishScreen> {
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color:
-                                    _showPublications
-                                        ? Colors.blue
-                                        : Colors.transparent,
+                                color: _showPublications
+                                    ? Colors.blue
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                             ),
@@ -326,10 +326,9 @@ class _PublishScreenState extends State<PublishScreen> {
                             style: TextStyle(
                               color:
                                   _showPublications ? Colors.blue : Colors.grey,
-                              fontWeight:
-                                  _showPublications
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                              fontWeight: _showPublications
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               fontSize: 13, // 缩小字体大小
                             ),
                           ),
@@ -356,10 +355,9 @@ class _PublishScreenState extends State<PublishScreen> {
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color:
-                                    !_showPublications
-                                        ? Colors.blue
-                                        : Colors.transparent,
+                                color: !_showPublications
+                                    ? Colors.blue
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                             ),
@@ -370,14 +368,12 @@ class _PublishScreenState extends State<PublishScreen> {
                           child: Text(
                             '出版者',
                             style: TextStyle(
-                              color:
-                                  !_showPublications
-                                      ? Colors.blue
-                                      : Colors.grey,
-                              fontWeight:
-                                  !_showPublications
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                              color: !_showPublications
+                                  ? Colors.blue
+                                  : Colors.grey,
+                              fontWeight: !_showPublications
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               fontSize: 14, // 缩小字体大小
                             ),
                           ),
@@ -398,7 +394,12 @@ class _PublishScreenState extends State<PublishScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Color.fromRGBO(0xf8, 0xf9, 0xfa, 1), // 背景颜色与页面背景保持一致
+              color: const Color.fromRGBO(
+                0xf8,
+                0xf9,
+                0xfa,
+                1,
+              ), // 背景颜色与页面背景保持一致
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
@@ -430,63 +431,60 @@ class _PublishScreenState extends State<PublishScreen> {
           ),
           // 内容区域
           Expanded(
-            child:
-                _showPublications
-                    ? (_hasErrorPublications
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 60,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessagePublications,
-                                style: const TextStyle(fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _refreshData,
-                                child: const Text('重试'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : EasyRefresh(
-                          controller: _refreshController,
-                          onRefresh: () => _refreshData(),
-                          onLoad: () => _loadMore(),
-                          header: RefreshConfig.buildHeader(),
-                          footer: RefreshConfig.buildFooter(),
-                          child:
-                              _publications.isEmpty && !_isLoadingPublications
-                                  ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/images/empty_list.png',
-                                          width: 80,
-                                          height: 80,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          '暂无出版物数据',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
+            child: _showPublications
+                ? (_hasErrorPublications
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 60,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessagePublications,
+                              style: const TextStyle(fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refreshData,
+                              child: const Text('重试'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : EasyRefresh(
+                        controller: _refreshController,
+                        onRefresh: () => _refreshData(),
+                        onLoad: () => _loadMore(),
+                        header: RefreshConfig.buildHeader(),
+                        footer: RefreshConfig.buildFooter(),
+                        child: _publications.isEmpty && !_isLoadingPublications
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/empty_list.png',
+                                      width: 80,
+                                      height: 80,
                                     ),
-                                  )
-                                  : _isCardLayout
-                                  ? SingleChildScrollView(
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      '暂无出版物数据',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _isCardLayout
+                                ? SingleChildScrollView(
                                     padding: const EdgeInsets.all(12),
                                     child: Wrap(
                                       alignment: WrapAlignment.start,
@@ -494,22 +492,21 @@ class _PublishScreenState extends State<PublishScreen> {
                                       runSpacing: 15,
                                       children:
                                           _publications.map((publication) {
-                                            return SizedBox(
-                                              width:
-                                                  (MediaQuery.of(
-                                                        context,
-                                                      ).size.width -
-                                                      24 -
-                                                      30) /
-                                                  3,
-                                              child: _buildPublicationCard(
-                                                publication,
-                                              ),
-                                            );
-                                          }).toList(),
+                                        return SizedBox(
+                                          width: (MediaQuery.of(
+                                                    context,
+                                                  ).size.width -
+                                                  24 -
+                                                  30) /
+                                              3,
+                                          child: _buildPublicationCard(
+                                            publication,
+                                          ),
+                                        );
+                                      }).toList(),
                                     ),
                                   )
-                                  : ListView.builder(
+                                : ListView.builder(
                                     itemCount: _publications.length,
                                     itemBuilder: (context, index) {
                                       final publication = _publications[index];
@@ -518,84 +515,79 @@ class _PublishScreenState extends State<PublishScreen> {
                                       );
                                     },
                                   ),
-                        ))
-                    : (_hasErrorPublishers
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 60,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessagePublishers,
-                                style: const TextStyle(fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _refreshData,
-                                child: const Text('重试'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : EasyRefresh(
-                          controller: _refreshController,
-                          onRefresh: () => _refreshData(),
-                          onLoad: () => _loadMore(),
-                          header: RefreshConfig.buildHeader(),
-                          footer: RefreshConfig.buildFooter(),
-                          child:
-                              _publishers.isEmpty && !_isLoadingPublishers
-                                  ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/images/empty_list.png',
-                                          width: 80,
-                                          height: 80,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          '暂无出版者数据',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
+                      ))
+                : (_hasErrorPublishers
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 60,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessagePublishers,
+                              style: const TextStyle(fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refreshData,
+                              child: const Text('重试'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : EasyRefresh(
+                        controller: _refreshController,
+                        onRefresh: () => _refreshData(),
+                        onLoad: () => _loadMore(),
+                        header: RefreshConfig.buildHeader(),
+                        footer: RefreshConfig.buildFooter(),
+                        child: _publishers.isEmpty && !_isLoadingPublishers
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/empty_list.png',
+                                      width: 80,
+                                      height: 80,
                                     ),
-                                  )
-                                  : SingleChildScrollView(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Wrap(
-                                      alignment: WrapAlignment.spaceBetween,
-                                      spacing: 10,
-                                      runSpacing: 15,
-                                      children:
-                                          _publishers.map((publisher) {
-                                            return SizedBox(
-                                              width:
-                                                  (MediaQuery.of(
-                                                        context,
-                                                      ).size.width -
-                                                      24 -
-                                                      10) /
-                                                  2,
-                                              child: _buildPublisherCard(
-                                                publisher,
-                                              ),
-                                            );
-                                          }).toList(),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      '暂无出版者数据',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                        )),
+                                  ],
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                padding: const EdgeInsets.all(12),
+                                child: Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  spacing: 10,
+                                  runSpacing: 15,
+                                  children: _publishers.map((publisher) {
+                                    return SizedBox(
+                                      width: (MediaQuery.of(
+                                                context,
+                                              ).size.width -
+                                              24 -
+                                              10) /
+                                          2,
+                                      child: _buildPublisherCard(
+                                        publisher,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                      )),
           ),
         ],
       ),
@@ -616,10 +608,16 @@ class _PublishScreenState extends State<PublishScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            BookCover(
-              imageUrl: _getPublicationImage(publication)!,
-              width: 90,
-              height: 130,
+            // 封面撑满网格列宽，高度按 90:130 比例自适应（列宽随屏宽动态）
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                return BookCover(
+                  imageUrl: _getPublicationImage(publication)!,
+                  width: width,
+                  height: width * 130 / 90,
+                );
+              },
             ),
 
             const SizedBox(height: 4),
@@ -652,9 +650,9 @@ class _PublishScreenState extends State<PublishScreen> {
       },
       child: Card(
         margin: const EdgeInsets.all(4),
-        elevation: 0.5,
+        elevation: 2,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -743,7 +741,7 @@ class _PublishScreenState extends State<PublishScreen> {
     // 检查多个可能的图片URL字段
     if (publication.containsKey('goodsImage') &&
         publication['goodsImage'] != null) {
-          print('Found goodsImage: ${publication['goodsImage']}');
+      debugPrint('Found goodsImage: ${publication['goodsImage']}');
       return publication['goodsImage'];
     } else if (publication.containsKey('image_url') &&
         publication['image_url'] != null) {
@@ -759,7 +757,7 @@ class _PublishScreenState extends State<PublishScreen> {
   }
 
   Widget _buildPublicationListTile(dynamic publication) {
-    String? goodsId = publication['goodsId']?.toString(); 
+    String? goodsId = publication['goodsId']?.toString();
     return GestureDetector(
       onTap: () {
         if (goodsId != null) {

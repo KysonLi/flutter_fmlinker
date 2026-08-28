@@ -69,7 +69,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         Uri.parse(linkUrl);
         context.push('/webview?url=${Uri.encodeComponent(linkUrl)}');
       } catch (e) {
-        print('Invalid URL: $jumpUrl, error: $e');
+        debugPrint('Invalid URL: $jumpUrl, error: $e');
         EasyLoading.showError('链接无效');
       }
     } else if (jumpUrl.contains('mpr:')) {
@@ -421,11 +421,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   if (_discoverData!['dailyRcommend'] != null)
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white),
+                      decoration: const BoxDecoration(color: Colors.white),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconTextWidget(
+                          const IconTextWidget(
                             iconPath: 'assets/icons/discover_today.png',
                             text: '今日推荐',
                           ),
@@ -506,11 +506,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   if (_discoverData!['readRankingList'] != null)
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white),
+                      decoration: const BoxDecoration(color: Colors.white),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconTextWidget(
+                          const IconTextWidget(
                             iconPath: 'assets/icons/discover_read.png',
                             text: '热门关注',
                           ),
@@ -553,11 +553,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.center,
                                             children: [
-                                              BookCover(
-                                                imageUrl:
-                                                    item['goodsInfo']['goodsImage'],
-                                                width: 90,
-                                                height: 130,
+                                              // 封面撑满列宽，高度按 90:130 比例自适应
+                                              LayoutBuilder(
+                                                builder: (context, constraints) {
+                                                  final width = constraints.maxWidth;
+                                                  return BookCover(
+                                                    imageUrl: item['goodsInfo']['goodsImage'],
+                                                    width: width,
+                                                    height: width * 130 / 90,
+                                                  );
+                                                },
                                               ),
                                               const SizedBox(height: 8),
                                               // 图书名称
@@ -603,11 +608,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   if (_discoverData!['likeMost'] != null)
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white),
+                      decoration: const BoxDecoration(color: Colors.white),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconTextWidget(
+                          const IconTextWidget(
                             iconPath: 'assets/icons/discover_like.png',
                             text: '点赞最多',
                           ),

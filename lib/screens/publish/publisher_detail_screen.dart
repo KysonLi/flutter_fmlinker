@@ -43,7 +43,7 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _description = widget.publisher.shopBrief ?? '';
+    _description = widget.publisher.shopBrief;
     _goodsCount = widget.publisher.goodsCount;
     _scrollController.addListener(_onScroll);
     EasyLoading.show(status: '加载中...');
@@ -69,10 +69,6 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
     if (_scrollOffset <= 0) return 0.0;
     if (_scrollOffset >= _maxScrollExtent) return 1.0;
     return _scrollOffset / _maxScrollExtent;
-  }
-
-  Color get _titleColor {
-    return _appBarOpacity > 0.5 ? Colors.black : Colors.white;
   }
 
   String _getShopId() {
@@ -153,7 +149,7 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
       children: [
         Container(
           height: 180,
-          decoration: BoxDecoration(color: Colors.white),
+          decoration: const BoxDecoration(color: Colors.white),
           child: Stack(
             children: [
               Image.asset(
@@ -169,7 +165,7 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
                 child: Container(
                   width: double.infinity,
                   height: 100,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     image: DecorationImage(
                       image: AssetImage('assets/images/publisher_logo_bg.png'),
                       fit: BoxFit.fill,

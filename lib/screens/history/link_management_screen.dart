@@ -15,7 +15,6 @@ class LinkManagementScreen extends StatefulWidget {
 }
 
 class _LinkManagementScreenState extends State<LinkManagementScreen> {
-  bool _isLoading = true;
   List<dynamic> _linkHistory = [];
   int _page = 1;
   final int _pageSize = 20;
@@ -53,9 +52,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
       String unificationId = await UserService().getUnificationId();
       
       if (unificationId.isEmpty) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() {});
         return;
       }
 
@@ -95,13 +92,11 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
         EasyLoading.showError(response['msg']);
       }
     } catch (e) {
-      print('加载历史关联数据失败: $e');
+      debugPrint('加载历史关联数据失败: $e');
       EasyLoading.showError('加载失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() {});
       if (isRefresh) {
         _refreshController.finishRefresh();
       } else {
@@ -275,7 +270,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
         EasyLoading.showError(response['msg'] ?? '删除失败');
       }
     } catch (e) {
-      print('删除失败: $e');
+      debugPrint('删除失败: $e');
       EasyLoading.showError('删除失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();

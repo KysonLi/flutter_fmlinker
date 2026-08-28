@@ -175,12 +175,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
           if (result['data'] != null) {
             await _userService.saveUserInfo(UserInfo.fromJson(result['data']));
           }
+          if (!mounted) return;
           Navigator.pop(context, {'refresh': true});
         } else {
           EasyLoading.showToast('密码重置成功！');
           if (result['data'] != null) {
             await _userService.saveUserInfo(UserInfo.fromJson(result['data']));
           }
+          if (!mounted) return;
           Navigator.pop(context, {'refresh': true});
         }
       } else {

@@ -79,7 +79,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
     final descriptionSectionHeight = descBox.size.height;
 
     String newTitle = '出版物详情';
-    final titleTriggerOffset = 250.0;
+    const titleTriggerOffset = 250.0;
     if (scrollOffset > titleTriggerOffset) {
       newTitle = _publicationDetail!['goodsName'] ?? '出版物详情';
     }
@@ -134,7 +134,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
         });
       }
     } catch (e) {
-      print('加载出版物详情失败: $e');
+      debugPrint('加载出版物详情失败: $e');
       setState(() {
         _errorMessage = '加载失败，请稍后重试';
         _isLoading = false;
@@ -450,7 +450,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
 
   // ==================== 图书板块 ====================
   Widget _buildBookSection() {
-    dynamic? publication = _publicationDetail!['publication'];
+    dynamic publication = _publicationDetail!['publication'];
 
     return Container(
       width: double.infinity,
@@ -827,7 +827,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
 
   // ==================== 出版物简介板块 ====================
   Widget _buildDescriptionSection() {
-    dynamic? publication = _publicationDetail!['publication'];
+    dynamic publication = _publicationDetail!['publication'];
     String? goodsDesc = _publicationDetail!['goodsDesc'];
     String? goodsName = _publicationDetail!['goodsName'];
     String? edition = publication?['edition'];
@@ -1166,7 +1166,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
               await launchUrl(uri);
             }
           } catch (e) {
-            print('Failed to launch URL: $e');
+            debugPrint('Failed to launch URL: $e');
           }
         }
       },

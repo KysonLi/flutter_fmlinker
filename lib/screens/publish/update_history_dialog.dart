@@ -200,7 +200,7 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
         updateTime = DateTime.parse(timeStr);
       }
     } catch (e) {
-      print('Parse time error: $e');
+      debugPrint('Parse time error: $e');
     }
 
     String dateStr = '--';

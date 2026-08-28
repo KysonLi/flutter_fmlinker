@@ -162,7 +162,7 @@ class _ScanScreenState extends State<ScanScreen>
         EasyLoading.showError(result['msg'] ?? '未找到关联资源');
       }
     } catch (e) {
-      print('ISLI码解析失败: $e');
+      debugPrint('ISLI码解析失败: $e');
       EasyLoading.dismiss();
       EasyLoading.showError('识别失败，请重试');
     } finally {
@@ -216,7 +216,7 @@ class _ScanScreenState extends State<ScanScreen>
       _lastValueTime = DateTime.now().millisecondsSinceEpoch;
       await _handleValue(value, barcode.format);
     } catch (e) {
-      print('相册识码失败: $e');
+      debugPrint('相册识码失败: $e');
       EasyLoading.dismiss();
       EasyLoading.showError('图片识别失败');
     }
@@ -488,17 +488,17 @@ class _ScannerOverlayPainter extends CustomPainter {
     const double len = 22;
     final List<List<Offset>> brackets = [
       // 左上
-      [window.topLeft, window.topLeft + Offset(len, 0)],
-      [window.topLeft, window.topLeft + Offset(0, len)],
+      [window.topLeft, window.topLeft + const Offset(len, 0)],
+      [window.topLeft, window.topLeft + const Offset(0, len)],
       // 右上
-      [window.topRight, window.topRight + Offset(-len, 0)],
-      [window.topRight, window.topRight + Offset(0, len)],
+      [window.topRight, window.topRight + const Offset(-len, 0)],
+      [window.topRight, window.topRight + const Offset(0, len)],
       // 左下
-      [window.bottomLeft, window.bottomLeft + Offset(len, 0)],
-      [window.bottomLeft, window.bottomLeft + Offset(0, -len)],
+      [window.bottomLeft, window.bottomLeft + const Offset(len, 0)],
+      [window.bottomLeft, window.bottomLeft + const Offset(0, -len)],
       // 右下
-      [window.bottomRight, window.bottomRight + Offset(-len, 0)],
-      [window.bottomRight, window.bottomRight + Offset(0, -len)],
+      [window.bottomRight, window.bottomRight + const Offset(-len, 0)],
+      [window.bottomRight, window.bottomRight + const Offset(0, -len)],
     ];
     for (final List<Offset> line in brackets) {
       canvas.drawLine(line[0], line[1], corner);
@@ -514,11 +514,11 @@ class _ScannerOverlayPainter extends CustomPainter {
       y + 2,
     );
     final Paint linePaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         colors: [
-          const Color(0x00409EFF),
-          const Color(0xFF409EFF),
-          const Color(0x00409EFF),
+          Color(0x00409EFF),
+          Color(0xFF409EFF),
+          Color(0x00409EFF),
         ],
       ).createShader(lineRect);
     canvas.drawRect(lineRect, linePaint);

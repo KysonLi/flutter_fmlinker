@@ -20,7 +20,6 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
   final UserService _userService = UserService();
   List<DeviceModel> _devices = [];
   bool _isEditing = false;
-  bool _isLoading = false;
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
   );
@@ -92,9 +91,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
   }
 
   Future<void> _deleteDevice(DeviceModel device) async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() {});
 
     try {
       Map<String, dynamic> response = await _apiService.post(
@@ -111,9 +108,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
     } catch (e) {
       EasyLoading.showToast('删除失败: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() {});
     }
   }
 

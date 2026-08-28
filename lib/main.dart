@@ -9,6 +9,10 @@ import 'package:provider/provider.dart';
 import 'provider/tab_provider.dart';
 
 void main() {
+  // 先初始化 Flutter binding，否则 initWeChat()（内部调用 MethodChannel）
+  // 会因 ServicesBinding 未构造而崩溃（flutter#BindingBase.checkInstance）。
+  WidgetsFlutterBinding.ensureInitialized();
+
   // 配置 EasyLoading 全局样式
   EasyLoading.instance
     ..displayDuration = const Duration(milliseconds: 2000)

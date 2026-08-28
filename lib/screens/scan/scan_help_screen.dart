@@ -59,7 +59,7 @@ class ScanHelpScreen extends StatelessWidget {
                 imagePath: 'assets/images/scan_help_6_1.png',
                 imageCaption: '标志码示例',
                 additionalImages: [
-                  _HelpImage(
+                  const _HelpImage(
                     'assets/images/scan_help_6_2.png',
                     '如下图所示的ISLI标志码，仅支持识读器点读识别：',
                   ),

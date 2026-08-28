@@ -15,7 +15,6 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   
   int _currentStep = 1;
   bool _agreeChecked = false;
-  String _phone = '';
   String _inputPhone = '';
   String _code = '';
 
@@ -26,7 +25,6 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   }
 
   Future<void> _loadPhone() async {
-    _phone = await _userService.getMaskedPhone();
     setState(() {});
   }
 
@@ -58,6 +56,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       if (response['status']) {
         EasyLoading.showToast('注销申请已提交，请在15天内不要登录');
         await _userService.clearUserInfo();
+        if (!mounted) return;
         context.go('/login');
       } else {
         EasyLoading.showToast(response['msg'] ?? '注销失败');
@@ -122,9 +121,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   Widget _buildStep1() {
     return Column(
       children: [
-        Text(
+        const Text(
           '账号注销后，你在泛媒关联上的所有个人数据和信息将被清空，包括但不限于以下内容:',
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          style: TextStyle(fontSize: 11, color: Colors.grey),
         ),
         const SizedBox(height: 15),
         _numberText('1', '你的 泛票 余额将全部被清零'),

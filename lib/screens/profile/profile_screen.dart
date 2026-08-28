@@ -118,16 +118,16 @@ class _MyScreenState extends State<MyScreen> {
               ),
               child: Column(
                 children: [
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   Transform.scale(
                     scale: _scaleFactor,
                     child: _buildHeaderContent(context),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   _buildHorizontalSection(),
-                  SizedBox(height: 15),
+                  const SizedBox(height: 15),
                   _buildListSection(),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -174,7 +174,7 @@ class _MyScreenState extends State<MyScreen> {
                                 }
                               },
                               child: Container(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                   vertical: 5,
                                 ),
@@ -244,7 +244,7 @@ class _MyScreenState extends State<MyScreen> {
                       ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               _nickName,
               style: const TextStyle(
@@ -253,10 +253,10 @@ class _MyScreenState extends State<MyScreen> {
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               _phoneNumber,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: Colors.white,
               ),
@@ -270,7 +270,7 @@ class _MyScreenState extends State<MyScreen> {
                 }
               },
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 35, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
@@ -293,7 +293,7 @@ class _MyScreenState extends State<MyScreen> {
 
   Widget _buildHorizontalSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
         image: const DecorationImage(
           image: AssetImage('assets/images/my_h_bg.png'),
@@ -301,7 +301,7 @@ class _MyScreenState extends State<MyScreen> {
         ),
         borderRadius: BorderRadius.circular(12),
       ),
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -333,7 +333,7 @@ class _MyScreenState extends State<MyScreen> {
       child: Column(
         children: [
           Image.asset(iconPath, width: 26, height: 26),
-          SizedBox(height: 5),
+          const SizedBox(height: 5),
           Text(
             title,
             style: const TextStyle(fontSize: 10, color: Colors.black87),
@@ -345,7 +345,7 @@ class _MyScreenState extends State<MyScreen> {
 
   Widget _buildListSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -370,11 +370,11 @@ class _MyScreenState extends State<MyScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
         child: Row(
           children: [
             Image.asset(iconPath, width: 18, height: 18),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,

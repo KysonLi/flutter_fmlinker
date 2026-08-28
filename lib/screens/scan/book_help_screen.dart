@@ -29,7 +29,7 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView error: ${error.description}');
+            debugPrint('WebView error: ${error.description}');
           },
         ),
       );
@@ -65,8 +65,8 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
         ),
       );
     } catch (e, stackTrace) {
-      print('Error loading HTML: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error loading HTML: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 

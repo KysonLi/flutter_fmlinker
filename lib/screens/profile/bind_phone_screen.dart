@@ -131,6 +131,7 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
         if (result['data'] != null) {
           await _userService.saveUserInfo(UserInfo.fromJson(result['data']));
         }
+        if (!mounted) return;
         Navigator.pop(context, {'refresh': true});
       } else {
         EasyLoading.showToast(result['msg'] ?? '绑定失败');
