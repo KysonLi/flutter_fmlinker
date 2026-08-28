@@ -85,15 +85,15 @@ class SourceItem extends StatelessWidget {
     );
   }
 
-  /// 行尾状态标签：已购 > 收费，免费不显示
+  /// 行尾状态标签：免费不显示；收费未购买显示「收费」；收费已购买显示「已购」
   Widget _buildStatusTag() {
+    if (_isFree) {
+      return const SizedBox.shrink();
+    }
     if (_isPaid) {
       return _statusTag('已购', const Color(0xFF00AFFE));
     }
-    if (!_isFree) {
-      return _statusTag('收费', const Color(0xFFFF8F00));
-    }
-    return const SizedBox.shrink();
+    return _statusTag('收费', const Color(0xFFFF8F00));
   }
 
   Widget _statusTag(String text, Color color) {

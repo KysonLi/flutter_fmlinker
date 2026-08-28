@@ -321,7 +321,12 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
                     )
                   : const SizedBox.shrink(),
               leading: IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
+                icon: Icon(
+                  Icons.chevron_left,
+                  // 透明背景时白色，白底吸顶后变黑色
+                  color: showAffix ? Colors.black : Colors.white,
+                  size: 28,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
