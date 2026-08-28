@@ -79,7 +79,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
         widget.prefixCode,
         versionCode: widget.versionCode,
         unificationId: unificationId,
-        page: _pageIndex,
+        page: isRefresh ? 1 : _pageIndex,
         pageSize: _pageSize,
       );
 
@@ -95,7 +95,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
           
           if (isRefresh) {
             _allSources = sources;
-            _pageIndex = 1;
+            _pageIndex = 2; // 已加载第 1 页，下次加载从第 2 页继续
           } else {
             _allSources.addAll(sources);
             _pageIndex++;
