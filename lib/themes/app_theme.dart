@@ -20,8 +20,9 @@ class AppTheme {
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
+        // 与 iOS 系统导航栏标题（17pt semibold）保持一致
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
         color: Color(0xFF333333),
       ),
     ),
