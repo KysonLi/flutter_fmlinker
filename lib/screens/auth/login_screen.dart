@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:fluwx/fluwx.dart';
@@ -654,8 +655,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => _thirdPartyLogin('qq'),
                             child: Container(
-                              width: 40,
-                              height: 40 * s,
+                              width: 60,
+                              height: 60 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/qq.png',
@@ -663,29 +664,34 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 24),
-                          GestureDetector(
-                            onTap: () => _thirdPartyLogin('apple'),
-                            child: Container(
-                              width: 40,
-                              height: 40 * s,
-                              padding: const EdgeInsets.all(8),
-                              child: Image.asset(
-                                'assets/icons/apple.png',
-                                fit: BoxFit.contain,
+                          // 苹果登录仅在 iOS 平台显示
+                          if (Platform.isIOS) ...[
+                            const SizedBox(width: 24),
+                            GestureDetector(
+                              onTap: () => _thirdPartyLogin('apple'),
+                              child: Container(
+                                width: 60,
+                                height: 60 * s,
+                                padding: const EdgeInsets.all(8),
+                                child: Image.asset(
+                                  'assets/icons/apple.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 24),
+                            const SizedBox(width: 24),
+                          ],
+                          // 南方云平台登录（暂无专属图标，先用「更多」图标）
                           GestureDetector(
-                            onTap: () => _thirdPartyLogin('weibo'),
+                            onTap: () => _thirdPartyLogin('south_cloud'),
                             child: Container(
-                              width: 40,
-                              height: 40 * s,
+                              width: 60,
+                              height: 60 * s,
                               padding: const EdgeInsets.all(8),
-                              child: Image.asset(
-                                'assets/icons/weibo.png',
-                                fit: BoxFit.contain,
+                              child: const Icon(
+                                Icons.more_horiz,
+                                size: 32,
+                                color: Colors.grey,
                               ),
                             ),
                           ),
