@@ -25,7 +25,7 @@ class BookCover extends StatelessWidget {
       // 这里加阴影
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4), // 轻微圆角更自然
-        boxShadow: showShadow ? [
+        boxShadow: showShadow ? const [
           BoxShadow(
             color: Colors.black12, // 淡淡的阴影色
             blurRadius: 2,

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:fmlink/routes/app_router.dart';
 import 'package:fmlink/services/third_party_manager.dart';
@@ -50,7 +52,21 @@ class MyApp extends StatelessWidget {
       title: '泛媒关联',
       theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,
-      builder: EasyLoading.init(),
+      builder: _buildAppBuilder,
+    );
+  }
+
+  /// 按屏宽等比放大字号（仅 iOS）：设计基准 375pt。
+  /// iPhone 逻辑宽 390~430pt、物理密度高于 Android，同字号观感偏小；
+  /// 这里统一放大 textScaleFactor，Android/鸿蒙保持原值不受影响。
+  static Widget _buildAppBuilder(BuildContext context, Widget? child) {
+    final Widget app = EasyLoading.init()(context, child);
+    if (!Platform.isIOS) return app;
+    final mq = MediaQuery.of(context);
+    final scale = (mq.size.width / 375.0).clamp(1.0, 1.2).toDouble();
+    return MediaQuery(
+      data: mq.copyWith(textScaleFactor: mq.textScaleFactor * scale),
+      child: app,
     );
   }
 }

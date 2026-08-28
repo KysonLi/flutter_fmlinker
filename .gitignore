@@ -69,7 +69,3 @@ keys/
 key.properties
 google-services.json
 GoogleService-Info.plist
-
-# Web
-/web/.dart_tool
-/web/build

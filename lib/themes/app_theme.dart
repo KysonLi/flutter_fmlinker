@@ -13,6 +13,12 @@ class AppTheme {
     cardColor: Colors.white,
     appBarTheme: const AppBarTheme(
       centerTitle: true,
+      // 默认导航栏：白底 + 深色内容，无阴影（发现/出版等未单独配色的页面统一生效）
+      backgroundColor: Colors.white,
+      foregroundColor: Color(0xFF333333),
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
