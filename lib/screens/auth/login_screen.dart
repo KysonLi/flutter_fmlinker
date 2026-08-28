@@ -531,7 +531,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : Text(
                               _loginType == LoginType.sms ? '快速登录' : '立即登录',
-                              style: const TextStyle(fontSize: 14, color: Colors.white),
+                              style: const TextStyle(fontSize: 16, color: Colors.white),
                             ),
                     ),
                   ),
@@ -558,7 +558,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 text: '《用户协议》',
                                 style: const TextStyle(
                                   color: Colors.blue,
-                                  fontSize: 10,
+                                  fontSize: 12,
                                 ),
                                 recognizer: TapGestureRecognizer()..onTap = _openUserAgreement,
                               ),
@@ -567,7 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 text: '隐私政策',
                                 style: const TextStyle(
                                   color: Colors.blue,
-                                  fontSize: 10,
+                                  fontSize: 12,
                                 ),
                                 recognizer: TapGestureRecognizer()..onTap = _openPrivacyPolicy,
                               ),
@@ -575,7 +575,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -599,7 +599,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             : '手机验证码登录',
                         style: const TextStyle(
                           color: Colors.blue,
-                          fontSize: 12,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -621,7 +621,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             '第三方账号登录',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               color: Colors.grey,
                             ),
                           ),
@@ -641,8 +641,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => _thirdPartyLogin('wechat'),
                             child: Container(
-                              width: 40,
-                              height: 40 * s,
+                              width: 60,
+                              height: 60 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/wechat.png',
