@@ -14,6 +14,8 @@ class ErrorHandler {
   void _loadErrorStrings() {
     try {
       // 读取FMErrorStrings.plist文件
+      // TODO(清理): 以下为硬编码的个人 macOS 路径，在 Android/iOS/OHOS 上恒不存在，
+      // 错误映射表实际从未生效；且 ErrorHandler 目前无调用方，可择机整体删除。
       final file = File('/Users/lilj/Desktop/Flutter/FMErrorStrings.plist');
       if (file.existsSync()) {
         final content = file.readAsStringSync();

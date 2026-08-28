@@ -18,21 +18,8 @@
 /android/gradlew
 /android/gradlew.bat
 /android/local.properties
-/ios/Runner.xcworkspace/
-/ios/Runner.xcodeproj/project.xcworkspace/
-/ios/Runner.xcodeproj/xcuserdata/
-/ios/Runner/Assets.xcassets/
-/ios/Runner/Gradle*
-/ios/Runner/Runner-Bridging-Header.h
-/ios/Pods/
-/ios/Runner/Info.plist
 
-# Xcode 相关
-ios/Runner/Info.plist
-ios/Pods/
-ios/Runner.xcworkspace
-ios/Runner.xcodeproj/project.xcworkspace
-ios/Runner.xcodeproj/xcuserdata
+# Xcode 相关（ios/.gitignore 已标准覆盖 Pods/xcuserdata/Generated.xcconfig 等）
 *.xcworkspace
 *.xcuserdata
 *.dSYM

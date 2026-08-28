@@ -11,6 +11,9 @@ class ThirdPartyManager {
     try {
       await fluwx.registerWxApi(
         appId: _wechatAppId,
+        // TODO(ios): universalLink 为占位值。正式接入微信开放平台后需替换为
+        // 与 Apple Associated Domains 一致的 https 链接（并开通 associated domains 能力），
+        // 否则 iOS 微信登录/分享回调不可用（Android/OHOS 不受影响）。
         universalLink: 'https://your-domain.com/wechat',
       );
     } catch (e) {
