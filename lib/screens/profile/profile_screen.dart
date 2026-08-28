@@ -125,7 +125,7 @@ class _MyScreenState extends State<MyScreen> {
                   ),
                   const SizedBox(height: 20),
                   _buildHorizontalSection(),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
                   _buildListSection(),
                   const SizedBox(height: 30),
                 ],
@@ -293,7 +293,7 @@ class _MyScreenState extends State<MyScreen> {
 
   Widget _buildHorizontalSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         // 去掉背景图，纯代码实现：白底 + 圆角 + 柔和阴影
         color: Colors.white,
