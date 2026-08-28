@@ -40,4 +40,12 @@ int isli_line_decoder_do_image_decode(
     int *brightness,        // 图像总体亮度 缓冲区大小为1 结果范围 0 ~ 255
     int *is_blur);          // 图像是否模糊(已对焦) 缓冲区大小为1 结果非0为模糊
 
+// FL-1 诊断（仅 bench_diag 构建 /DILD_BENCH_DIAG）：本帧解码的拒绝点。
+// 编号含义见 ISLILineDecoder.cpp 头部注释。发布库不定义此宏。
+#ifdef ILD_BENCH_DIAG
+extern int g_ild_reject_stage;
+extern int g_ild_retry_ran;     // A1：几何重试是否执行（0/1）
+extern int g_ild_retry_reject;  // A1：重试失败拒绝点（0=未执行/成功）
+#endif
+
 #endif

@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
+set(ILD_FL_ENABLED, ON)
+option(ILD_FL_ENABLED "ISLI line: FL-T 张量独立解码（真机试验开关，失败即终不回落）" ON)
+
 
 # OHOS NDK libraries
 find_library(napi-lib ace_napi.z)
@@ -62,6 +65,8 @@ add_library(isli_line_decoder SHARED
     linecode/Filter.cpp
     linecode/GaussianBinarization.cpp
 #   linecode/kiss_fft.cpp              # REMOVED: FFT blur rejects valid barcodes
+    linecode/LineTensor.cpp
+    linecode/LineLocator.cpp
     linecode/MatrixSolver.cpp
     linecode/TImage.cpp
     linecode/Wave2Bits.cpp
@@ -83,3 +88,9 @@ target_link_libraries(isli_line_decoder ${napi-lib} ${hilog-lib})
 # #if defined(__aarch64__)).
 # ============================================================
 target_compile_options(isli_line_decoder PRIVATE -O3)
+# FL-T 独立解码（用户决定 2026-08-20）：LineTensor 结构张量 + top-3 候对
+# 紧裁剪仲裁，失败即终不回落旧路径。PC bench 1798 图：456 vs 旧 375（净+81，
+# FP4/mis2，代价 -35 GT 帧）；零码守卫内置。⚠️ 试验后清 CMake 缓存再改回 OFF。
+if(ILD_FL_ENABLED)
+    target_compile_definitions(isli_line_decoder PRIVATE ILD_FLT)
+endif()

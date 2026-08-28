@@ -273,7 +273,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         }
       } else {
         await launchUrl(
-          Uri.parse('package:com.isli.fmlink'),
+          Uri.parse('package:com.mpr.chaincode'),
           mode: LaunchMode.externalApplication,
         );
       }

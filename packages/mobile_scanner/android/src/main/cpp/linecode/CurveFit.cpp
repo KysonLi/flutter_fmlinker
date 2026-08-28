@@ -83,8 +83,7 @@ int ild_curve_fit_with_coord_normalization(double* px, double* py, size_t dot_nu
     nx.resize(dot_num);
     tl::buffer<double> ny;
     ny.resize(dot_num);
-    
+
     normalize_point_coord(px, py, (int)dot_num, nx.data(), ny.data(), rcos, rsin);
     return ild_fit_curve(nx.data(), ny.data(), (int)dot_num, coefficient);
 }
-

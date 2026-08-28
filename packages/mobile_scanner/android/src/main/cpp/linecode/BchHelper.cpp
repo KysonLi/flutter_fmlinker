@@ -6,6 +6,11 @@
 extern bch_control*   __bch_ctrl127;
 extern bch_control*   __bch_ctrl64;
 
+// rej=5 桶诊断（bench_diag /DILD_BENCH_DIAG）：本帧 112-bit 路径最小 BCH err_num。
+// 100=从未达到可纠状态（decode_bch 返回 -1，>7 错或不可纠）；7=差 1 位被 cap=6 拒
+// （cap 提升潜在收益）；<7=已入 cap 但守卫拒（miscorrection/零码/预设零位）。
+int g_ild_min_bch_err = 100;
+
 // __________________________________________________________________________________________________________________________________________________________________________
 //|                                       data， 80bits - 2个x位 - 15个0位 = 63位有效位                                                                                        | 
 //|_________________________________________________________________________________________________________________________________________________________________________|
@@ -129,7 +134,8 @@ int ild_bits_decode2(const unsigned char bits[ILD_BIT_COUNT], char isli_code[20]
 
     int err_num = decode_bch(__bch_ctrl127, &received[0], 10, &received[10], 0, 0, error_loc);
     //ILDLOG("err_num: %d", err_num);
-    if (err_num >= 0 && err_num <= 6) {
+    if (err_num >= 0 && err_num < g_ild_min_bch_err) g_ild_min_bch_err = err_num;  // rej=5 桶诊断
+    if (err_num >= 0 && err_num <= 6) {   // cap=6（A/B cap7 否决：+32 rescue 但 4 个 FP 误纠）
         for (int i = 0; i < err_num; i++) {
             unsigned int k = error_loc[(size_t)i];
             if (((k >= PRESET_DATA_ZERO_BITS_START) && (k <= PRESET_DATA_ZERO_BITS_END)) ||

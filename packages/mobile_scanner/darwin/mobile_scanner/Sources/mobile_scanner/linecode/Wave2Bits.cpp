@@ -60,7 +60,8 @@ void ild_find_peak_valley(tl::buffer<unsigned char> &wave, std::vector<int> &pea
 
 static int wave2bits(tl::buffer<unsigned char> &wave, int pos, int len,
     double sample_per_bit, int th0, int th1,
-    int bit_num, tl::buffer<Byte> &bits, const char* graph_name)
+    int bit_num, tl::buffer<Byte> &bits, const char* graph_name,
+    tl::buffer<int>* conf = 0)
 {
     graph_name = graph_name;
     if (len <= 0 || pos + len > (int)wave.size()) return 0;
@@ -80,7 +81,10 @@ static int wave2bits(tl::buffer<unsigned char> &wave, int pos, int len,
         // Clamp to valid range to guard against floating-point rounding at segment edges
         if (idx < 0) idx = 0;
         if (idx >= len) idx = len - 1;
-        bits.push_back(bin[idx] > 0 ? 0xff : 0x00);
+        int v = bin[idx];
+        bits.push_back(v > 0 ? 0xff : 0x00);
+        // 软判决置信度：离阈值距离 |bin[idx]|（越大越可信）。0xff→v>0 幅度, 0x00→|v|
+        if (conf) conf->push_back(v > 0 ? v : -v);
     }
     return 1;
 }
@@ -126,7 +130,8 @@ void ild_trim_head_tail(tl::buffer<unsigned char> &wave, std::vector<int> &peak,
 }
 
 int ild_wave2bits112(tl::buffer<Byte> &wave, tl::buffer<Byte> &out,
-    int head, int tail, std::vector<int> &sync_pos, const char* graph_name, bool use_mean)
+    int head, int tail, std::vector<int> &sync_pos, const char* graph_name, bool use_mean,
+    tl::buffer<int>* conf)
 {
     int real_len = (int)wave.size() - head - tail;
     double spb_f = real_len / 68.0;
@@ -138,7 +143,7 @@ int ild_wave2bits112(tl::buffer<Byte> &wave, tl::buffer<Byte> &out,
     for (int k = 0; k < 5; k++) th[k] = mean_of_peak2vally(wave, s[k] - spb, spb * 2, use_mean);
     int ret = 1;
     for (int k = 0; k < 4; k++)
-        ret &= wave2bits(wave, s[k], s[k + 1] - s[k], spb_f, th[k], th[k + 1], 14, out, graph_name);
+        ret &= wave2bits(wave, s[k], s[k + 1] - s[k], spb_f, th[k], th[k + 1], 14, out, graph_name, conf);
     return ret;
 }
 

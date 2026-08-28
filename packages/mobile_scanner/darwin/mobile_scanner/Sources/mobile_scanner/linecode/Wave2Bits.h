@@ -12,7 +12,8 @@ enum IldOrientation {
 };
 
 int ild_wave2bits112(tl::buffer<Byte> &wave, tl::buffer<Byte> &out,
-    int head, int tail, std::vector<int> &sync_pos, const char* graph_name, bool use_mean = false);
+    int head, int tail, std::vector<int> &sync_pos, const char* graph_name, bool use_mean = false,
+    tl::buffer<int>* conf = 0);
 
 int ild_wave2bits64(tl::buffer<Byte> &wave, tl::buffer<Byte> &out,
     std::vector<int> &sync_pos, double avg_width, const char* graph_name);
