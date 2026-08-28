@@ -183,7 +183,9 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
   void _calculateAffixThreshold() {
     if (_bookInfoKey.currentContext != null) {
       final RenderBox renderBox = _bookInfoKey.currentContext!.findRenderObject() as RenderBox;
+      // _affixThreshold = 图书信息卡高度 + 25
       _affixThreshold = renderBox.size.height + 25;
+      setState(() {});
     }
   }
 
@@ -255,11 +257,12 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
               return SourceItem(
                 sourceNo: source['sourceNo']?.toString() ?? '${entry.key + 1}',
                 sourceFragment: source['sourceFragment']?.toString() ?? '',
+                sourceIdentifier: source['sourceIdentifier']?.toString() ?? '',
                 resourceCount: source['resourceCount'] ?? 0,
                 bookPageNo: source['bookPageNo'] ?? 0,
-                serviceCode: source['serviceCode']?.toString(),
-                prefixCode: source['prefixCode']?.toString(),
-                suffixCode: source['suffixCode']?.toString(),
+                free: source['free'],
+                price: source['price'],
+                pay: source['pay'],
               );
             }),
           ],
@@ -303,7 +306,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
           builder: (context, child) {
             bool showAffix = _showAffixTitle.value;
             return AppBar(
-              backgroundColor: showAffix ? const Color(0xFF4A90E2) : Colors.transparent,
+              backgroundColor: showAffix ? Colors.white : Colors.transparent,
               elevation: showAffix ? 4 : 0,
               title: showAffix
                   ? Text(
@@ -311,7 +314,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -365,6 +368,15 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
                   resourceFormats: widget.resourceFormats,
                 ),
                 Container(
+                  // 数据量少时撑满屏幕剩余高度，避免底部露出模糊背景图
+                  // 剩余高度 = 屏高 - 顶部padding(40) - 图书信息卡高度(affixThreshold - 25)
+                  constraints: BoxConstraints(
+                    minHeight: _affixThreshold > 0
+                        ? MediaQuery.of(context).size.height -
+                            15 -
+                            _affixThreshold
+                        : 0,
+                  ),
                   decoration: const BoxDecoration(
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(16),

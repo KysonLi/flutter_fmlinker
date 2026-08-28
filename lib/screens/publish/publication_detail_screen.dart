@@ -721,8 +721,8 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
 
   // ==================== 关联阅读与点赞板块 ====================
   Widget _buildStatisticsSection() {
-    int readCount = _publicationDetail!['readCount'] ?? 0;
-    int likeCount = _publicationDetail!['likeCount'] ?? 0;
+    int readCount = _publicationDetail!['readNum'] ?? 0;
+    int likeCount = _publicationDetail!['likeNum'] ?? 0;
 
     return Container(
       width: double.infinity,

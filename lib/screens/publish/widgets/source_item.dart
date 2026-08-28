@@ -1,42 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:fmlink/utils/isli_code_util.dart';
 
 class SourceItem extends StatelessWidget {
   final String sourceNo;
   final String sourceFragment;
+  final String sourceIdentifier;
   final int resourceCount;
   final int bookPageNo;
-  final String? serviceCode;
-  final String? prefixCode;
-  final String? suffixCode;
   final bool isCurrentTarget;
+  // 收费/已购状态：free、price 判断收费，pay 判断已购（source 为动态 JSON，用 dynamic 兼容 bool/int/String）
+  final dynamic free;
+  final dynamic price;
+  final dynamic pay;
 
   const SourceItem({
     super.key,
     required this.sourceNo,
     required this.sourceFragment,
+    this.sourceIdentifier = '',
     required this.resourceCount,
     required this.bookPageNo,
-    this.serviceCode,
-    this.prefixCode,
-    this.suffixCode,
     this.isCurrentTarget = false,
+    this.free,
+    this.price,
+    this.pay,
   });
 
   String _getSourceName() {
     if (sourceFragment.isNotEmpty) {
       return sourceFragment;
     }
-
-    String service = serviceCode ?? '';
-    String prefix = prefixCode ?? '';
-    String suffix = suffixCode ?? '';
-
-    if (service.isEmpty && prefix.isEmpty && suffix.isEmpty) {
-      return '链码';
+    // source 数据中没有 serviceCode/prefixCode，为空时回退到 sourceIdentifier
+    if (sourceIdentifier.isNotEmpty) {
+      return sourceIdentifier;
     }
+    return '链码';
+  }
 
-    return ISLICodeUtil.buildISLICode(service, prefix, suffix);
+  /// 是否已购：pay 为 true/1/'1'/'true'
+  bool get _isPaid => pay == true || pay == 1 || pay == '1' || pay == 'true';
+
+  /// 是否免费：free 为 true/1/'1'/'true'，或 price 为空/≤0
+  bool get _isFree {
+    if (free == true || free == 1 || free == '1' || free == 'true') {
+      return true;
+    }
+    if (price is num) {
+      return (price as num) <= 0;
+    }
+    return false;
   }
 
   @override
@@ -54,24 +65,48 @@ class SourceItem extends StatelessWidget {
           _buildSerialNumber(),
           const SizedBox(width: 12),
           _buildInfoSection(),
+          _buildStatusTag(),
         ],
       ),
     );
   }
 
   Widget _buildSerialNumber() {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: Center(
-        child: Text(
-          sourceNo.isNotEmpty ? sourceNo : '1',
-          style: TextStyle(
-            fontSize: 11,
-            color: isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF4F5960),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+    // 动态宽度：不固定宽度、不换行
+    return Text(
+      sourceNo.isNotEmpty ? sourceNo : '1',
+      maxLines: 1,
+      softWrap: false,
+      style: TextStyle(
+        fontSize: 11,
+        color: isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF4F5960),
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  /// 行尾状态标签：已购 > 收费，免费不显示
+  Widget _buildStatusTag() {
+    if (_isPaid) {
+      return _statusTag('已购', const Color(0xFF00AFFE));
+    }
+    if (!_isFree) {
+      return _statusTag('收费', const Color(0xFFFF8F00));
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _statusTag(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8, top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 9, color: Colors.white),
       ),
     );
   }
