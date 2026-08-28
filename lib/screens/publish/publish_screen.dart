@@ -648,11 +648,19 @@ class _PublishScreenState extends State<PublishScreen> {
           context.push('/publisher-detail', extra: publisher);
         }
       },
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.all(4),
-        elevation: 2,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            // 柔和弥散阴影：大模糊半径、小偏移、低透明度，避免 Card 的硬边阴影
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
