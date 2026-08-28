@@ -782,8 +782,8 @@ class _PublishScreenState extends State<PublishScreen> {
                 children: [
                   BookCover(
                     imageUrl: _getPublicationImage(publication) ?? '',
-                    width: 80,
-                    height: 116,
+                    width: 100,
+                    height: 140,
                   ),
 
                   const SizedBox(width: 12),
@@ -799,7 +799,7 @@ class _PublishScreenState extends State<PublishScreen> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
