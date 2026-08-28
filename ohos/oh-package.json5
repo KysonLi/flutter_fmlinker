@@ -1,5 +1,5 @@
 {
-  "modelVersion": "5.1.0",
+  "modelVersion": "5.0.0",
   "name": "fmlink",
   "version": "1.0.0",
   "description": "Please describe the basic information.",
@@ -23,6 +23,7 @@
     "sqflite": "file:./har/sqflite.har",
     "@ohos/flutter_module": "file:./entry",
     "@ohos/flutter_ohos": "file:./har/flutter.har",
-    "imagecropper_ohos": "file:./har/imagecropper_ohos.har"
+    "imagecropper_ohos": "file:./har/imagecropper_ohos.har",
+    "mobile_scanner": "file:./har/mobile_scanner.har"
   }
 }

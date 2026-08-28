@@ -38,7 +38,5 @@ flutter:
         pluginClass: MobileScannerPlugin
       ios:
         pluginClass: MobileScannerPlugin
-        sharedDarwinSource: true
       macos:
         pluginClass: MobileScannerPlugin
-        sharedDarwinSource: true

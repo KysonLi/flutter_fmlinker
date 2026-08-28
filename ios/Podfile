@@ -31,6 +31,12 @@ target 'Runner' do
   use_frameworks!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # ISLI native decoders vendored as separate framework modules (bridging headers
+  # are unsupported for framework targets; icon/line kept apart because their cpp
+  # basenames collide inside a single Xcode target).
+  pod 'isli_icon_native', :path => '../packages/mobile_scanner/ios/ISLIWrappers'
+  pod 'isli_line_native', :path => '../packages/mobile_scanner/ios/ISLIWrappers'
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -39,5 +45,12 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # fluwx 使用旧式 #import <WXApiObject.h>，需将 WeChat SDK 头文件目录加入搜索路径
+    if target.name == 'fluwx'
+      target.build_configurations.each do |config|
+        config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited)'
+        config.build_settings['HEADER_SEARCH_PATHS'] += ' "${PODS_ROOT}/WechatOpenSDK-XCFramework/WechatOpenSDK.xcframework/ios-arm64/WechatOpenSDK.framework/Headers"'
+      end
+    end
   end
 end
