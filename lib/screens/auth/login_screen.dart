@@ -253,6 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375，1.0~1.2），Android/鸿蒙恒为 1.0
+    final double s = MediaQuery.textScaleFactorOf(context);
     return Scaffold(
       appBar: null, // 不显示导航栏
       backgroundColor: Colors.white, // 背景为纯白色
@@ -309,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
                             'assets/icons/login_phone.png',
-                            width: 24,
+                            width: 24 * s,
                             height: 24,
                             fit: BoxFit.contain,
                           ),
@@ -348,7 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
                             'assets/icons/login_code.png',
-                            width: 24,
+                            width: 24 * s,
                             height: 24,
                             fit: BoxFit.contain,
                           ),
@@ -412,7 +414,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
                             'assets/icons/login_account.png',
-                            width: 24,
+                            width: 24 * s,
                             height: 24,
                             fit: BoxFit.contain,
                           ),
@@ -451,7 +453,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
                             'assets/icons/login_password.png',
-                            width: 24,
+                            width: 24 * s,
                             height: 24,
                             fit: BoxFit.contain,
                           ),
@@ -640,7 +642,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onTap: () => _thirdPartyLogin('wechat'),
                             child: Container(
                               width: 40,
-                              height: 40,
+                              height: 40 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/wechat.png',
@@ -653,7 +655,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onTap: () => _thirdPartyLogin('qq'),
                             child: Container(
                               width: 40,
-                              height: 40,
+                              height: 40 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/qq.png',
@@ -666,7 +668,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onTap: () => _thirdPartyLogin('apple'),
                             child: Container(
                               width: 40,
-                              height: 40,
+                              height: 40 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/apple.png',
@@ -679,7 +681,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onTap: () => _thirdPartyLogin('weibo'),
                             child: Container(
                               width: 40,
-                              height: 40,
+                              height: 40 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/weibo.png',

@@ -295,11 +295,16 @@ class _MyScreenState extends State<MyScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        image: const DecorationImage(
-          image: AssetImage('assets/images/my_h_bg.png'),
-          fit: BoxFit.cover,
-        ),
+        // 去掉背景图，纯代码实现：白底 + 圆角 + 柔和阴影
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       child: Row(
@@ -328,11 +333,13 @@ class _MyScreenState extends State<MyScreen> {
     String title,
     VoidCallback onTap,
   ) {
+    // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375），其他平台恒为 1.0
+    final double s = MediaQuery.textScaleFactorOf(context);
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          Image.asset(iconPath, width: 26, height: 26),
+          Image.asset(iconPath, width: 26 * s, height: 26 * s),
           const SizedBox(height: 5),
           Text(
             title,
@@ -367,13 +374,15 @@ class _MyScreenState extends State<MyScreen> {
   }
 
   Widget _buildListItem(String iconPath, String title, VoidCallback onTap) {
+    // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375），其他平台恒为 1.0
+    final double s = MediaQuery.textScaleFactorOf(context);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
         child: Row(
           children: [
-            Image.asset(iconPath, width: 18, height: 18),
+            Image.asset(iconPath, width: 18 * s, height: 18 * s),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -381,7 +390,7 @@ class _MyScreenState extends State<MyScreen> {
                 style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold),
               ),
             ),
-            Image.asset('assets/icons/right_arrow.png', width: 12, height: 12),
+            Image.asset('assets/icons/right_arrow.png', width: 12 * s, height: 12 * s),
           ],
         ),
       ),
