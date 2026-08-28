@@ -1,0 +1,14 @@
+{
+  'version': 0,
+  'use-external-names': 'false',
+  'case-sensitive': 'false',
+  'roots': [{
+    'type': 'directory',
+    'name': "/Users/lilj/Desktop/Flutter/flutter_fmlinker/ios/build/Debug-iphoneos/mobile_scanner/mobile_scanner.framework/Modules"
+    'contents': [{
+      'type': 'file',
+      'name': "module.modulemap",
+      'external-contents': "/Users/lilj/Desktop/Flutter/flutter_fmlinker/ios/build/Pods.build/Debug-iphoneos/mobile_scanner.build/unextended-module.modulemap",
+    }]
+  }]
+}

@@ -1,0 +1,6 @@
+Target dependency graph (3 targets)
+Flutter in Pods, no dependencies
+mobile_scanner-mobile_scanner_privacy in Pods, no dependencies
+mobile_scanner in Pods, depends on:
+Flutter in Pods (explicit)
+mobile_scanner-mobile_scanner_privacy in Pods (explicit)

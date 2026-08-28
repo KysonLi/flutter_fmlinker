@@ -1,0 +1,11 @@
+version: "Apple Swift version 5.7 (swiftlang-5.7.0.127.4 clang-1400.0.29.50)"
+options: "a9214f314971c0a4409a2f88a463985b6e6932c2a24c87be1003d7d0686d4213"
+build_start_time: [1787889402, 686159133]
+build_end_time: [1787889402, 862782001]
+inputs:
+  "/Users/lilj/Desktop/Flutter/flutter_fmlinker/packages/mobile_scanner/ios/Sources/mobile_scanner/DetectionSpeed.swift": !private [1787888998, 200384140]
+  ? "/Users/lilj/Desktop/Flutter/flutter_fmlinker/packages/mobile_scanner/ios/Sources/mobile_scanner/DeviceOrientationStreamHandler.swift"
+  : !private [1787888998, 144280433]
+  "/Users/lilj/Desktop/Flutter/flutter_fmlinker/packages/mobile_scanner/ios/Sources/mobile_scanner/MobileScannerError.swift": !private [1787888998, 145826578]
+  "/Users/lilj/Desktop/Flutter/flutter_fmlinker/packages/mobile_scanner/ios/Sources/mobile_scanner/MobileScannerErrorCodes.swift": !private [1787888998, 141458988]
+  "/Users/lilj/Desktop/Flutter/flutter_fmlinker/packages/mobile_scanner/ios/Sources/mobile_scanner/MobileScannerPlugin.swift": !private [1787888998, 195593833]
