@@ -642,8 +642,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => _thirdPartyLogin('wechat'),
                             child: Container(
-                              width: 60,
-                              height: 60 * s,
+                              width: 50,
+                              height: 50 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/wechat.png',
@@ -655,8 +655,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => _thirdPartyLogin('qq'),
                             child: Container(
-                              width: 60,
-                              height: 60 * s,
+                              width: 50,
+                              height: 50 * s,
                               padding: const EdgeInsets.all(8),
                               child: Image.asset(
                                 'assets/icons/qq.png',
@@ -670,8 +670,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             GestureDetector(
                               onTap: () => _thirdPartyLogin('apple'),
                               child: Container(
-                                width: 60,
-                                height: 60 * s,
+                                width: 50,
+                                height: 50 * s,
                                 padding: const EdgeInsets.all(8),
                                 child: Image.asset(
                                   'assets/icons/apple.png',
@@ -685,8 +685,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => _thirdPartyLogin('south_cloud'),
                             child: Container(
-                              width: 60,
-                              height: 60 * s,
+                              width: 50,
+                              height: 50 * s,
                               padding: const EdgeInsets.all(8),
                               child: const Icon(
                                 Icons.more_horiz,

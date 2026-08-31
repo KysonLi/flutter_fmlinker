@@ -344,7 +344,12 @@ class _ScanScreenState extends State<ScanScreen>
               alignment: Alignment.topCenter,
               child: Row(
                 children: [
-                  const SizedBox(width: 48),
+                  // 全屏页关闭/返回按钮
+                  IconButton(
+                    icon: const Icon(Icons.close,
+                        color: Colors.white, size: 24),
+                    onPressed: () => context.pop(),
+                  ),
                   const Expanded(
                     child: Text(
                       '扫一扫',
