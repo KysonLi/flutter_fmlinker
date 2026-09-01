@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fmlink/services/link_service.dart';
@@ -11,10 +13,14 @@ import 'package:fmlink/services/user_service.dart';
 
 /// 扫码页
 ///
-/// 支持三类码：
-/// - ISLI 线码（链码，嵌在书页文本行间的"双下划线"，BarcodeFormat.isli_line_code）
-/// - ISLI 图标码（书籍封底标志码，BarcodeFormat.isli）
-/// - 普通二维码/条码（内容为 ISLI 码或链接时同样处理）
+/// 三区域布局：
+/// - 顶部导航条（黑色半透明背景）
+/// - 中间扫码区：扫码类型 + 扫码框 + 提示文案 + 焦距调节器 + 灯光开关
+/// - 底部控制台：链码 / 标志码（图标码）/ 相册
+///
+/// 默认链码（线码）扫码：扫码框为宽>>高的长方形，解码器只做线码解码。
+/// 点击"标志码"切换为图标码扫码：扫码框变为正方形，解码器只做图标码解码。
+/// 点击"相册"：暂停相机输入 → 选图 → 先线码后图标码解析 → 解析完成恢复相机。
 ///
 /// 扫到 ISLI 码后调用 LinkService.getTargetsWithIsliCodeV2 解析关联资源，
 /// 并跳转 /scan/result 展示。
@@ -25,14 +31,25 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
+/// 扫码模式：链码（线码）/ 标志码（图标码）
+enum _ScanMode { line, icon }
+
 class _ScanScreenState extends State<ScanScreen>
     with SingleTickerProviderStateMixin {
   final LinkService _linkService = LinkService();
   final UserService _userService = UserService();
-  final ImagePicker _imagePicker = ImagePicker();
 
   late final MobileScannerController _controller;
   late final AnimationController _lineController;
+
+  /// 当前扫码模式，默认链码
+  _ScanMode _mode = _ScanMode.line;
+
+  /// 本地缩放状态（0=1x 无变焦，1=最大变焦），拖动滑块即时更新
+  double _zoomScale = 0;
+
+  /// 初始模式是否已下发给 native 解码器
+  bool _didApplyInitialMode = false;
 
   /// 正在解析/跳转中，忽略新扫码回调
   bool _isHandling = false;
@@ -41,13 +58,17 @@ class _ScanScreenState extends State<ScanScreen>
   String? _lastValue;
   int _lastValueTime = 0;
 
+  /// ISLI 特征点（图像坐标，线码 2 点 / 图标码 6 点）与图像尺寸，用于黄点渲染
+  List<Offset> _featurePoints = [];
+  Size _imageSize = Size.zero;
+
   @override
   void initState() {
     super.initState();
-    // formats 留空 = 全部格式（native 侧同时启用 ISLI 线码 + ISLI 图标码解码）
+    // formats 留空 = 全部格式（相册分析需要同时识别线码+图标码）
     _controller = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
-    );
+    )..addListener(_onControllerStateChanged);
     _lineController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -56,20 +77,70 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerStateChanged);
     _lineController.dispose();
     unawaited(_controller.dispose());
     super.dispose();
   }
 
-  /// 扫描窗口：宽 0.8 屏宽、高 0.5 屏宽（线码扁长、图标码接近方形，折中取偏扁矩形）
-  Rect _windowFor(Size size) {
-    final double w = size.width * 0.8;
-    final double h = w * 0.62;
-    return Rect.fromCenter(
-      center: Offset(size.width / 2, size.height * 0.42),
-      width: w,
-      height: h,
+  /// 相机就绪后下发一次初始模式（默认只开线码解码器）
+  void _onControllerStateChanged() {
+    if (_controller.value.isInitialized && !_didApplyInitialMode) {
+      _didApplyInitialMode = true;
+      unawaited(_applyMode(_mode));
+    }
+  }
+
+  /// 顶部导航条总高度（状态栏 + 导航栏）
+  double get _topBarHeight =>
+      MediaQuery.of(context).padding.top + kToolbarHeight;
+
+  /// 底部操作区总高度（Home 指示条 + 分段胶囊 + 底部留白）
+  double get _bottomBarHeight =>
+      MediaQuery.of(context).padding.bottom + 16 + 46 + 10;
+
+  /// 中间扫码区域矩形（全屏坐标：扣除顶部导航条与底部控制台）
+  Rect _middleRectFor(Size fullSize) {
+    return Rect.fromLTRB(
+      0,
+      _topBarHeight,
+      fullSize.width,
+      fullSize.height - _bottomBarHeight,
     );
+  }
+
+  /// 扫码窗口：相对全屏预览坐标。线码为宽>>高长方形，图标码为正方形；
+  /// 均居中于中间扫码区域，受中间区域尺寸限制并设最大宽度（小屏收缩）。
+  Rect _windowFor(Rect middle) {
+    final Offset center = middle.center;
+    if (_mode == _ScanMode.line) {
+      final double w = min(middle.width * 0.85, 380);
+      final double h = min(w * 0.26, middle.height * 0.24);
+      return Rect.fromCenter(center: center, width: w, height: h);
+    }
+    // 正方形：受宽度、中间区域高度与最大宽度三重限制
+    final double side =
+        min(min(middle.width * 0.62, middle.height * 0.50), 340);
+    return Rect.fromCenter(center: center, width: side, height: side);
+  }
+
+  /// 切换扫码模式：更新扫码框形状 + 通知 native 只开对应解码器
+  Future<void> _switchMode(_ScanMode mode) async {
+    if (_mode == mode) return;
+    setState(() => _mode = mode);
+    await _applyMode(mode);
+  }
+
+  /// 下发解码模式给 native（实时帧只做对应类型解码）
+  Future<void> _applyMode(_ScanMode mode) async {
+    try {
+      await _controller.setISLIMode(
+        icon: mode == _ScanMode.icon,
+        line: mode == _ScanMode.line,
+      );
+    } catch (e) {
+      debugPrint('setISLIMode failed: $e');
+    }
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -83,13 +154,28 @@ class _ScanScreenState extends State<ScanScreen>
     _lastValue = value;
     _lastValueTime = now;
 
-    _handleValue(value, barcode.format);
+    _handleValue(
+      value,
+      barcode.format,
+      featurePoints: barcode.corners,
+      imageSize: capture.size,
+    );
   }
 
-  Future<void> _handleValue(String value, BarcodeFormat format) async {
-    // 1) native ISLI 解码器直接产出（线码/图标码）
+  Future<void> _handleValue(
+    String value,
+    BarcodeFormat format, {
+    List<Offset> featurePoints = const [],
+    Size imageSize = Size.zero,
+  }) async {
+    // 1) native ISLI 解码器直接产出（线码/图标码）：渲染特征点 + 弹窗确认
     if (format == BarcodeFormat.isli || format == BarcodeFormat.isli_line_code) {
-      await _resolveIsli(value);
+      await _resolveIsli(
+        value,
+        format: format,
+        featurePoints: featurePoints,
+        imageSize: imageSize,
+      );
       return;
     }
 
@@ -98,7 +184,7 @@ class _ScanScreenState extends State<ScanScreen>
     if (RegExp(r'^[0-9\- ]+$').hasMatch(value) &&
         digits.length >= 10 &&
         digits.length <= 20) {
-      await _resolveIsli(digits);
+      await _resolveIsli(digits, format: BarcodeFormat.unknown);
       return;
     }
 
@@ -139,10 +225,103 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  /// 解析 ISLI 码并跳转结果页
-  Future<void> _resolveIsli(String isliCode) async {
+  /// 解析成功处理：暂停视频输入 → 滴声 → 弹窗展示解析结果 → 用户关闭后继续扫码
+  /// （点"查看详情"才走网络解析并跳转结果页）
+  Future<void> _resolveIsli(
+    String isliCode, {
+    BarcodeFormat format = BarcodeFormat.unknown,
+    List<Offset> featurePoints = const [],
+    Size imageSize = Size.zero,
+  }) async {
     if (_isHandling) return;
     _isHandling = true;
+
+    // 渲染特征点黄点
+    if (featurePoints.isNotEmpty && mounted) {
+      setState(() {
+        _featurePoints = featurePoints;
+        _imageSize = imageSize;
+      });
+    }
+
+    // 1) 暂停相机（非关闭）：预览停留在最后一帧图像上
+    try {
+      await _controller.pause();
+    } catch (_) {}
+
+    // 2) 滴的一声提示音（原生系统音效；Android 未实现时静默忽略）
+    try {
+      await _controller.playScanSound();
+    } catch (_) {
+      SystemSound.play(SystemSoundType.click);
+    }
+
+    if (!mounted) {
+      _isHandling = false;
+      return;
+    }
+
+    // 3) 弹窗提示解析出的结果
+    final String typeName = format == BarcodeFormat.isli
+        ? '标志码'
+        : format == BarcodeFormat.isli_line_code
+            ? '链码'
+            : 'ISLI 码';
+    final String? action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('识别成功', style: TextStyle(fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('类型：$typeName', style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 8),
+            Text('码值：$isliCode', style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('scan'),
+            child: const Text('继续扫码'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('detail'),
+            child: const Text('查看详情'),
+          ),
+        ],
+      ),
+    );
+
+    // 4) 关闭弹窗后清空亮点
+    if (mounted) {
+      setState(() {
+        _featurePoints = [];
+        _imageSize = Size.zero;
+      });
+    }
+    if (!mounted) {
+      _isHandling = false;
+      return;
+    }
+
+    if (action == 'detail') {
+      await _loadAndPushResult(isliCode);
+      _isHandling = false;
+      return;
+    }
+
+    // 5) 用户关闭后继续开启视频输入
+    try {
+      await _controller.start();
+    } catch (_) {}
+    _isHandling = false;
+  }
+
+  /// 网络解析 ISLI 码并跳转结果页（"查看详情"入口）
+  Future<void> _loadAndPushResult(String isliCode) async {
+    if (!mounted) return;
     EasyLoading.show(status: '识别中...');
     try {
       // 冷启动后 Constants.token 为空，先从本地存储恢复
@@ -165,8 +344,6 @@ class _ScanScreenState extends State<ScanScreen>
       debugPrint('ISLI码解析失败: $e');
       EasyLoading.dismiss();
       EasyLoading.showError('识别失败，请重试');
-    } finally {
-      _isHandling = false;
     }
   }
 
@@ -182,86 +359,6 @@ class _ScanScreenState extends State<ScanScreen>
         await _controller.start();
       } catch (_) {}
     }
-  }
-
-  /// 相册选图识别（ISLI 解码走整图，不裁剪扫描窗口）
-  Future<void> _pickFromAlbum() async {
-    if (_isHandling) return;
-    try {
-      final XFile? file = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
-      if (file == null) return;
-
-      EasyLoading.show(status: '识别中...');
-      final BarcodeCapture? capture = await _controller.analyzeImage(
-        file.path,
-        // 传整图窗口，避免控制器里存的实时扫描窗口把相册图裁掉
-        scanWindow: const Rect.fromLTWH(0, 0, 1, 1),
-      );
-      EasyLoading.dismiss();
-      if (!mounted) return;
-
-      if (capture == null || capture.barcodes.isEmpty) {
-        EasyLoading.showError('未识别到码，请换一张图片');
-        return;
-      }
-      final Barcode barcode = capture.barcodes.first;
-      final String? value = barcode.rawValue;
-      if (value == null || value.isEmpty) {
-        EasyLoading.showError('未识别到码，请换一张图片');
-        return;
-      }
-      _lastValue = value;
-      _lastValueTime = DateTime.now().millisecondsSinceEpoch;
-      await _handleValue(value, barcode.format);
-    } catch (e) {
-      debugPrint('相册识码失败: $e');
-      EasyLoading.dismiss();
-      EasyLoading.showError('图片识别失败');
-    }
-  }
-
-  /// 手动输入链码/ISLI码
-  Future<void> _showManualInputDialog() async {
-    if (_isHandling) return;
-    final TextEditingController inputController = TextEditingController();
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('输入链码', style: TextStyle(fontSize: 16)),
-        content: TextField(
-          controller: inputController,
-          autofocus: true,
-          keyboardType: TextInputType.text,
-          maxLength: 25,
-          decoration: const InputDecoration(
-            hintText: '如 10-0001-0001-1',
-            counterText: '',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
-    final String input = inputController.text.trim();
-    inputController.dispose();
-    if (confirmed != true || !mounted) return;
-
-    final String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length < 10 || digits.length > 20) {
-      EasyLoading.showError('码格式不正确');
-      return;
-    }
-    await _resolveIsli(digits);
   }
 
   Widget _buildErrorWidget(BuildContext context, MobileScannerException error) {
@@ -308,130 +405,296 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // 状态栏文字（时间/电池等）显示为白色，适配黑色扫码背景
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // 相机预览（含扫描窗口）
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return MobileScanner(
-                  controller: _controller,
-                  onDetect: _onDetect,
-                  scanWindow: _windowFor(constraints.biggest),
-                  errorBuilder: _buildErrorWidget,
-                );
-              },
-            ),
-            // 扫描框遮罩 + 扫描线
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return AnimatedBuilder(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final Size fullSize = constraints.biggest;
+          final Rect middle = _middleRectFor(fullSize);
+          final Rect window = _windowFor(middle);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // 相机预览铺满全屏（视频内容显示在最底部，上下栏为半透明覆盖层）
+              MobileScanner(
+                controller: _controller,
+                onDetect: _onDetect,
+                scanWindow: window,
+                errorBuilder: _buildErrorWidget,
+                overlayBuilder: (context, c) => AnimatedBuilder(
                   animation: _lineController,
                   builder: (context, _) => CustomPaint(
-                    size: constraints.biggest,
+                    size: c.biggest,
                     painter: _ScannerOverlayPainter(
-                      window: _windowFor(constraints.biggest),
+                      window: window,
                       lineProgress: _lineController.value,
+                      featurePoints: _featurePoints,
+                      imageSize: _imageSize,
                     ),
                   ),
-                );
-              },
-            ),
-            // 顶栏
-            Align(
-              alignment: Alignment.topCenter,
-              child: Row(
-                children: [
-                  // 全屏页关闭/返回按钮
-                  IconButton(
-                    icon: const Icon(Icons.close,
-                        color: Colors.white, size: 24),
-                    onPressed: () => context.pop(),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      '扫一扫',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.help_outline,
-                        color: Colors.white, size: 24),
-                    onPressed: () => context.push('/scan/help'),
-                  ),
-                ],
+                ),
               ),
-            ),
-            // 底部提示 + 操作
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '将码对准框内，即可自动扫描\n支持：链码 · ISLI标志码 · 二维码',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildBottomControls(),
-                  const SizedBox(height: 16),
-                ],
+              // 顶部导航条（黑色半透明覆盖层）
+              Align(
+                alignment: Alignment.topCenter,
+                child: _buildTopBar(),
               ),
-            ),
-          ],
+              // 中间扫码区域：类型 + 提示 + 焦距 + 灯光，围绕扫码框垂直居中
+              Positioned(
+                top: _topBarHeight,
+                bottom: _bottomBarHeight,
+                left: 0,
+                right: 0,
+                child: _buildMiddleControls(window),
+              ),
+              // 底部控制台（黑色半透明覆盖层）
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildBottomBar(),
+              ),
+            ],
+          );
+        },
+      ),
+      ),
+    );
+  }
+
+  /// 顶部导航条：黑色半透明背景
+  Widget _buildTopBar() {
+    return Container(
+      color: Colors.black.withAlpha(140),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                onPressed: () => context.pop(),
+              ),
+              const Expanded(
+                child: Text(
+                  '扫一扫',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline,
+                    color: Colors.white, size: 24),
+                onPressed: () => context.push('/scan/help'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBottomControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        // 手电筒
-        ValueListenableBuilder<MobileScannerState>(
-          valueListenable: _controller,
-          builder: (context, state, _) {
-            final bool torchOn = state.torchState == TorchState.on;
-            return _ControlButton(
-              icon: torchOn ? Icons.flash_on : Icons.flash_off,
-              label: torchOn ? '轻触关闭' : '手电筒',
+  /// 中间扫码区域控件：类型标签 + 提示文案（框上方）+ 焦距调节器 + 灯光开关，
+  /// 以扫码框为锚点垂直居中分布。
+  Widget _buildMiddleControls(Rect window) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildScanTypeBadge(),
+          const SizedBox(height: 10),
+          const Text(
+            '将码对准框内，即可自动扫描',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          // 扫码框占位：让上下两组控件围绕框分布且整体居中
+          SizedBox(width: window.width, height: window.height),
+          const SizedBox(height: 48),
+          _buildFocusAndTorchControls(),
+        ],
+      ),
+    );
+  }
+
+  /// 当前扫码类型标签
+  Widget _buildScanTypeBadge() {
+    final bool line = _mode == _ScanMode.line;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(120),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        line ? '扫链码' : '扫标志码',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  /// 焦距调节器（一行）+ 灯光开关（独立一行，居中）
+  Widget _buildFocusAndTorchControls() {
+    return ValueListenableBuilder<MobileScannerState>(
+      valueListenable: _controller,
+      builder: (context, state, _) {
+        final bool torchOn = state.torchState == TorchState.on;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 焦距调节：边框圆角容器 + 相机图标 + 滑块 + 倍率
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withOpacity(0.15)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.photo_camera_outlined,
+                    color: Colors.white.withOpacity(0.5),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 160,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 5.0,
+                        activeTrackColor: const Color(0xFF5E7A9A),
+                        inactiveTrackColor: Colors.white.withOpacity(0.18),
+                        thumbColor: Colors.white.withOpacity(0.65),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 7,
+                          elevation: 0,
+                          pressedElevation: 2,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 14,
+                        ),
+                        overlayColor: const Color(0x1F5E7A9A),
+                        showValueIndicator: ShowValueIndicator.never,
+                      ),
+                      child: Slider(
+                        value: _zoomScale.clamp(0.0, 1.0),
+                        onChanged: (v) {
+                          setState(() => _zoomScale = v);
+                          unawaited(_controller.setZoomScale(v));
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${(1 + _zoomScale * 7).toStringAsFixed(1)}x',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.55),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
               onTap: () => unawaited(_controller.toggleTorch()),
-            );
-          },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(30),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Icon(
+                  torchOn ? Icons.flash_on : Icons.flash_off,
+                  color: torchOn ? const Color(0xFFFFD54F) : Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 底部操作区：链码/标志码在同一胶囊内左右切换，半透明毛玻璃背景
+  Widget _buildBottomBar() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ScanModeSegment(
+                    normalIcon: 'assets/icons/chain_code_normal.png',
+                    activeIcon: 'assets/icons/chain_code_active.png',
+                    label: '链码',
+                    active: _mode == _ScanMode.line,
+                    onTap: () => unawaited(_switchMode(_ScanMode.line)),
+                  ),
+                  _ScanModeSegment(
+                    normalIcon: 'assets/icons/isli_code_normal.png',
+                    activeIcon: 'assets/icons/isli_code_active.png',
+                    label: '标志码',
+                    active: _mode == _ScanMode.icon,
+                    onTap: () => unawaited(_switchMode(_ScanMode.icon)),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        _ControlButton(
-          icon: Icons.photo_library_outlined,
-          label: '相册',
-          onTap: () => unawaited(_pickFromAlbum()),
-        ),
-        _ControlButton(
-          icon: Icons.keyboard_alt_outlined,
-          label: '输入链码',
-          onTap: () => unawaited(_showManualInputDialog()),
-        ),
-      ],
+      ),
     );
   }
 }
 
-/// 底部圆形操作按钮
-class _ControlButton extends StatelessWidget {
-  final IconData icon;
+/// 分段胶囊内的单个按钮（图标 + 文案，选中蓝底高亮）
+class _ScanModeSegment extends StatelessWidget {
+  final String normalIcon;
+  final String activeIcon;
   final String label;
+  final bool active;
   final VoidCallback onTap;
 
-  const _ControlButton({
-    required this.icon,
+  const _ScanModeSegment({
+    required this.normalIcon,
+    required this.activeIcon,
     required this.label,
+    required this.active,
     required this.onTap,
   });
 
@@ -439,38 +702,51 @@ class _ControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(30),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xB3409EFF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              active ? activeIcon : normalIcon,
+              width: 30,
+              height: 30,
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : Colors.white70,
+                fontSize: 14,
+                fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 扫描窗口遮罩：框外压暗、四角括号、扫描线
+/// 扫描窗口遮罩：框外压暗、四角括号、扫描线、特征点黄点
 class _ScannerOverlayPainter extends CustomPainter {
   final Rect window;
   final double lineProgress;
 
+  /// 特征点（图像坐标）与图像尺寸；非空时按 aspectFill 映射到预览坐标画黄点
+  final List<Offset> featurePoints;
+  final Size imageSize;
+
   const _ScannerOverlayPainter({
     required this.window,
     required this.lineProgress,
+    this.featurePoints = const [],
+    this.imageSize = Size.zero,
   });
 
   @override
@@ -527,11 +803,30 @@ class _ScannerOverlayPainter extends CustomPainter {
         ],
       ).createShader(lineRect);
     canvas.drawRect(lineRect, linePaint);
+
+    // 特征点小黄亮点（线码 2 点 / 图标码 6 点）
+    if (featurePoints.isNotEmpty && !imageSize.isEmpty) {
+      final double ratio = max(
+        size.width / imageSize.width,
+        size.height / imageSize.height,
+      );
+      final double offX = (imageSize.width * ratio - size.width) / 2;
+      final double offY = (imageSize.height * ratio - size.height) / 2;
+      final Paint dot = Paint()..color = const Color(0xFFFFD54F);
+      final Paint halo = Paint()..color = const Color(0x55FFD54F);
+      for (final Offset pt in featurePoints) {
+        final Offset p = Offset(pt.dx * ratio - offX, pt.dy * ratio - offY);
+        canvas.drawCircle(p, 8, halo);
+        canvas.drawCircle(p, 4, dot);
+      }
+    }
   }
 
   @override
   bool shouldRepaint(covariant _ScannerOverlayPainter oldDelegate) {
     return oldDelegate.window != window ||
-        oldDelegate.lineProgress != lineProgress;
+        oldDelegate.lineProgress != lineProgress ||
+        oldDelegate.featurePoints != featurePoints ||
+        oldDelegate.imageSize != imageSize;
   }
 }

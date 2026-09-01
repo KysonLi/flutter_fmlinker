@@ -92,6 +92,15 @@ class MobileScanner(
     @Volatile
     var isliLineDecoderEnabled: Boolean = false
 
+    /// ISLI 图标码（2D）解码开关，由 setISLIMode(icon:) 控制，与 iOS 对齐。
+    @Volatile
+    var isliIconEnabled: Boolean = true
+
+    /// ISLI 线性码（1D）解码开关，由 setISLIMode(line:) 控制，与 iOS 对齐。
+    /// 与 isliLineDecoderEnabled（解码器初始化可用性）分离：此开关只控制是否参与本帧解码。
+    @Volatile
+    var isliLineEnabled: Boolean = true
+
     /// 是否保存解码 Y 平面图片到缓存目录（PGM 格式），用于排查解码失败原因。
     /// 默认开启。如不需要，手动设为 false 以减少磁盘 I/O。
     @Volatile
@@ -234,8 +243,8 @@ class MobileScanner(
         // ---- 单帧解码串行链：MLKit → ISLI 图标码 → ISLI 线性码 ----
         // 三者在同一个 decodeExecutor 单线程上顺序执行，任一成功即 post 回调并跳过剩余解码器。
         // 线性码单帧 ~2s，忙时（上一帧仍在解码）直接丢这一帧，避免队列堆积拖慢预览。
-        val doIcon = shouldDecodeIsli(requestedFormats) && !invertImage
-        val doLine = shouldDecodeIsliLine(requestedFormats) && isliLineDecoderEnabled && !invertImage
+        val doIcon = shouldDecodeIsli(requestedFormats) && isliIconEnabled && !invertImage
+        val doLine = shouldDecodeIsliLine(requestedFormats) && isliLineDecoderEnabled && isliLineEnabled && !invertImage
 
         val dispatched = decodeBusy.compareAndSet(false, true)
         if (dispatched) {

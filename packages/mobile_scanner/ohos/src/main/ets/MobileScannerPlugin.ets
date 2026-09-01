@@ -39,6 +39,8 @@ import { Point } from '@ohos.UiTest';
 import { hasFlashUnit, getCameraManager } from './CameraUtil';
 import { image } from '@kit.ImageKit';
 import { camera } from '@kit.CameraKit';
+import { media } from '@kit.MediaKit';
+import { audio } from '@kit.AudioKit';
 
 const TAG: string = "MobileScannerPlugin";
 
@@ -197,7 +199,7 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
         });
       } else if (call.method === "start") {
         this.start(call, result)
-      } else if (call.method === "torch") {
+      } else if (call.method === "toggleTorch") {
         this.toggleTorch(call, result)
       } else if (call.method === "stop") {
         this.stop(result)
@@ -209,8 +211,12 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
         this.resetScale(result)
       } else if (call.method === "updateScanWindow") {
         this.updateScanWindow(call, result)
-      }  else if (call.method === "pause") {
+      } else if (call.method === "pause") {
         this.pause(call, result)
+      } else if (call.method === "setISLIMode") {
+        this.setISLIMode(call, result)
+      } else if (call.method === "playScanSound") {
+        this.playScanSound(result)
       } else {
         result.notImplemented()
       }
@@ -586,16 +592,24 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
   }
 
   toggleTorch(call: MethodCall, result: MethodResult) {
-    const light = customScan.getFlashLightStatus();
-    if (light) {
-      customScan.closeFlashLight()
-    } else {
-      customScan.openFlashLight()
+    try {
+      const light = customScan.getFlashLightStatus();
+      if (light) {
+        customScan.closeFlashLight()
+      } else {
+        customScan.openFlashLight()
+      }
+      const desired = !light;
+      const plugin = this;
+      setTimeout(() => {
+        plugin.publishEvent({
+          name: 'torchState',
+          data: desired ? TorchState.on : TorchState.off
+        });
+      }, 50);
+    } catch (e) {
+      Log.e(TAG, `toggleTorch error: ${e}`);
     }
-    this.publishEvent({
-      name: 'torchState',
-      data: customScan.getFlashLightStatus() ? TorchState.on : TorchState.off
-    });
     result.success(null)
   }
 
@@ -771,6 +785,53 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
     result.success(null)
   }
 
+  /// 切换 ISLI 解码模式（与 iOS/Android 对齐）：只开图标码 / 只开线码 / 全开。
+  /// 直接覆盖 start() 时按 formats 推导的 shouldDecodeIsli/shouldDecodeIsliLine；
+  /// 目标解码器若尚未初始化（start 时按 formats 只初始化了部分）则在此补 init。
+  private setISLIMode(call: MethodCall, result: MethodResult) {
+    const iconRaw: ESObject = call.argument("icon");
+    const lineRaw: ESObject = call.argument("line");
+    const icon = typeof iconRaw === 'boolean' ? iconRaw : this.shouldDecodeIsli;
+    const line = typeof lineRaw === 'boolean' ? lineRaw : this.shouldDecodeIsliLine;
+    if (icon && !this.shouldDecodeIsli) {
+      this.isliDecoder.init(this.isliInstanceId);
+      this.isliDecoder.setLogLevel(2);
+    }
+    if (line && !this.shouldDecodeIsliLine) {
+      this.isliLineDecoder.init(this.isliInstanceId);
+      this.isliLineDecoder.setLogLevel(2);
+    }
+    this.shouldDecodeIsli = icon;
+    this.shouldDecodeIsliLine = line;
+    result.success(null);
+  }
+
+  /// 播放扫码成功提示音（与 iOS 对齐）。SDK 无公共"播系统音"API（playNotificationSound
+  /// 不存在、systemSoundManager 需 API 23），故用 SoundPool 播放内置 beep.wav 资源。
+  private soundPool: media.SoundPool | null = null;
+  private beepSoundId: number = -1;
+
+  private async playScanSound(result: MethodResult) {
+    try {
+      if (this.soundPool === null) {
+        const renderInfo: audio.AudioRendererInfo = {
+          usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
+          rendererFlags: 0
+        };
+        this.soundPool = await media.createSoundPool(3, renderInfo);
+      }
+      if (this.beepSoundId < 0) {
+        const fd = this.applicationContext!.resourceManager.getRawFdSync("beep.wav");
+        this.beepSoundId = await this.soundPool.load(fd.fd, fd.offset, fd.length);
+      }
+      await this.soundPool.play(this.beepSoundId);
+      result.success(null);
+    } catch (e) {
+      Log.e(TAG, `playScanSound failed: ${e.message}`);
+      result.error("playScanSound", e.message, null);
+    }
+  }
+
   callback(barcodes: Barcode[], image: Uint8Array | null, width: number, height: number) {
     barcodes = barcodes.filter(barcode => {
       if (this.scanWindow) {
@@ -820,11 +881,15 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
    * `returnImage` does `rotateSync(ROTATION_90)`). The scanWindow is display-
    * normalized [left, top, right, bottom] in [0,1], so it must be mapped through
    * that rotation to get the frame-space rect:
-   *   frameX ∈ [top, bottom]·fw ,  frameY ∈ [1-right, 1-left]·fh
+   * frameX ∈ [left, right]·fw ,  frameY ∈ [top, bottom]·fh
    * offX/offY let decoded feature points be translated back to full-frame coords.
    * Returns null if the rect is too small.
    */
   private cropYToWindow(src: Uint8Array, fw: number, fh: number, sw: number[]): CroppedYPlane | null {
+    // sw = [left, top, right, bottom]（Dart 侧统一语义，display 归一化坐标，y 向下）。
+    // display = sensor 顺时针旋转 90°：display(x,y) → sensor(y, fh-1-x)。
+    // 故 scanWindow 在 sensor 帧上的区域：
+    //   frameX ∈ [top, bottom]·fw ，frameY ∈ [1-right, 1-left]·fh
     const cL = Math.max(0, Math.round(sw[1] * fw));
     const cR = Math.min(fw, Math.round(sw[3] * fw));
     const cT = Math.max(0, Math.round((1 - sw[2]) * fh));
@@ -849,9 +914,15 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
     hit: IsliCascadeHit, imageWidth: number, imageHeight: number, offX: number, offY: number
   ): Barcode {
     const format: BarcodeFormat = hit.format === BarcodeFormat.isli ? BarcodeFormat.isli : BarcodeFormat.isli_line_code;
+    // frameCallback 的 Y 平面是 sensor 方向（横），预览为顺时针旋转 90° 后的显示方向。
+    // 特征点先加 off 得 sensor 全帧坐标，再旋转到显示坐标，Dart 黄点才能与预览对齐。
     const corners: Array<ESObject> = [];
     for (const pt of hit.featurePoints) {
-      corners.push({ x: this.toDoubleType(pt.x + offX), y: this.toDoubleType(pt.y + offY) });
+      const sx = pt.x + offX;
+      const sy = pt.y + offY;
+      const dx = imageHeight - 1 - sy;
+      const dy = sx;
+      corners.push({ x: this.toDoubleType(dx), y: this.toDoubleType(dy) });
     }
     return {
       displayValue: hit.isliCode,
@@ -860,8 +931,8 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
       type: BarcodeType.text,
       corners: corners,
       size: {
-        width: this.toDoubleType(imageWidth),
-        height: this.toDoubleType(imageHeight)
+        width: this.toDoubleType(imageHeight),
+        height: this.toDoubleType(imageWidth)
       }
     } as Barcode;
   }
@@ -874,10 +945,16 @@ export class MobileScannerPlugin implements FlutterPlugin, MethodCallHandler, Ab
   ): void {
     const barcode = this.buildBarcodeFromHit(hit, imageWidth, imageHeight, offX, offY);
     Log.i(TAG, `emitISLI: format=${barcode.format} code=${hit.isliCode} points=${hit.featurePoints.length} off=(${offX},${offY})`);
+    // 携带显示方向图像尺寸（Dart 黄点/坐标映射依赖 capture.size），结构与 Android/iOS 一致。
+    const imageinfo: ESObject = {
+      bytes: null,
+      width: this.toDoubleType(imageHeight),
+      height: this.toDoubleType(imageWidth)
+    };
     this.publishEvent({
       "name": "barcode",
       "data": [barcode],
-      "image": null
+      "image": imageinfo
     });
   }
 

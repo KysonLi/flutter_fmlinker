@@ -431,6 +431,22 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   }
 
   @override
+  Future<void> setISLIMode({
+    required bool icon,
+    required bool line,
+  }) async {
+    await methodChannel.invokeMethod<void>('setISLIMode', {
+      'icon': icon,
+      'line': line,
+    });
+  }
+
+  @override
+  Future<void> playScanSound() async {
+    await methodChannel.invokeMethod<void>('playScanSound');
+  }
+
+  @override
   Future<void> dispose() async {
     await updateScanWindow(null);
     await stop();

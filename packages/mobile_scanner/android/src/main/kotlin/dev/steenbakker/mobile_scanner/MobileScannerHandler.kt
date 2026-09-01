@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -152,6 +154,8 @@ class MobileScannerHandler(
             "setScale" -> setScale(call, result)
             "resetScale" -> resetScale(result)
             "updateScanWindow" -> updateScanWindow(call, result)
+            "setISLIMode" -> setISLIMode(call, result)
+            "playScanSound" -> playScanSound(result)
             else -> result.notImplemented()
         }
     }
@@ -337,6 +341,29 @@ class MobileScannerHandler(
         Log.d("isliline", "update scan window: ${mobileScanner?.scanWindow}")
 
         result.success(null)
+    }
+
+    /// 切换 ISLI 解码模式（与 iOS 对齐）：只开图标码 / 只开线码 / 全开。
+    private fun setISLIMode(call: MethodCall, result: MethodChannel.Result) {
+        val scanner = mobileScanner ?: run {
+            result.error("setISLIMode", "mobileScanner not initialized", null)
+            return
+        }
+        call.argument<Boolean>("icon")?.let { scanner.isliIconEnabled = it }
+        call.argument<Boolean>("line")?.let { scanner.isliLineEnabled = it }
+        result.success(null)
+    }
+
+    /// 播放扫码成功提示音（与 iOS 对齐）：播系统通知音效。
+    private fun playScanSound(result: MethodChannel.Result) {
+        try {
+            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val ringtone = RingtoneManager.getRingtone(activity.applicationContext, uri)
+            ringtone?.play()
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("playScanSound", e.message, null)
+        }
     }
 
     private fun buildBarcodeScannerOptions(formats: List<Int>?, autoZoom: Boolean): BarcodeScannerOptions? {

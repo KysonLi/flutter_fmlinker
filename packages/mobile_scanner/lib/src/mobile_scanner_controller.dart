@@ -578,6 +578,26 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     await MobileScannerPlatform.instance.updateScanWindow(window);
   }
 
+  /// Switch which native ISLI decoder is active for live frames.
+  ///
+  /// [icon] enables the ISLI icon-code (2D) decoder, [line] enables the ISLI
+  /// line-code (1D) decoder. Used to scan only one code type at a time.
+  Future<void> setISLIMode({
+    required bool icon,
+    required bool line,
+  }) async {
+    _throwIfNotInitialized();
+
+    await MobileScannerPlatform.instance.setISLIMode(icon: icon, line: line);
+  }
+
+  /// 播放扫码成功提示音（"滴"一声，由平台实现为系统音效）。
+  Future<void> playScanSound() async {
+    _throwIfNotInitialized();
+
+    await MobileScannerPlatform.instance.playScanSound();
+  }
+
   /// Dispose the controller.
   ///
   /// Once the controller is disposed, it cannot be used anymore.

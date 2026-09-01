@@ -1,6 +1,8 @@
 import AVFoundation
 import Vision
 import VideoToolbox
+import Accelerate
+import AudioToolbox
 
 import isli_icon_native
 import isli_line_native
@@ -63,6 +65,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     /// this queue guarantees exclusive access and FIFO ordering.
     private let isliDecodeQueue = DispatchQueue(label: "mobile_scanner.isli_decode")
     private var isliDecodeBusy = false
+    /// Dedicated queue for sample-buffer delivery (kept alive for the session's lifetime).
+    private var sampleBufferQueue: DispatchQueue?
 
     private var stopped: Bool {
         return device == nil || captureSession == nil
@@ -124,6 +128,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             updateScanWindow(call, result)
         case "analyzeImage":
             analyzeImage(call, result)
+        case "setISLIMode":
+            setISLIMode(call, result)
+        case "playScanSound":
+            playScanSound(call, result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -252,45 +260,34 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         if (shouldDecodeIsli || shouldDecodeIsliLine) && !isliDecodeBusy {
             guard let buf = latestBuffer else { return }
             isliDecodeBusy = true
-            let window = scanWindow
             isliDecodeQueue.async { [weak self] in
                 guard let self = self else {
                     return
                 }
                 defer { self.isliDecodeBusy = false }
-                self.decodeISLIFrame(buf, scanWindow: window)
+                // Read the scan window at decode time, not frame-delivery time:
+                // decodes can lag delivery by many seconds, while the Dart widget
+                // pushes the window a moment after camera start. Snapshotting at
+                // delivery produced full-frame decodes for the first cycle.
+                self.decodeISLIFrame(buf, scanWindow: self.scanWindow)
             }
         }
     }
 
     // MARK: - ISLI Custom Decode Pipeline
 
-    /// Min-max contrast stretch: maps the narrow Y range to full 0-255.
-    /// Mirrors Android's `contrastStretchY` in `decodeIsliLineAsync` (S1/S2).
-    /// Critical for the line decoder's vertical_locating in dim/backlit scenes.
-    private func contrastStretch(_ pixels: UnsafeMutablePointer<UInt8>, count: Int) {
-        var yMin: UInt8 = 255, yMax: UInt8 = 0
-        for i in 0..<count {
-            let v = pixels[i]
-            if v < yMin { yMin = v }
-            if v > yMax { yMax = v }
-        }
-        guard yMax > yMin else { return }
-        let range = Float(yMax - yMin)
-        for i in 0..<count {
-            let v = Float(pixels[i] - yMin) * 255.0 / range + 0.5
-            pixels[i] = UInt8(max(0, min(255, v)))
-        }
-    }
+    // MARK: - TEMPORARY DEBUG: dump decoder-bound frames
+
+    /// TEMPORARY DEBUG (removed): PNG dumping of decoder-bound frames was the
+    /// dominant per-frame stall (2 PNG encodes/frame, one on the 3× upscaled
+    /// 2592×1605 line crop). Deleting the calls removed it entirely.
 
     /// Convert a BGRA CVPixelBuffer to 8bpp grayscale and run ISLI decoders.
     /// Called on `isliDecodeQueue` (serial, non-concurrent).
     ///
-    /// Icon-first: icon (2D, 4-way robust, ~20ms) runs before line — it's the
-    /// common scan target. Line only uses the +90° rotated path (native rotate in
-    /// ObjC) because the raw portrait iPhone frame predictably misses on the
-    /// landscape-only native line decoder. Contrast stretch is applied before line
-    /// decode only (Android S1 strategy), icon gets raw grayscale.
+    /// Icon-first: icon (2D, 6-way robust) runs before line — it's the common
+    /// scan target. Line gets the grayscale crop with no orientation handling:
+    /// straight decode first, then the wrapper's native +90° CW rotate as fallback.
     private func decodeISLIFrame(_ pixelBuffer: CVPixelBuffer, scanWindow: CGRect?) {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
@@ -300,48 +297,80 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         let height = CVPixelBufferGetHeight(pixelBuffer)
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
 
-        // Convert BGRA → grayscale (BT.601 luma)
-        let grayCount = width * height
-        let grayPixels = UnsafeMutablePointer<UInt8>.allocate(capacity: grayCount)
-        defer { grayPixels.deallocate() }
+        // Determine the working region FIRST (scanWindow box, else full frame),
+        // then grayscale only that region. The source vImage_Buffer points into
+        // the BGRA frame at the box's top-left with the full-frame row stride, so
+        // the matrix multiply converts just boxW×boxH pixels — no full-frame gray
+        // pass and no separate Swift copy loop.
+        // BGRA byte order: pixel[0]=B, [1]=G, [2]=R, [3]=A.
+        // vImageMatrixMultiply_ARGB8888ToPlanar8 expects the 4 coefficients in
+        // A,R,G,B channel order, so luma = (77*R + 150*G + 29*B)/256 maps to
+        // [A=0, R=77, G=150, B=29].
+        let lumaMatrix: [Int16] = [0, 77, 150, 29]
 
-        let bgra = baseAddress.assumingMemoryBound(to: UInt8.self)
-        for y in 0..<height {
-            let rowOffset = y * bytesPerRow
-            let grayRow = grayPixels.advanced(by: y * width)
-            for x in 0..<width {
-                let off = rowOffset + x * 4
-                grayRow[x] = UInt8(((Int(bgra[off + 2]) * 77 + Int(bgra[off + 1]) * 150 + Int(bgra[off]) * 29) >> 8) & 0xFF)
-            }
-        }
-
-        // Crop to scanWindow if active (display-oriented frame & window, direct map).
-        var decPixels = grayPixels
+        var decPixels: UnsafeMutablePointer<UInt8>
         var decWidth = width
         var decHeight = height
         var offX = 0, offY = 0
         var cropAlloc: UnsafeMutablePointer<UInt8>? = nil
+        var grayAlloc: UnsafeMutablePointer<UInt8>? = nil
+        var srcData: UnsafeMutableRawPointer = baseAddress
+        var srcRowBytes = bytesPerRow
 
         if let sw = scanWindow {
             let boxX = max(0, Int(sw.minX * CGFloat(width)))
-            let boxY = max(0, Int(sw.minY * CGFloat(height)))
+            // NOTE: scanWindow was Y-flipped for Vision (regionOfInterest uses
+            // bottom-left origin). The buffer below is top-left origin, so undo
+            // the flip here: unflipped top == 1 - sw.maxY (since sw.minY = 1-bottom).
+            let boxY = max(0, Int((1.0 - sw.maxY) * CGFloat(height)))
             let boxW = min(width - boxX, Int(sw.width * CGFloat(width)))
             let boxH = min(height - boxY, Int(sw.height * CGFloat(height)))
             if boxW >= 32 && boxH >= 32 {
-                let cap = boxW * boxH
-                let crop = UnsafeMutablePointer<UInt8>.allocate(capacity: cap)
+                let crop = UnsafeMutablePointer<UInt8>.allocate(capacity: boxW * boxH)
                 cropAlloc = crop
-                for r in 0..<boxH {
-                    let src = grayPixels.advanced(by: (boxY + r) * width + boxX)
-                    crop.advanced(by: r * boxW).assign(from: src, count: boxW)
-                }
                 decPixels = crop
                 decWidth = boxW; decHeight = boxH; offX = boxX; offY = boxY
+                // Point the source directly at the box inside the BGRA frame:
+                // pixel offset (boxY*bpl + boxX*4), row stride stays full-frame.
+                srcData = baseAddress.advanced(by: boxY * bytesPerRow + boxX * 4)
+                srcRowBytes = bytesPerRow
+            } else {
+                let gray = UnsafeMutablePointer<UInt8>.allocate(capacity: width * height)
+                grayAlloc = gray
+                decPixels = gray
             }
+        } else {
+            let gray = UnsafeMutablePointer<UInt8>.allocate(capacity: width * height)
+            grayAlloc = gray
+            decPixels = gray
+        }
+        defer { grayAlloc?.deallocate() }
+
+        var srcBuf = vImage_Buffer(
+            data: srcData,
+            height: vImagePixelCount(decHeight),
+            width: vImagePixelCount(decWidth),
+            rowBytes: srcRowBytes
+        )
+        var dstBuf = vImage_Buffer(
+            data: decPixels,
+            height: vImagePixelCount(decHeight),
+            width: vImagePixelCount(decWidth),
+            rowBytes: decWidth
+        )
+        let vErr = vImageMatrixMultiply_ARGB8888ToPlanar8(
+            &srcBuf, &dstBuf,
+            lumaMatrix, 256,
+            nil, 128,
+            vImage_Flags(kvImageNoFlags)
+        )
+        if vErr != kvImageNoError {
+            NSLog("[ISLI-DEBUG] vImage ERROR %ld — gray buffer may be garbage!", vErr)
         }
 
-        // Step 1: ISLI icon code (2D, 4-way robust) — icon-first, common case.
-        // Icon gets raw grayscale (Android does not contrast-stretch before icon).
+        // Step 1: ISLI icon code (2D) — icon-first, common case. No orientation
+        // attempts, no contrast stretch: the grayscale crop is handed straight
+        // to the decoder.
         if shouldDecodeIsli {
             if let result = ISLIDecoderWrapper.decodeGrayscalePixels(
                 decPixels, width: decWidth, height: decHeight, bytesPerLine: decWidth) {
@@ -352,14 +381,27 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             }
         }
 
-        // Step 2: ISLI line code (1D) — +90° rotated only (portrait iPhone frames).
-        // Contrast stretch before line decode (Android S1 cropped strategy).
+        // Step 2: ISLI line code (1D). The grayscale crop is fed straight to the
+        // decoder with no orientation handling; only on a miss does the wrapper's
+        // native +90° CW rotate path run (two-step, see block below).
         if shouldDecodeIsliLine {
-            contrastStretch(decPixels, count: decWidth * decHeight)
+            // Step 1: feed the decoder the grayscale crop directly. The raw
+            // portrait camera frame gets NO orientation handling up front.
+            if let result = ISLILineDecoderWrapper.decodeGrayscalePixels(
+                decPixels, width: decWidth, height: decHeight, bytesPerLine: decWidth) {
+                emitISLIBarcode(result, format: 16384, imageWidth: width, imageHeight: height,
+                                offX: offX, offY: offY)
+                cropAlloc?.deallocate()
+                return
+            }
+
+            // Step 2: fallback — the wrapper rotates 90° CW natively then decodes.
             if let result = ISLILineDecoderWrapper.decodeGrayscalePixelsRotated(
                 decPixels, width: decWidth, height: decHeight, bytesPerLine: decWidth) {
                 emitISLIBarcode(result, format: 16384, imageWidth: width, imageHeight: height,
                                 offX: offX, offY: offY)
+                cropAlloc?.deallocate()
+                return
             }
         }
 
@@ -398,7 +440,9 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             "rawValue": isliCode,
             "size": nil,
             "sms": nil,
-            "type": "TEXT",
+            // Dart 侧按 int 解析（`as int?`），字符串会抛 TypeError 导致事件丢失；
+            // 0 = BarcodeType.unknown，与 Android 端 TYPE_UNKNOWN 保持一致。
+            "type": 0,
             "url": nil,
             "wifi": nil,
         ]
@@ -418,7 +462,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             self?.sink?([
                 "name": "barcode",
                 "data": [barcodeData],
-                "image": nil,
+                // 图像尺寸：供 Dart 侧把 featurePoints（图像坐标）映射到预览坐标
+                "image": ["bytes": nil,
+                          "width": Double(imageWidth),
+                          "height": Double(imageHeight)],
             ])
         }
     }
@@ -486,28 +533,27 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         }
     }
 
-    func updateScanWindow(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        let argReader = MapArgumentReader(call.arguments as? [String: Any])
-        let scanWindowData: Array? = argReader.floatArray(key: "rect")
+    /// Parse a normalized rect `[left, top, right, bottom]` (top-left origin,
+    /// texture-relative percentages, as sent by the Dart side) from a method
+    /// call argument, converting it to a Vision-space CGRect (bottom-left
+    /// origin). Reads `[NSNumber]` directly to avoid any bridging surprises.
+    private func parseRectFromArgs(_ key: String, in args: [String: Any]?) -> CGRect? {
+        guard let raw = args?[key] as? [NSNumber], raw.count == 4,
+              raw.allSatisfy({ $0.doubleValue.isFinite }) else { return nil }
+        let l = raw[0].doubleValue
+        let t = raw[1].doubleValue
+        let r = raw[2].doubleValue
+        let b = raw[3].doubleValue
+        guard r > l, b > t else { return nil }
+        return CGRect(x: l, y: 1.0 - b, width: r - l, height: b - t)
+    }
 
-        if (scanWindowData == nil) {
+    func updateScanWindow(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        if let rect = parseRectFromArgs("rect", in: call.arguments as? [String: Any]) {
+            scanWindow = rect
+        } else {
             scanWindow = nil
-            result(nil)
-            return
         }
-        
-        let left = scanWindowData![0]
-        let top = scanWindowData![1]
-        let right = scanWindowData![2]
-        let bottom = scanWindowData![3]
-        
-        scanWindow = CGRect(
-            x: left,                  // Normalized x-position (left)
-            y: 1.0 - bottom,          // Flip Y-axis since Vision uses a different coordinate system
-            width: right - left,      // Width (difference between right and left)
-            height: bottom - top      // Height (difference between bottom and top)
-        )
-        
         result(nil)
     }
 
@@ -595,14 +641,19 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             shouldDecodeIsliLine = true
         }
 
+        // Pre-apply the scan window carried in the start options (the Dart
+        // controller retains the last window across stop/start). The widget
+        // also pushes it later via updateScanWindow.
+        if let rect = parseRectFromArgs("scanWindow", in: call.arguments as? [String: Any]) {
+            scanWindow = rect
+        }
+
         // Initialize native ISLI decoders if needed
         if shouldDecodeIsli {
             _ = ISLIDecoderWrapper.initializeDecoder()
-            ISLIDecoderWrapper.setLogLevel(2)  // WARN (0=OFF 1=ERR 2=WARN 3=INFO 4=DEBUG)
         }
         if shouldDecodeIsliLine {
             _ = ISLILineDecoderWrapper.initializeDecoder()
-            ISLILineDecoderWrapper.setLogLevel(2)
         }
 
         // Set the camera to use. In macOS only a front camera is available.
@@ -666,14 +717,22 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 message: error.localizedDescription, details: nil))
             return
         }
-        captureSession!.sessionPreset = AVCaptureSession.Preset.photo
+        // Use .high (1080p) instead of .photo (12MP/48MP). Full-sensor BGRA
+        // frames (~48MB each) delivered on the main thread + the Flutter
+        // texture copy on the raster thread starve the preview pipeline on
+        // older devices → black texture. 1080p is ample for both Vision and
+        // the ISLI decoders, and is 5.7× cheaper per frame.
+        captureSession!.sessionPreset = AVCaptureSession.Preset.high
 
         // Add video output
         let videoOutput = AVCaptureVideoDataOutput()
         videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
         videoOutput.alwaysDiscardsLateVideoFrames = true
 
-        videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
+        // Deliver frames on a dedicated serial queue, not the main thread:
+        // at 1080p30 the main-thread delegate would still throttle the UI.
+        sampleBufferQueue = DispatchQueue(label: "mobile_scanner.sample_buffer")
+        videoOutput.setSampleBufferDelegate(self, queue: sampleBufferQueue!)
         captureSession!.addOutput(videoOutput)
         let deviceVideoOrientation = self.getVideoOrientation()
         
@@ -1031,6 +1090,35 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         textureId = nil
     }
 
+    /// Switch which native ISLI decoder is active for live frames at runtime
+    /// (called by the Dart UI when toggling between line-code and icon-code
+    /// scan modes). Decoders are initialized lazily on demand; they stay
+    /// initialized until the scanner is fully stopped.
+    func setISLIMode(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any]
+        if let icon = args?["icon"] as? Bool {
+            shouldDecodeIsli = icon
+        }
+        if let line = args?["line"] as? Bool {
+            shouldDecodeIsliLine = line
+        }
+        if shouldDecodeIsli {
+            _ = ISLIDecoderWrapper.initializeDecoder()
+        }
+        if shouldDecodeIsliLine {
+            _ = ISLILineDecoderWrapper.initializeDecoder()
+        }
+        result(nil)
+    }
+
+    /// 播放扫码成功提示音（"滴"一声）。
+    /// iOS 系统音效 1057 = Tink（清脆"叮"），比 Flutter SystemSound.click 悦耳，
+    /// 且不受 Flutter SystemSoundType.alert 在 iOS 上映射失效的影响。
+    func playScanSound(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        AudioServicesPlaySystemSound(1057)
+        result(nil)
+    }
+
     func analyzeImage(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         // The iOS Simulator cannot use some of the GPU features that are required for the Vision API.
         // Thus analyzing images is not supported on the iOS Simulator.
@@ -1108,21 +1196,27 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 if let gray = grayPixels {
                     defer { gray.data.deallocate() }
 
-                    if analyzeIsliLine,
-                       let lineResult = ISLILineDecoderWrapper.decodeGrayscalePixelsRotated(
-                        gray.data, width: gray.width, height: gray.height, bytesPerLine: gray.bytesPerLine) {
-                        if let map = buildISLIBarcodeMap(lineResult, format: 16384,
-                                                         imageWidth: imgWidth, imageHeight: imgHeight) {
-                            isliBarcodeMaps.append(map)
+                    // 与实时线码解码一致：先 raw 直解，失败再 90° 旋转兜底
+                    if analyzeIsliLine {
+                        if let lineResult =
+                            ISLILineDecoderWrapper.decodeGrayscalePixels(
+                                gray.data, width: gray.width, height: gray.height, bytesPerLine: gray.bytesPerLine)
+                            ?? ISLILineDecoderWrapper.decodeGrayscalePixelsRotated(
+                                gray.data, width: gray.width, height: gray.height, bytesPerLine: gray.bytesPerLine) {
+                            if let map = buildISLIBarcodeMap(lineResult, format: 16384,
+                                                             imageWidth: imgWidth, imageHeight: imgHeight) {
+                                isliBarcodeMaps.append(map)
+                            }
                         }
                     }
 
-                    if analyzeIsli,
-                       let iconResult = ISLIDecoderWrapper.decodeGrayscalePixels(
-                        gray.data, width: gray.width, height: gray.height, bytesPerLine: gray.bytesPerLine) {
-                        if let map = buildISLIBarcodeMap(iconResult, format: 8192,
-                                                         imageWidth: imgWidth, imageHeight: imgHeight) {
-                            isliBarcodeMaps.append(map)
+                    if analyzeIsli {
+                        if let iconResult = ISLIDecoderWrapper.decodeGrayscalePixels(
+                            gray.data, width: gray.width, height: gray.height, bytesPerLine: gray.bytesPerLine) {
+                            if let map = buildISLIBarcodeMap(iconResult, format: 8192,
+                                                             imageWidth: imgWidth, imageHeight: imgHeight) {
+                                isliBarcodeMaps.append(map)
+                            }
                         }
                     }
                 }

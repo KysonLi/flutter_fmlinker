@@ -124,6 +124,23 @@ abstract class MobileScannerPlatform extends PlatformInterface {
     throw UnimplementedError('updateScanWindow() has not been implemented.');
   }
 
+  /// Switch which native ISLI decoder is active for live frames.
+  ///
+  /// [icon] enables the ISLI icon-code (2D) decoder, [line] enables the ISLI
+  /// line-code (1D) decoder. Only supported on the mobile platforms that ship
+  /// the ISLI custom decoders.
+  Future<void> setISLIMode({
+    required bool icon,
+    required bool line,
+  }) {
+    throw UnimplementedError('setISLIMode() has not been implemented.');
+  }
+
+  /// 播放扫码成功提示音（"滴"一声）。由各平台实现为系统音效。
+  Future<void> playScanSound() {
+    throw UnimplementedError('playScanSound() has not been implemented.');
+  }
+
   /// Dispose of this [MobileScannerPlatform] instance.
   Future<void> dispose() {
     throw UnimplementedError('dispose() has not been implemented.');
