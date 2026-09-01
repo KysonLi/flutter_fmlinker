@@ -12,6 +12,8 @@ class RefreshConfig {
       textStyle: TextStyle(fontSize: 12, color: Color(0xFF666666)),
       messageText: '更新于 %T',
       messageStyle: TextStyle(fontSize: 10, color: Color(0xFF666666)),
+      // 图标颜色与提示文字保持一致，避免默认黑色过于醒目
+      iconTheme: IconThemeData(color: Color(0xFF666666)),
     );
   }
 
@@ -24,6 +26,8 @@ class RefreshConfig {
       processingText: '加载中',
       failedText: '加载失败',
       noMoreText: '暂无更多数据',
+      // 图标颜色与提示文字保持一致，避免默认黑色过于醒目
+      iconTheme: IconThemeData(color: Color(0xFF666666)),
       textStyle: TextStyle(fontSize: 12, color: Color(0xFF666666)),
       showMessage: false,
     );

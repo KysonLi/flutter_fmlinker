@@ -19,7 +19,7 @@ class AccountSecurityScreen extends StatefulWidget {
 class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   final UserService _userService = UserService();
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   String _nickname = '用户';
   String _phone = '';
   String _avatarUrl = '';
@@ -62,7 +62,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     }
 
     TextEditingController controller = TextEditingController(text: _nickname);
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -93,7 +93,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFF2376E3)),
                     ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     counterText: '',
                   ),
                   maxLength: 20,
@@ -135,7 +136,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
                 EasyLoading.dismiss();
               },
-              child: const Text('确定', style: TextStyle(fontSize: 14, color: Color(0xFF2376E3))),
+              child: const Text('确定',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF2376E3))),
             ),
           ],
         );
@@ -155,11 +157,14 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _buildBottomSheetItem('拍照', () => _handleImageSource(ImageSource.camera)),
+              _buildBottomSheetItem(
+                  '拍照', () => _handleImageSource(ImageSource.camera)),
               const Divider(height: 1, color: Color(0xFFEEEEEE), indent: 16),
-              _buildBottomSheetItem('从相册选择', () => _handleImageSource(ImageSource.gallery)),
+              _buildBottomSheetItem(
+                  '从相册选择', () => _handleImageSource(ImageSource.gallery)),
               const SizedBox(height: 10),
-              _buildBottomSheetItem('取消', () => Navigator.pop(context), isCancel: true),
+              _buildBottomSheetItem('取消', () => Navigator.pop(context),
+                  isCancel: true),
             ],
           ),
         );
@@ -167,7 +172,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     );
   }
 
-  Widget _buildBottomSheetItem(String title, VoidCallback onTap, {bool isCancel = false}) {
+  Widget _buildBottomSheetItem(String title, VoidCallback onTap,
+      {bool isCancel = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -187,7 +193,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Future<void> _handleImageSource(ImageSource source) async {
     Navigator.pop(context);
-    
+
     Permission permission;
     if (source == ImageSource.camera) {
       permission = Permission.camera;
@@ -208,9 +214,10 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     }
   }
 
-  Future<bool> _checkAndRequestPermission(Permission permission, ImageSource source) async {
+  Future<bool> _checkAndRequestPermission(
+      Permission permission, ImageSource source) async {
     PermissionStatus status = await permission.status;
-    
+
     if (status.isGranted) {
       return true;
     }
@@ -230,7 +237,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Future<void> _showPermissionDeniedDialog(ImageSource source) async {
     String permissionName = source == ImageSource.camera ? '相机' : '相册';
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -348,7 +355,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Widget _buildArrowRow(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       child: Row(
         children: <Widget>[
           Expanded(child: Text(title, style: const TextStyle(fontSize: 13))),
@@ -387,7 +394,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 child: GestureDetector(
                   onTap: _handleAvatarTap,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 15),
                     child: Row(
                       children: <Widget>[
                         const Text('头像', style: TextStyle(fontSize: 13)),
@@ -406,13 +414,18 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                                     imageUrl: _avatarUrl,
                                     fit: BoxFit.cover,
                                     errorWidget: (context, url, error) =>
-                                        Image.asset('assets/images/default_avatar.png', fit: BoxFit.cover),
+                                        Image.asset(
+                                            'assets/images/default_avatar.png',
+                                            fit: BoxFit.cover),
                                   )
-                                : Image.asset('assets/images/default_avatar.png', fit: BoxFit.cover),
+                                : Image.asset(
+                                    'assets/images/default_avatar.png',
+                                    fit: BoxFit.cover),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Image.asset('assets/icons/right_arrow.png', width: 12, height: 12),
+                        Image.asset('assets/icons/right_arrow.png',
+                            width: 12, height: 12),
                       ],
                     ),
                   ),
@@ -424,18 +437,21 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 child: GestureDetector(
                   onTap: _handleNicknameTap,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 15),
                     child: Row(
                       children: <Widget>[
                         const Text('用户名', style: TextStyle(fontSize: 13)),
                         const Spacer(),
                         Row(
                           children: [
-                            Text(_nickname, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                            Text(_nickname,
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.grey)),
+                            if (!_hasSetUserName) const SizedBox(width: 4),
                             if (!_hasSetUserName)
-                              const SizedBox(width: 4),
-                            if (!_hasSetUserName)
-                              Image.asset('assets/icons/right_arrow.png', width: 12, height: 12),
+                              Image.asset('assets/icons/right_arrow.png',
+                                  width: 12, height: 12),
                           ],
                         ),
                       ],
@@ -449,7 +465,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 child: GestureDetector(
                   onTap: _phone.isEmpty ? _handleBindPhone : null,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 15),
                     child: Row(
                       children: <Widget>[
                         const Text('手机号', style: TextStyle(fontSize: 13)),
@@ -460,13 +477,14 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                               _phone.isEmpty ? '未绑定' : _phone,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: _phone.isEmpty ? Colors.blue : Colors.grey,
+                                color:
+                                    _phone.isEmpty ? Colors.blue : Colors.grey,
                               ),
                             ),
+                            if (_phone.isEmpty) const SizedBox(width: 4),
                             if (_phone.isEmpty)
-                              const SizedBox(width: 4),
-                            if (_phone.isEmpty)
-                              Image.asset('assets/icons/right_arrow.png', width: 12, height: 12),
+                              Image.asset('assets/icons/right_arrow.png',
+                                  width: 12, height: 12),
                           ],
                         ),
                       ],
@@ -499,18 +517,31 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              GestureDetector(
-                onTap: _logout,
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Center(
-                    child: Text('退出登录', style: TextStyle(fontSize: 14, color: Colors.black)),
+              // 退出登录：柔和浅红底色 + 细边框 + 红字，低调不刺眼
+              Container(
+                height: 44,
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3F3),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFFFC9C9)),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: _logout,
+                    child: const Center(
+                      child: Text(
+                        '退出登录',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFFD64545),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

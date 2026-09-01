@@ -5,6 +5,7 @@ import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/isli_code_util.dart';
+import 'package:fmlink/widgets/delete_action_button.dart';
 
 class ScanHistoryScreen extends StatefulWidget {
   final String goodsId;
@@ -298,7 +299,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     }
 
     return ListView(
-      padding: EdgeInsets.only(bottom: _isManageMode ? 70 : 0),
+      padding: EdgeInsets.only(
+        bottom: _isManageMode ? 70 + MediaQuery.of(context).padding.bottom : 0,
+      ),
       children: [
         _buildHeader(),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
@@ -409,7 +412,8 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
   Widget _buildBottomToolbar() {
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom,
+      // 背景块紧贴屏幕底部，底部安全区高度只由内部 SafeArea 为内容让位
+      bottom: 0,
       left: 0,
       right: 0,
       child: Container(
@@ -448,13 +452,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                   child: Text('已选择 ${_selectedItems.length} 条', style: const TextStyle(fontSize: 12)),
                 ),
               ),
-              ElevatedButton(
-                onPressed: _selectedItems.isEmpty ? null : _deleteSelectedItems,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedItems.isEmpty ? Colors.grey : Colors.red,
-                  disabledBackgroundColor: Colors.grey,
-                ),
-                child: const Text('删除', style: TextStyle(color: Colors.white)),
+              DeleteActionButton(
+                enabled: _selectedItems.isNotEmpty,
+                onPressed: _deleteSelectedItems,
               ),
             ],
           ),

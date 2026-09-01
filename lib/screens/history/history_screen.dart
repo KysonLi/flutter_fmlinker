@@ -142,7 +142,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // 如果没有资源类型，显示默认图标
     if (icons.isEmpty) {
-      icons.add(const Icon(Icons.insert_drive_file, size: 16, color: Colors.grey));
+      icons.add(
+          const Icon(Icons.insert_drive_file, size: 16, color: Colors.grey));
     }
 
     return icons;
@@ -189,7 +190,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           height: 16,
         );
       default:
-        return const Icon(Icons.insert_drive_file, size: 16, color: Colors.grey);
+        return const Icon(Icons.insert_drive_file,
+            size: 16, color: Colors.grey);
     }
   }
 
@@ -245,10 +247,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
     return Scaffold(
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _isLoggedIn
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _isLoggedIn
               ? _buildLoggedInUI()
               : _buildNotLoggedInUI(),
     );
@@ -362,160 +363,169 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // 已登录状态的UI
   Widget _buildLoggedInUI() {
     return Column(
-        children: [
-          // 标题
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 30, 20, 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 左侧占位，保持标题居中
-                const SizedBox(width: 24),
-                // 标题文本
-                const Text(
-                  '关联的MPR出版物',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                // 右侧按钮
-                GestureDetector(
-                  onTap: () {
-                    // 跳转到关联出版物管理页面
-                    context.push('/link-management');
-                  },
-                  child: Image.asset(
-                    'assets/icons/history_more.png',
-                    width: 35,
-                    height: 35,
-                  ),
-                ),
-              ],
-            ),
+      children: [
+        // 标题
+        Padding(
+          // 顶部内边距叠加状态栏高度，避免标题被状态栏遮挡
+          padding: EdgeInsets.fromLTRB(
+            20,
+            MediaQuery.of(context).padding.top + 10,
+            20,
+            15,
           ),
-          // 关联卡片
-          Expanded(
-            child:
-                _linkHistory.isEmpty
-                    ? SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // 顶部标题
-                          const Text(
-                            '泛媒关联',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-
-                          // 中间图片
-                          SizedBox(
-                            width: 160,
-                            height: 160,
-                            child: Image.asset(
-                              'assets/images/link_unlogin.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          // Tips提示
-                          GestureDetector(
-                            onTap: _goToScanHelp,
-                            child: const Text(
-                              'Tips: 扫描链码添加关联 ?',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          // 查看支持扫链码的出版物按钮
-                          Center(
-                            child: SizedBox(
-                              width: 280, // 固定宽度，确保两个按钮宽度一致
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  // 进入出版页面
-                                  Provider.of<TabProvider>(
-                                    context,
-                                    listen: false,
-                                  ).switchTab(1);
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                    horizontal: 16,
-                                  ),
-                                  side: const BorderSide(color: Colors.blue),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      20,
-                                    ), // 半圆角
-                                  ),
-                                ),
-                                child: const Text(
-                                  '查看支持扫链码的出版物',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 14,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 去扫码按钮
-                          Center(
-                            child: SizedBox(
-                              width: 280, // 固定宽度，确保两个按钮宽度一致
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // 跳转到扫码页面
-                                  Provider.of<TabProvider>(
-                                    context,
-                                    listen: false,
-                                  ).switchTab(2);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                    horizontal: 16,
-                                  ),
-                                  backgroundColor: Colors.blue,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      20,
-                                    ), // 半圆角
-                                  ),
-                                ),
-                                child: const Text(
-                                  '去扫码',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20), // 添加底部间距，确保内容不会紧贴底部
-                        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 左侧占位，保持标题居中
+              const SizedBox(width: 24),
+              // 标题文本
+              const Text(
+                '关联的MPR出版物',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              // 右侧按钮
+              GestureDetector(
+                onTap: () {
+                  // 跳转到关联出版物管理页面
+                  context.push('/link-management');
+                },
+                child: Image.asset(
+                  'assets/icons/history_more.png',
+                  width: 35,
+                  height: 35,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 关联卡片
+        Expanded(
+          child: _linkHistory.isEmpty
+              ? SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 顶部标题
+                      const Text(
+                        '泛媒关联',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
-                    : Padding(
+                      const SizedBox(height: 40),
+
+                      // 中间图片
+                      SizedBox(
+                        width: 160,
+                        height: 160,
+                        child: Image.asset(
+                          'assets/images/link_unlogin.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Tips提示
+                      GestureDetector(
+                        onTap: _goToScanHelp,
+                        child: const Text(
+                          'Tips: 扫描链码添加关联 ?',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // 查看支持扫链码的出版物按钮
+                      Center(
+                        child: SizedBox(
+                          width: 280, // 固定宽度，确保两个按钮宽度一致
+                          child: OutlinedButton(
+                            onPressed: () {
+                              // 进入出版页面
+                              Provider.of<TabProvider>(
+                                context,
+                                listen: false,
+                              ).switchTab(1);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                              side: const BorderSide(color: Colors.blue),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  20,
+                                ), // 半圆角
+                              ),
+                            ),
+                            child: const Text(
+                              '查看支持扫链码的出版物',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 去扫码按钮
+                      Center(
+                        child: SizedBox(
+                          width: 280, // 固定宽度，确保两个按钮宽度一致
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // 跳转到扫码页面
+                              Provider.of<TabProvider>(
+                                context,
+                                listen: false,
+                              ).switchTab(2);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  20,
+                                ), // 半圆角
+                              ),
+                            ),
+                            child: const Text(
+                              '去扫码',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20), // 添加底部间距，确保内容不会紧贴底部
+                    ],
+                  ),
+                )
+              : Center(
+                  child: ConstrainedBox(
+                    // 默认撑满剩余空间，超过 580 时封顶（类似 CSS flex:1 + max-height:580）
+                    constraints: const BoxConstraints(maxHeight: 580),
+                    child: Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: CarouselSlider(
                         options: CarouselOptions(
@@ -528,173 +538,170 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           enlargeCenterPage: true,
                           scrollDirection: Axis.horizontal,
                         ),
-                        items:
-                            _linkHistory.map((item) {
-                              var linkSource = item['linkSource'] ?? {};
-                              var linkCode =
-                                  linkSource['sourceFragment'] != null &&
-                                          linkSource['sourceFragment']
-                                              .toString()
-                                              .isNotEmpty
-                                      ? linkSource['sourceFragment']
-                                      : linkSource['sourceIdentifier'];
-                              return Builder(
-                                builder: (BuildContext context) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ScanHistoryScreen(
-                                            goodsId: item['goodsId']?.toString() ?? '',
-                                            goodsName: item['goodsName'] ?? '',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      width:
-                                          MediaQuery.of(context).size.width * 0.8,
-                                      margin: const EdgeInsets.only(
-                                        left: 5,
-                                        right: 5,
-                                        bottom: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.grey.withOpacity(0.2),
-                                            spreadRadius: 2,
-                                            blurRadius: 5,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(15),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            // 上半部分
-                                            Expanded(
-                                              flex: 3,
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  // 出版物封面
-                                                  Stack(
-                                                    alignment: Alignment.center,
-                                                    children: [
-                                                      BookCover(
-                                                        imageUrl:
-                                                            item['goodsImage'] ??
-                                                                '',
-                                                        width: 100,
-                                                        height: 140,
-                                                        showShadow: false,
-                                                      ),
-                                                      // 状态图标
-                                                      if (item.containsKey(
-                                                        'goodsStatus',
-                                                      ))
-                                                        _buildStatusIcon(
-                                                          item['goodsStatus'],
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  // 出版物名称
-                                                  Text(
-                                                    item['goodsName'] ?? '',
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.black,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                    maxLines: 3,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  // 链码数 | 资源数
-                                                  Text(
-                                                    '链码: ${item['sourceCount'] ?? 0} | 资源: ${item['resourceCount'] ?? 0}',
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  // 资源类型icons
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.center,
-                                                    children: [
-                                                      // 根据resourceForamt显示对应的图标
-                                                      ..._buildResourceIcons(
-                                                        item['resourceForamt'] ??
-                                                            [],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            // 下半部分
-                                            Expanded(
-                                              flex: 1,
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const SizedBox(height: 10),
-                                                  const Divider(),
-                                                  const SizedBox(height: 10),
-                                                  // 已扫码数
-                                                  Text(
-                                                    '已扫码: ${item['linkSourceCount'] ?? 0}',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  // 上传扫码pageNo | 上次的关联编码
-                                                  Text(
-                                                    '上次扫链码: P${linkSource['bookPageNo'] ?? '未知'} | ${linkCode ?? '未知'}',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                        items: _linkHistory.map((item) {
+                          var linkSource = item['linkSource'] ?? {};
+                          var linkCode = linkSource['sourceFragment'] != null &&
+                                  linkSource['sourceFragment']
+                                      .toString()
+                                      .isNotEmpty
+                              ? linkSource['sourceFragment']
+                              : linkSource['sourceIdentifier'];
+                          return Builder(
+                            builder: (BuildContext context) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ScanHistoryScreen(
+                                        goodsId:
+                                            item['goodsId']?.toString() ?? '',
+                                        goodsName: item['goodsName'] ?? '',
                                       ),
                                     ),
                                   );
                                 },
+                                child: Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.8,
+                                  margin: const EdgeInsets.only(
+                                    left: 5,
+                                    right: 5,
+                                    bottom: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        spreadRadius: 2,
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(15),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        // 上半部分：封面 / 名称 / 数量 / 资源图标
+                                        Expanded(
+                                          flex: 3,
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // 出版物封面
+                                              Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  BookCover(
+                                                    imageUrl:
+                                                        item['goodsImage'] ??
+                                                            '',
+                                                    width: 100,
+                                                    height: 140,
+                                                    showShadow: false,
+                                                  ),
+                                                  // 状态图标
+                                                  if (item.containsKey(
+                                                    'goodsStatus',
+                                                  ))
+                                                    _buildStatusIcon(
+                                                      item['goodsStatus'],
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // 出版物名称
+                                              Text(
+                                                item['goodsName'] ?? '',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.black,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 3,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // 链码数 | 资源数
+                                              Text(
+                                                '链码: ${item['sourceCount'] ?? 0} | 资源: ${item['resourceCount'] ?? 0}',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // 资源类型icons
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  // 根据resourceForamt显示对应的图标
+                                                  ..._buildResourceIcons(
+                                                    item['resourceForamt'] ??
+                                                        [],
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // 下半部分：分隔线与扫码信息
+                                        Expanded(
+                                          flex: 1,
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const SizedBox(height: 10),
+                                              const Divider(),
+                                              const SizedBox(height: 10),
+                                              // 已扫码数
+                                              Text(
+                                                '已扫码: ${item['linkSourceCount'] ?? 0}',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // 上传扫码pageNo | 上次的关联编码
+                                              Text(
+                                                '上次扫链码: P${linkSource['bookPageNo'] ?? '未知'} | ${linkCode ?? '未知'}',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
-                            }).toList(),
+                            },
+                          );
+                        }).toList(),
                       ),
                     ),
-          ),
-        ],
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }

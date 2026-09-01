@@ -4,6 +4,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/widgets/delete_action_button.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -341,7 +342,9 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
                             left: 12,
                             right: 12,
                             top: 12,
-                            bottom: _isManageMode ? 70 : 12,
+                            bottom: _isManageMode
+                                ? 70 + MediaQuery.of(context).padding.bottom
+                                : 12,
                           ),
                           children: [
                             Wrap(
@@ -428,7 +431,8 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
                 // 底部工具栏
                 if (_isManageMode)
                   Positioned(
-                    bottom: MediaQuery.of(context).padding.bottom,
+                    // 背景块紧贴屏幕底部，底部安全区高度只由内部 SafeArea 为内容让位
+                    bottom: 0,
                     left: 0,
                     right: 0,
                     child: Container(
@@ -470,13 +474,9 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
                               ),
                             ),
                             // 删除按钮
-                            ElevatedButton(
-                              onPressed: _selectedItems.isEmpty ? null : _deleteSelectedItems,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _selectedItems.isEmpty ? Colors.grey : Colors.red,
-                                disabledBackgroundColor: Colors.grey,
-                              ),
-                              child: const Text('删除', style: TextStyle(color: Colors.white)),
+                            DeleteActionButton(
+                              enabled: _selectedItems.isNotEmpty,
+                              onPressed: _deleteSelectedItems,
                             ),
                           ],
                         ),

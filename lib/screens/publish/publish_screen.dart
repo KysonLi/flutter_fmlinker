@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/common/constants.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
@@ -90,10 +89,6 @@ class _PublishScreenState extends State<PublishScreen> {
 
   Future<void> _loadPublications() async {
     try {
-      if (_publicationPage == 1 && _publications.isEmpty) {
-        EasyLoading.show(status: '加载中...');
-      }
-
       setState(() {
         _hasErrorPublications = false;
         _errorMessagePublications = '';
@@ -144,10 +139,6 @@ class _PublishScreenState extends State<PublishScreen> {
         _errorMessagePublications = '加载数据失败，请稍后重试';
       });
     } finally {
-      if (_publicationPage == 1) {
-        EasyLoading.dismiss();
-      }
-
       setState(() {
         _isLoadingPublications = false;
         _isLoadingMorePublications = false;
@@ -157,10 +148,6 @@ class _PublishScreenState extends State<PublishScreen> {
 
   Future<void> _loadPublishers() async {
     try {
-      if (_publisherPage == 1 && _publishers.isEmpty) {
-        EasyLoading.show(status: '加载中...');
-      }
-
       setState(() {
         _hasErrorPublishers = false;
         _errorMessagePublishers = '';
@@ -214,10 +201,6 @@ class _PublishScreenState extends State<PublishScreen> {
         _errorMessagePublishers = '加载数据失败，请稍后重试';
       });
     } finally {
-      if (_publisherPage == 1) {
-        EasyLoading.dismiss();
-      }
-
       setState(() {
         _isLoadingPublishers = false;
         _isLoadingMorePublishers = false;
@@ -308,28 +291,33 @@ class _PublishScreenState extends State<PublishScreen> {
                         },
                         child: Container(
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: _showPublications
-                                    ? Colors.blue
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                            ),
-                          ),
                           padding: const EdgeInsets.symmetric(
                             vertical: 8,
                           ), // 缩小控件大小
-                          child: Text(
-                            '出版物',
-                            style: TextStyle(
-                              color:
-                                  _showPublications ? Colors.blue : Colors.grey,
-                              fontWeight: _showPublications
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: 13, // 缩小字体大小
+                          child: Container(
+                            // 蓝色下划线只包住文字宽度，而非整行
+                            padding: const EdgeInsets.symmetric(horizontal: 12 ,vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: _showPublications
+                                      ? Colors.blue
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              '出版物',
+                              style: TextStyle(
+                                color: _showPublications
+                                    ? Colors.blue
+                                    : Colors.grey,
+                                fontWeight: _showPublications
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 13, // 缩小字体大小
+                              ),
                             ),
                           ),
                         ),
@@ -352,29 +340,33 @@ class _PublishScreenState extends State<PublishScreen> {
                         },
                         child: Container(
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: !_showPublications
-                                    ? Colors.blue
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                            ),
-                          ),
                           padding: const EdgeInsets.symmetric(
                             vertical: 8,
                           ), // 缩小控件大小
-                          child: Text(
-                            '出版者',
-                            style: TextStyle(
-                              color: !_showPublications
-                                  ? Colors.blue
-                                  : Colors.grey,
-                              fontWeight: !_showPublications
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: 14, // 缩小字体大小
+                          child: Container(
+                            // 蓝色下划线只包住文字宽度，而非整行
+                            padding: const EdgeInsets.symmetric(horizontal: 12 ,vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: !_showPublications
+                                      ? Colors.blue
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              '出版者',
+                              style: TextStyle(
+                                color: !_showPublications
+                                    ? Colors.blue
+                                    : Colors.grey,
+                                fontWeight: !_showPublications
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 14, // 缩小字体大小
+                              ),
                             ),
                           ),
                         ),
@@ -483,38 +475,41 @@ class _PublishScreenState extends State<PublishScreen> {
                                   ],
                                 ),
                               )
-                            : _isCardLayout
-                                ? SingleChildScrollView(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Wrap(
-                                      alignment: WrapAlignment.start,
-                                      spacing: 15,
-                                      runSpacing: 15,
-                                      children:
-                                          _publications.map((publication) {
-                                        return SizedBox(
-                                          width: (MediaQuery.of(
-                                                    context,
-                                                  ).size.width -
-                                                  24 -
-                                                  30) /
-                                              3,
-                                          child: _buildPublicationCard(
+                            : _isLoadingPublications && _publications.isEmpty
+                                ? _buildPublicationSkeleton()
+                                : _isCardLayout
+                                    ? SingleChildScrollView(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Wrap(
+                                          alignment: WrapAlignment.start,
+                                          spacing: 15,
+                                          runSpacing: 15,
+                                          children:
+                                              _publications.map((publication) {
+                                            return SizedBox(
+                                              width: (MediaQuery.of(
+                                                        context,
+                                                      ).size.width -
+                                                      24 -
+                                                      30) /
+                                                  3,
+                                              child: _buildPublicationCard(
+                                                publication,
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        itemCount: _publications.length,
+                                        itemBuilder: (context, index) {
+                                          final publication =
+                                              _publications[index];
+                                          return _buildPublicationListTile(
                                             publication,
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    itemCount: _publications.length,
-                                    itemBuilder: (context, index) {
-                                      final publication = _publications[index];
-                                      return _buildPublicationListTile(
-                                        publication,
-                                      );
-                                    },
-                                  ),
+                                          );
+                                        },
+                                      ),
                       ))
                 : (_hasErrorPublishers
                     ? Center(
@@ -566,31 +561,154 @@ class _PublishScreenState extends State<PublishScreen> {
                                   ],
                                 ),
                               )
-                            : SingleChildScrollView(
-                                padding: const EdgeInsets.all(12),
-                                child: Wrap(
-                                  alignment: WrapAlignment.spaceBetween,
-                                  spacing: 10,
-                                  runSpacing: 15,
-                                  children: _publishers.map((publisher) {
-                                    return SizedBox(
-                                      width: (MediaQuery.of(
-                                                context,
-                                              ).size.width -
-                                              24 -
-                                              10) /
-                                          2,
-                                      child: _buildPublisherCard(
-                                        publisher,
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
+                            : _isLoadingPublishers && _publishers.isEmpty
+                                ? _buildPublisherSkeleton()
+                                : SingleChildScrollView(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      spacing: 10,
+                                      runSpacing: 15,
+                                      children: _publishers.map((publisher) {
+                                        return SizedBox(
+                                          width: (MediaQuery.of(
+                                                    context,
+                                                  ).size.width -
+                                                  24 -
+                                                  10) /
+                                              2,
+                                          child: _buildPublisherCard(
+                                            publisher,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
                       )),
           ),
         ],
       ),
+    );
+  }
+
+  // 出版物加载骨架：三列灰色占位卡片，与真实卡片布局一致
+  Widget _buildPublicationSkeleton() {
+    final double itemWidth = (MediaQuery.of(context).size.width - 24 - 30) / 3;
+    const Color blockColor = Color(0xFFF0F1F3);
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(12),
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        spacing: 15,
+        runSpacing: 15,
+        children: List.generate(9, (_) {
+          return SizedBox(
+            width: itemWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 封面占位
+                Container(
+                  width: itemWidth,
+                  height: itemWidth * 130 / 90,
+                  decoration: BoxDecoration(
+                    color: blockColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // 标题占位
+                Container(
+                  width: itemWidth * 0.8,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: blockColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // 链码数占位
+                Container(
+                  width: itemWidth * 0.5,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: blockColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // 出版者加载骨架：两列灰色占位卡片，按可用高度动态生成卡片数量以占满全屏
+  Widget _buildPublisherSkeleton() {
+    final double itemWidth = (MediaQuery.of(context).size.width - 24 - 10) / 2;
+    const Color blockColor = Color(0xFFF0F1F3);
+    // 单行高度估算：内边距(8+8) + logo 45 + 间距(8+6) + 名称 11 + 数量 9 + 行间距 15
+    const double rowHeight = 8 + 45 + 8 + 11 + 6 + 9 + 8 + 15;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final int rows = (constraints.maxHeight / rowHeight).ceil();
+        final int itemCount = rows * 2;
+        return SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 10,
+            runSpacing: 15,
+            children: List.generate(itemCount, (_) {
+              return Container(
+                width: itemWidth,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // logo 占位
+                    Container(
+                      width: double.infinity,
+                      height: 45,
+                      decoration: BoxDecoration(
+                        color: blockColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // 名称占位
+                    Container(
+                      width: itemWidth * 0.6,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: blockColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // 出版物数占位
+                    Container(
+                      width: itemWidth * 0.4,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: blockColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 

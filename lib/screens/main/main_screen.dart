@@ -113,7 +113,8 @@ class MainScreen extends StatelessWidget {
         children: [
           Image.asset(
             selected ? activeIcon : icon,
-            width: 24,
+            // 只约束高度，宽度按源图宽高比自适应：
+            // 关联图标源图是 102x84（宽>高），若同时约束 24x24 + contain 会被等比缩小，显得比方形图标小
             height: 24,
             fit: BoxFit.contain,
           ),
