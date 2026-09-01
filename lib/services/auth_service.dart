@@ -36,7 +36,7 @@ class AuthService {
   // 账号密码登录
   Future<Map<String, dynamic>> loginWithPassword(String phoneNumber, String password, String deviceId, String deviceName) async {
     Map<String, dynamic> result = await _apiService.post('/chain-server/api/link_code_system/login/v2/login_with_account', data: {
-      'phoneNumber': phoneNumber,
+      'account': phoneNumber,
       'password': password,
       'deviceId': deviceId,
       'deviceName': deviceName,
