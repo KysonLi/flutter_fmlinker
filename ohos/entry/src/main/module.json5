@@ -8,6 +8,8 @@
     deliveryWithInstall: true,
     installationFree: false,
     pages: "$profile:main_pages",
+    // 微信 OpenSDK：weixin 用于判断微信是否安装，wxopensdk 用于跳转微信
+    querySchemes: ["weixin", "wxopensdk"],
     abilities: [
       {
         name: "EntryAbility",
@@ -22,6 +24,11 @@
           {
             entities: ["entity.system.home"],
             actions: ["action.system.home"],
+          },
+          {
+            // 微信授权回调：微信通过该 action 拉起本应用并回传登录结果
+            entities: ["entity.system.browsable"],
+            actions: ["wxentity.action.open"],
           },
         ],
       },
