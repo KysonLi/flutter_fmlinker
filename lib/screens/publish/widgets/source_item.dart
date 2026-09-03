@@ -11,6 +11,7 @@ class SourceItem extends StatelessWidget {
   final dynamic free;
   final dynamic price;
   final dynamic pay;
+  final VoidCallback? onTap;
 
   const SourceItem({
     super.key,
@@ -23,6 +24,7 @@ class SourceItem extends StatelessWidget {
     this.free,
     this.price,
     this.pay,
+    this.onTap,
   });
 
   String _getSourceName() {
@@ -52,7 +54,7 @@ class SourceItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
         border: Border(
@@ -69,6 +71,14 @@ class SourceItem extends StatelessWidget {
         ],
       ),
     );
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: row,
+      );
+    }
+    return row;
   }
 
   Widget _buildSerialNumber() {

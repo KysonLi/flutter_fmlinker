@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/screens/publish/update_history_dialog.dart';
 
 class PublicationDetailScreen extends StatefulWidget {
@@ -933,7 +934,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       }
     }
 
-    return Padding(
+    final Widget row = Padding(
       padding: const EdgeInsets.fromLTRB(25, 5, 0, 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -982,6 +983,26 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
           ),
         ],
       ),
+    );
+    return GestureDetector(
+      onTap: () => _handleSourceTap(source),
+      behavior: HitTestBehavior.opaque,
+      child: row,
+    );
+  }
+
+  /// 点击单个链码源 → 统一入口进入资源模块
+  /// （单资源直进播放页，多资源进列表页，需购买则进购买页）
+  void _handleSourceTap(dynamic source) {
+    final String? sourceIdentifier = source['sourceIdentifier']?.toString();
+    if (sourceIdentifier == null || sourceIdentifier.isEmpty) {
+      EasyLoading.showToast('暂无链码信息');
+      return;
+    }
+    ResourceEntry.openFromCode(
+      context,
+      isliCode: sourceIdentifier.replaceAll('-', ''),
+      fromScan: false,
     );
   }
 

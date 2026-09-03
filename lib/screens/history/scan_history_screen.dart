@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/isli_code_util.dart';
@@ -155,6 +156,20 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       }
       _isSelectAll = _selectedItems.length == _scanHistory.length && _scanHistory.isNotEmpty;
     });
+  }
+
+  /// 普通模式下点击记录 → 以 sourceIdentifier 进入资源模块
+  void _handleItemTap(dynamic item) {
+    final String? sourceIdentifier = item['sourceIdentifier']?.toString();
+    if (sourceIdentifier == null || sourceIdentifier.isEmpty) {
+      EasyLoading.showToast('暂无链码信息');
+      return;
+    }
+    ResourceEntry.openFromCode(
+      context,
+      isliCode: sourceIdentifier.replaceAll('-', ''),
+      fromScan: false,
+    );
   }
 
   void _toggleSelectAll() {
@@ -404,7 +419,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           isFree: item['free'] == true,
           isSelectable: _isManageMode,
           isSelected: isSelected,
-          onTap: _isManageMode && itemId != null ? () => _toggleItemSelection(itemId) : null,
+          onTap: _isManageMode
+              ? (itemId != null ? () => _toggleItemSelection(itemId) : null)
+              : () => _handleItemTap(item),
         );
       }).toList(),
     );
@@ -526,7 +543,7 @@ class ScanHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
         border: Border(
@@ -601,5 +618,13 @@ class ScanHistoryItem extends StatelessWidget {
         ],
       ),
     );
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: row,
+      );
+    }
+    return row;
   }
 }

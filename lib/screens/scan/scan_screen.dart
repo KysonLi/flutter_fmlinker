@@ -8,8 +8,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:fmlink/services/link_service.dart';
-import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/resource/resource_entry.dart';
+import 'package:fmlink/utils/chain_code_parser.dart';
 
 /// 扫码页
 ///
@@ -22,8 +22,11 @@ import 'package:fmlink/services/user_service.dart';
 /// 点击"标志码"切换为图标码扫码：扫码框变为正方形，解码器只做图标码解码。
 /// 点击"相册"：暂停相机输入 → 选图 → 先线码后图标码解析 → 解析完成恢复相机。
 ///
-/// 扫到 ISLI 码后调用 LinkService.getTargetsWithIsliCodeV2 解析关联资源，
-/// 并跳转 /scan/result 展示。
+/// 扫码分流（无弹窗）：
+/// - 链码（1D 线码）：parseChainCode 分流——ISBN/ISSN→标志码详情页、
+///   ISON→提示不支持、其余→ResourceEntry 统一入口。
+/// - 标志码（2D 图标码）：直接进入标志码版权详情页。
+/// - 离场停相机，返回后自动重启相机。
 class ScanScreen extends StatefulWidget {
   const ScanScreen({Key? key}) : super(key: key);
 
@@ -36,9 +39,6 @@ enum _ScanMode { line, icon }
 
 class _ScanScreenState extends State<ScanScreen>
     with SingleTickerProviderStateMixin {
-  final LinkService _linkService = LinkService();
-  final UserService _userService = UserService();
-
   late final MobileScannerController _controller;
   late final AnimationController _lineController;
 
@@ -59,8 +59,8 @@ class _ScanScreenState extends State<ScanScreen>
   int _lastValueTime = 0;
 
   /// ISLI 特征点（图像坐标，线码 2 点 / 图标码 6 点）与图像尺寸，用于黄点渲染
-  List<Offset> _featurePoints = [];
-  Size _imageSize = Size.zero;
+  final List<Offset> _featurePoints = [];
+  final Size _imageSize = Size.zero;
 
   @override
   void initState() {
@@ -168,23 +168,18 @@ class _ScanScreenState extends State<ScanScreen>
     List<Offset> featurePoints = const [],
     Size imageSize = Size.zero,
   }) async {
-    // 1) native ISLI 解码器直接产出（线码/图标码）：渲染特征点 + 弹窗确认
+    // 1) native ISLI 解码器直接产出（线码/图标码）：走新分流
     if (format == BarcodeFormat.isli || format == BarcodeFormat.isli_line_code) {
-      await _resolveIsli(
-        value,
-        format: format,
-        featurePoints: featurePoints,
-        imageSize: imageSize,
-      );
+      _handleIsli(value, format);
       return;
     }
 
-    // 2) 普通码内容是 ISLI 码（纯数字 10~20 位，可含连字符/空格）
+    // 2) 普通码内容是 ISLI 码（纯数字 10~20 位，可含连字符/空格）→ 按线码处理
     final String digits = value.replaceAll(RegExp(r'[^0-9]'), '');
     if (RegExp(r'^[0-9\- ]+$').hasMatch(value) &&
         digits.length >= 10 &&
         digits.length <= 20) {
-      await _resolveIsli(digits, format: BarcodeFormat.unknown);
+      _handleIsli(digits, BarcodeFormat.isli_line_code);
       return;
     }
 
@@ -198,6 +193,91 @@ class _ScanScreenState extends State<ScanScreen>
     // 4) 其余内容仅提示
     final String tip = value.length > 30 ? '${value.substring(0, 30)}…' : value;
     EasyLoading.showToast('无法识别的内容：$tip');
+  }
+
+  /// ISLI 码分流（无弹窗）：
+  /// - 图标码（2D）→ 标志码版权详情页
+  /// - 线码（1D）→ parseChainCode 分流：
+  ///   ISBN/ISSN → 标志码版权详情页（markCode 作 mprCode）
+  ///   ISON → 提示不支持
+  ///   其余 → ResourceEntry 统一入口
+  void _handleIsli(String code, BarcodeFormat format) {
+    if (_isHandling) return;
+    _isHandling = true;
+
+    // 滴的一声提示音
+    try {
+      _controller.playScanSound();
+    } catch (_) {
+      SystemSound.play(SystemSoundType.click);
+    }
+
+    // 图标码（2D 标志码）→ 直接进标志码详情
+    if (format == BarcodeFormat.isli) {
+      _stopCameraAndNavigate(() {
+        ResourceEntry.openIsliCopyright(context, code);
+      });
+      return;
+    }
+
+    // 线码（1D 链码）→ parseChainCode 分流
+    final ChainCodeInfo info = parseChainCode(code);
+    if (info.isMarkStyle) {
+      // ISBN / ISSN → 标志码版权详情页
+      _stopCameraAndNavigate(() {
+        ResourceEntry.openIsliCopyright(context, info.markCode);
+      });
+    } else if (info.isIson) {
+      EasyLoading.showToast('暂不支持该码制');
+      _isHandling = false;
+    } else {
+      // 普通链码 → 统一入口
+      _stopCameraAndNavigate(() {
+        ResourceEntry.openFromCode(context,
+            isliCode: info.fullCode, fromScan: true);
+      });
+    }
+  }
+
+  /// 停相机 → 执行跳转 → 返回后自动重启相机
+  Future<void> _stopCameraAndNavigate(VoidCallback navigate) async {
+    try {
+      await _controller.stop();
+    } catch (_) {}
+    if (!mounted) {
+      _isHandling = false;
+      return;
+    }
+    navigate();
+    // 等待跳转返回后重启相机（push 是异步的，但这里用 then 回调）
+    // 注：openFromCode/openIsliCopyright 内部用 context.push，
+    // 返回该页后通过 RouteAware/widgetsBinding 检测恢复。
+    // 简单方案：延迟检测 mounted 后重启。
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    // 持续等待直到用户返回（页面重新可见时重启）
+    _resumeWhenVisible();
+  }
+
+  /// 页面重新可见时重启相机
+  void _resumeWhenVisible() {
+    // 使用 WidgetsBinding.addPostFrameCallback 检测；
+    // 若用户已返回（mounted 且 Navigator.canPop 为 false 即当前页）则重启。
+    if (!mounted) {
+      _isHandling = false;
+      return;
+    }
+    // 通过 ModalRoute 了解是否还在当前页栈顶
+    final ModalRoute? route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) {
+      // 还在跳转中，稍后重试
+      Future<void>.delayed(const Duration(milliseconds: 500), _resumeWhenVisible);
+      return;
+    }
+    // 已返回当前页，重启相机
+    _isHandling = false;
+    try {
+      _controller.start();
+    } catch (_) {}
   }
 
   Future<void> _confirmOpenUrl(String url, String host) async {
@@ -225,129 +305,7 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  /// 解析成功处理：暂停视频输入 → 滴声 → 弹窗展示解析结果 → 用户关闭后继续扫码
-  /// （点"查看详情"才走网络解析并跳转结果页）
-  Future<void> _resolveIsli(
-    String isliCode, {
-    BarcodeFormat format = BarcodeFormat.unknown,
-    List<Offset> featurePoints = const [],
-    Size imageSize = Size.zero,
-  }) async {
-    if (_isHandling) return;
-    _isHandling = true;
-
-    // 渲染特征点黄点
-    if (featurePoints.isNotEmpty && mounted) {
-      setState(() {
-        _featurePoints = featurePoints;
-        _imageSize = imageSize;
-      });
-    }
-
-    // 1) 暂停相机（非关闭）：预览停留在最后一帧图像上
-    try {
-      await _controller.pause();
-    } catch (_) {}
-
-    // 2) 滴的一声提示音（原生系统音效；Android 未实现时静默忽略）
-    try {
-      await _controller.playScanSound();
-    } catch (_) {
-      SystemSound.play(SystemSoundType.click);
-    }
-
-    if (!mounted) {
-      _isHandling = false;
-      return;
-    }
-
-    // 3) 弹窗提示解析出的结果
-    final String typeName = format == BarcodeFormat.isli
-        ? '标志码'
-        : format == BarcodeFormat.isli_line_code
-            ? '链码'
-            : 'ISLI 码';
-    final String? action = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('识别成功', style: TextStyle(fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('类型：$typeName', style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            Text('码值：$isliCode', style: const TextStyle(fontSize: 13)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop('scan'),
-            child: const Text('继续扫码'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop('detail'),
-            child: const Text('查看详情'),
-          ),
-        ],
-      ),
-    );
-
-    // 4) 关闭弹窗后清空亮点
-    if (mounted) {
-      setState(() {
-        _featurePoints = [];
-        _imageSize = Size.zero;
-      });
-    }
-    if (!mounted) {
-      _isHandling = false;
-      return;
-    }
-
-    if (action == 'detail') {
-      await _loadAndPushResult(isliCode);
-      _isHandling = false;
-      return;
-    }
-
-    // 5) 用户关闭后继续开启视频输入
-    try {
-      await _controller.start();
-    } catch (_) {}
-    _isHandling = false;
-  }
-
-  /// 网络解析 ISLI 码并跳转结果页（"查看详情"入口）
-  Future<void> _loadAndPushResult(String isliCode) async {
-    if (!mounted) return;
-    EasyLoading.show(status: '识别中...');
-    try {
-      // 冷启动后 Constants.token 为空，先从本地存储恢复
-      await _userService.refreshToken();
-
-      final Map<String, dynamic> result =
-          await _linkService.getTargetsWithIsliCodeV2(isliCode);
-      EasyLoading.dismiss();
-
-      if (!mounted) return;
-      if (result['status'] == true) {
-        await _pauseCameraAndPush('/scan/result', extra: {
-          'isliCode': isliCode,
-          'data': result['data'],
-        });
-      } else {
-        EasyLoading.showError(result['msg'] ?? '未找到关联资源');
-      }
-    } catch (e) {
-      debugPrint('ISLI码解析失败: $e');
-      EasyLoading.dismiss();
-      EasyLoading.showError('识别失败，请重试');
-    }
-  }
-
-  /// 停相机 → 跳转 → 返回后重启相机（扫码页是 tab 页，跳转期间保持挂载）
+  /// 停相机 → 跳转 → 返回后重启相机（URL/相册等场景）
   Future<void> _pauseCameraAndPush(String location, {Object? extra}) async {
     try {
       await _controller.stop();

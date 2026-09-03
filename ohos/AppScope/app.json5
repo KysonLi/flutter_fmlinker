@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.isli.fmlink",
+    "bundleName": "com.mpr.chaincode",
     "vendor": "example",
     "versionCode": 1,
     "versionName": "1.0.0",

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `fmlink` (泛媒关联 / "Pan-Media Link") is a Flutter client app for the **ISLI** (International Standard Link Identifier) ecosystem. Users scan ISLI codes (typically printed in books) to link physical publications to digital resources — text, images, audio, video, 3D models, and HTML. The app also supports publishing publications, managing link/scan history, discovery, and account management.
 
-The app targets Android, iOS, web, Windows, macOS, Linux, and **HarmonyOS (`ohos/`)**.
+The app targets Android, iOS, and **HarmonyOS (`ohos/`)**.
 
 ## Common Commands
 

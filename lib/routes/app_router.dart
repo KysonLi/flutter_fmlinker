@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/screens/auth/login_screen.dart';
@@ -9,6 +8,11 @@ import 'package:fmlink/screens/publish/publication_desc_screen.dart';
 import 'package:fmlink/screens/publish/publisher_detail_screen.dart';
 import 'package:fmlink/screens/publish/publication_source_list_screen.dart';
 import 'package:fmlink/screens/resource/resource_list_screen.dart';
+import 'package:fmlink/screens/resource/resource_play_screen.dart';
+import 'package:fmlink/screens/resource/resource_model3d_screen.dart';
+import 'package:fmlink/screens/resource/resource_source_detail_screen.dart';
+import 'package:fmlink/screens/isli/isli_copyright_screen.dart';
+import 'package:fmlink/screens/purchase/purchase_screen.dart';
 import 'package:fmlink/screens/history/history_screen.dart';
 import 'package:fmlink/screens/history/link_management_screen.dart';
 import 'package:fmlink/screens/profile/profile_screen.dart';
@@ -86,8 +90,47 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/resource',
-        builder: (context, state) => const ResourceListScreen(),
+        path: '/resource/list',
+        builder: (context, state) {
+          final data =
+              state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
+          return ResourceListScreen(extra: data);
+        },
+      ),
+      GoRoute(
+        path: '/resource/play',
+        builder: (context, state) {
+          final data =
+              state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
+          return ResourcePlayScreen(extra: data);
+        },
+      ),
+      GoRoute(
+        path: '/resource/source-detail',
+        builder: (context, state) {
+          final data =
+              state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
+          return ResourceSourceDetailScreen(extra: data);
+        },
+      ),
+      GoRoute(
+        path: '/resource/model3d',
+        builder: (context, state) => const ResourceModel3dScreen(),
+      ),
+      GoRoute(
+        path: '/isli/copyright',
+        builder: (context, state) {
+          final mprCode = state.uri.queryParameters['mprCode'] ?? '';
+          return IsliCopyrightScreen(mprCode: mprCode);
+        },
+      ),
+      GoRoute(
+        path: '/purchase',
+        builder: (context, state) {
+          // 购买页参数与小程序购买页 onLoad options 一致，由入口（源/资源页）以 extra 传入
+          final data = state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
+          return PurchaseScreen(params: data);
+        },
       ),
       GoRoute(
         path: '/history',

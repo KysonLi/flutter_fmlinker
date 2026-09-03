@@ -5,6 +5,7 @@ import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/screens/publish/widgets/book_info_card.dart';
 import 'package:fmlink/screens/publish/widgets/chapter_header.dart';
 import 'package:fmlink/screens/publish/widgets/source_item.dart';
@@ -155,6 +156,20 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
     });
   }
 
+  /// 点击链码条目 → 以 sourceIdentifier 进入资源模块
+  void _handleSourceTap(dynamic source) {
+    final String? sourceIdentifier = source['sourceIdentifier']?.toString();
+    if (sourceIdentifier == null || sourceIdentifier.isEmpty) {
+      EasyLoading.showToast('暂无链码信息');
+      return;
+    }
+    ResourceEntry.openFromCode(
+      context,
+      isliCode: sourceIdentifier.replaceAll('-', ''),
+      fromScan: false,
+    );
+  }
+
   void _onRefresh() {
     _loadSources(isRefresh: true);
   }
@@ -263,6 +278,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
                 free: source['free'],
                 price: source['price'],
                 pay: source['pay'],
+                onTap: () => _handleSourceTap(source),
               );
             }),
           ],
