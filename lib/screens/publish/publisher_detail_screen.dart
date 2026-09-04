@@ -282,7 +282,7 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
               ),
               backgroundColor:
                   opacity > 0
-                      ? Colors.white.withOpacity(opacity)
+                      ? Colors.white.withValues(alpha: opacity)
                       : Colors.transparent,
               centerTitle: true,
               leading: IconButton(

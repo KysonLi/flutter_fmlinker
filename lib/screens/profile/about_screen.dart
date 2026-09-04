@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AboutScreen extends StatelessWidget {
-  const AboutScreen({Key? key}) : super(key: key);
+  const AboutScreen({super.key});
 
   final String _currentVersion = '1.0.0';
   final String _latestVersion = '暂无新版';

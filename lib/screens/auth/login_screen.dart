@@ -258,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375，1.0~1.2），Android/鸿蒙恒为 1.0
-    final double s = MediaQuery.textScaleFactorOf(context);
+    final double s = MediaQuery.textScalerOf(context).scale(1.0);
     return Scaffold(
       appBar: null, // 不显示导航栏
       backgroundColor: Colors.white, // 背景为纯白色
@@ -624,7 +624,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2376E3).withOpacity(0.3),
+                              color: const Color(0xFF2376E3).withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

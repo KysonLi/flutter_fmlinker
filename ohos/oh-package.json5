@@ -24,6 +24,7 @@
     "@ohos/flutter_module": "file:./entry",
     "@ohos/flutter_ohos": "file:./har/flutter.har",
     "imagecropper_ohos": "file:./har/imagecropper_ohos.har",
-    "mobile_scanner": "file:./har/mobile_scanner.har"
+    "mobile_scanner": "file:./har/mobile_scanner.har",
+    "fluwx": "file:./har/fluwx.har"
   }
 }

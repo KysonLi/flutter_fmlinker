@@ -563,7 +563,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
           color: Colors.white,
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 3,
               offset: const Offset(0, -1),
             ),

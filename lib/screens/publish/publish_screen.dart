@@ -774,7 +774,7 @@ class _PublishScreenState extends State<PublishScreen> {
           boxShadow: [
             // 柔和弥散阴影：大模糊半径、小偏移、低透明度，避免 Card 的硬边阴影
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 14,
               offset: const Offset(0, 3),
             ),

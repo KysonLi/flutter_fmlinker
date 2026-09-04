@@ -10,13 +10,13 @@ class CoverImage extends StatelessWidget {
   final Widget placeholder;
 
   const CoverImage({
-    Key? key,
+    super.key,
     required this.urls,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
     required this.placeholder,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

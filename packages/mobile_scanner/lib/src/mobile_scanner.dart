@@ -342,6 +342,7 @@ class _MobileScannerState extends State<MobileScanner>
     switch (state) {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
         return;
       case AppLifecycleState.resumed:
         unawaited(controller.start());

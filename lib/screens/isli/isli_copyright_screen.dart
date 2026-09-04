@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -42,8 +40,7 @@ class IsliCopyrightScreen extends StatefulWidget {
   /// 标志码（MPR 编码）
   final String mprCode;
 
-  const IsliCopyrightScreen({Key? key, required this.mprCode})
-      : super(key: key);
+  const IsliCopyrightScreen({super.key, required this.mprCode});
 
   @override
   State<IsliCopyrightScreen> createState() => _IsliCopyrightScreenState();

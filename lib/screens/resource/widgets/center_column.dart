@@ -7,11 +7,11 @@ class CenterColumn extends StatelessWidget {
   final Widget? button;
 
   const CenterColumn({
-    Key? key,
+    super.key,
     required this.icon,
     required this.text,
     this.button,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

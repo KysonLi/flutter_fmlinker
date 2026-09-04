@@ -9,10 +9,10 @@ class ImageView extends StatelessWidget {
   final bool hasAddress;
 
   const ImageView({
-    Key? key,
+    super.key,
     required this.url,
     required this.hasAddress,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

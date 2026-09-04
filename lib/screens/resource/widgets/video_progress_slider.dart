@@ -7,10 +7,10 @@ class VideoProgressSlider extends StatefulWidget {
   final void Function(Duration) onSeek;
 
   const VideoProgressSlider({
-    Key? key,
+    super.key,
     required this.controller,
     required this.onSeek,
-  }) : super(key: key);
+  });
 
   @override
   State<VideoProgressSlider> createState() => _VideoProgressSliderState();

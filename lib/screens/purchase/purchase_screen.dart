@@ -28,7 +28,7 @@ import 'package:fmlink/utils/device_info_util.dart';
 class PurchaseScreen extends StatefulWidget {
   final Map<String, dynamic> params;
 
-  const PurchaseScreen({Key? key, required this.params}) : super(key: key);
+  const PurchaseScreen({super.key, required this.params});
 
   @override
   State<PurchaseScreen> createState() => _PurchaseScreenState();

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 class ResourceModel3dScreen extends StatelessWidget {
   final String? title;
 
-  const ResourceModel3dScreen({Key? key, this.title}) : super(key: key);
+  const ResourceModel3dScreen({super.key, this.title});
 
   @override
   Widget build(BuildContext context) {

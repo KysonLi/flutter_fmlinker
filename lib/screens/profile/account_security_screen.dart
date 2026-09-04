@@ -10,7 +10,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
-  const AccountSecurityScreen({Key? key}) : super(key: key);
+  const AccountSecurityScreen({super.key});
 
   @override
   State<AccountSecurityScreen> createState() => _AccountSecurityScreenState();

@@ -27,7 +27,9 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+    # 工程存在大量历史调试 print（api_service、third_party_manager 等约 90 处），
+    # 全量替换 debugPrint 侵入面大且不影响构建，暂禁用该 lint，后续可专项清理。
+    avoid_print: false
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
 # Additional information about this file can be found at

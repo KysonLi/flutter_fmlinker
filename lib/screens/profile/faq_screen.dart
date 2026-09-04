@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class FaqScreen extends StatelessWidget {
-  const FaqScreen({Key? key}) : super(key: key);
+  const FaqScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

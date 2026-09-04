@@ -16,6 +16,8 @@
     "sqflite": "file:../har/sqflite.har",
     "imagecropper_ohos": "file:../har/imagecropper_ohos.har",
     "mobile_scanner": "file:../har/mobile_scanner.har",
-    "@tencent/wechat_open_sdk": "1.0.21"
+    "@tencent/wechat_open_sdk": "1.0.21",
+    "@ohos/flutter_ohos": "har/flutter.har",
+    "fluwx": "file:../har/fluwx.har"
   }
 }

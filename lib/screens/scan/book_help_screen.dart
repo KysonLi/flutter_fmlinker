@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class BookHelpScreen extends StatefulWidget {
-  const BookHelpScreen({Key? key}) : super(key: key);
+  const BookHelpScreen({super.key});
 
   @override
   State<BookHelpScreen> createState() => _BookHelpScreenState();

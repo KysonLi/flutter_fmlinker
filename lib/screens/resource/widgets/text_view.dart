@@ -12,10 +12,10 @@ class TextView extends StatefulWidget {
   final bool hasAddress;
 
   const TextView({
-    Key? key,
+    super.key,
     required this.url,
     required this.hasAddress,
-  }) : super(key: key);
+  });
 
   @override
   State<TextView> createState() => _TextViewState();

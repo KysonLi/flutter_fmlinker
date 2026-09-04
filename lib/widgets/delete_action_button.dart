@@ -33,7 +33,7 @@ class DeleteActionButton extends StatelessWidget {
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF5B5B).withOpacity(0.35),
+                    color: const Color(0xFFFF5B5B).withValues(alpha: 0.35),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),

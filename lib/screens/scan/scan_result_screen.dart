@@ -8,10 +8,10 @@ class ScanResultScreen extends StatefulWidget {
   final dynamic resultData;
 
   const ScanResultScreen({
-    Key? key,
+    super.key,
     required this.isliCode,
     this.resultData,
-  }) : super(key: key);
+  });
 
   @override
   State<ScanResultScreen> createState() => _ScanResultScreenState();

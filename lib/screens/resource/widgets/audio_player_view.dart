@@ -18,11 +18,11 @@ class AudioPlayerView extends StatefulWidget {
   final List<String> coverUrls;
 
   const AudioPlayerView({
-    Key? key,
+    super.key,
     required this.controller,
     required this.resource,
     required this.coverUrls,
-  }) : super(key: key);
+  });
 
   @override
   State<AudioPlayerView> createState() => _AudioPlayerViewState();

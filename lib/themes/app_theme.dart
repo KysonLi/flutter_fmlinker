@@ -27,14 +27,14 @@ class AppTheme {
       ),
     ),
     checkboxTheme: CheckboxThemeData(
-      side: MaterialStateBorderSide.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      side: WidgetStateBorderSide.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return const BorderSide(color: Colors.blue);
         }
         return const BorderSide(color: Colors.grey);
       }),
-      fillColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return Colors.blue; // 选中时为蓝色
         }
         return Colors.white; // 未选中时为灰色

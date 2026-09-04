@@ -11,7 +11,7 @@ const String kResourcePlayRoute = '/resource/play';
 const String kResourceSourceDetailRoute = '/resource/source-detail';
 const String kResourceModel3dRoute = '/resource/model3d';
 const String kIsliCopyrightRoute = '/isli/copyright';
-/// 购买页（既有路由，extra 为 Map<String, dynamic> 参数）
+/// 购买页（既有路由，extra 为 `Map<String, dynamic>` 参数）
 const String kPurchaseRoute = '/purchase';
 /// 通用 webview（既有路由，query: url/title）
 const String kWebviewRoute = '/webview';

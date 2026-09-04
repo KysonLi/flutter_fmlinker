@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/user_service.dart';
 
 class MyScreen extends StatefulWidget {
-  const MyScreen({Key? key}) : super(key: key);
+  const MyScreen({super.key});
 
   @override
   State<MyScreen> createState() => _MyScreenState();
@@ -143,8 +143,8 @@ class _MyScreenState extends State<MyScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF2376E3).withOpacity(_appBarOpacity),
-                      const Color(0xFF4DA6FF).withOpacity(_appBarOpacity),
+                      const Color(0xFF2376E3).withValues(alpha: _appBarOpacity),
+                      const Color(0xFF4DA6FF).withValues(alpha: _appBarOpacity),
                     ],
                   ),
                 ),
@@ -300,7 +300,7 @@ class _MyScreenState extends State<MyScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -334,7 +334,7 @@ class _MyScreenState extends State<MyScreen> {
     VoidCallback onTap,
   ) {
     // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375），其他平台恒为 1.0
-    final double s = MediaQuery.textScaleFactorOf(context);
+    final double s = MediaQuery.textScalerOf(context).scale(1.0);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -375,7 +375,7 @@ class _MyScreenState extends State<MyScreen> {
 
   Widget _buildListItem(String iconPath, String title, VoidCallback onTap) {
     // 图标尺寸系数：iOS 上随全局文本缩放（屏宽/375），其他平台恒为 1.0
-    final double s = MediaQuery.textScaleFactorOf(context);
+    final double s = MediaQuery.textScalerOf(context).scale(1.0);
     return GestureDetector(
       onTap: onTap,
       child: Padding(

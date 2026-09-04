@@ -28,7 +28,7 @@ import 'package:fmlink/utils/chain_code_parser.dart';
 /// - 标志码（2D 图标码）：直接进入标志码版权详情页。
 /// - 离场停相机，返回后自动重启相机。
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({Key? key}) : super(key: key);
+  const ScanScreen({super.key});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -517,9 +517,9 @@ class _ScanScreenState extends State<ScanScreen>
               margin: const EdgeInsets.symmetric(vertical: 5),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.15)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -527,7 +527,7 @@ class _ScanScreenState extends State<ScanScreen>
                 children: [
                   Icon(
                     Icons.photo_camera_outlined,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     size: 18,
                   ),
                   const SizedBox(width: 12),
@@ -537,8 +537,8 @@ class _ScanScreenState extends State<ScanScreen>
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 5.0,
                         activeTrackColor: const Color(0xFF5E7A9A),
-                        inactiveTrackColor: Colors.white.withOpacity(0.18),
-                        thumbColor: Colors.white.withOpacity(0.65),
+                        inactiveTrackColor: Colors.white.withValues(alpha: 0.18),
+                        thumbColor: Colors.white.withValues(alpha: 0.65),
                         thumbShape: const RoundSliderThumbShape(
                           enabledThumbRadius: 7,
                           elevation: 0,
@@ -563,7 +563,7 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     '${(1 + _zoomScale * 7).toStringAsFixed(1)}x',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
+                      color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
                       letterSpacing: 0.3,

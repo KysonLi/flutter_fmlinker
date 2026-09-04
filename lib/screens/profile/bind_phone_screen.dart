@@ -6,7 +6,7 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 
 class BindPhoneScreen extends StatefulWidget {
-  const BindPhoneScreen({Key? key}) : super(key: key);
+  const BindPhoneScreen({super.key});
 
   @override
   State<BindPhoneScreen> createState() => _BindPhoneScreenState();

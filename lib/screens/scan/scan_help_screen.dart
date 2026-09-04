@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ScanHelpScreen extends StatelessWidget {
-  const ScanHelpScreen({Key? key}) : super(key: key);
+  const ScanHelpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

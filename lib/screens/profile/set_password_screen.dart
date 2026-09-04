@@ -12,9 +12,9 @@ class SetPasswordScreen extends StatefulWidget {
   final PasswordType type;
 
   const SetPasswordScreen({
-    Key? key,
+    super.key,
     this.type = PasswordType.setPassword,
-  }) : super(key: key);
+  });
 
   @override
   State<SetPasswordScreen> createState() => _SetPasswordScreenState();

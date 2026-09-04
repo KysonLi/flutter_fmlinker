@@ -19,8 +19,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.18.0 <4.0.0'
-  flutter: ">=3.3.0"
+  sdk: '>=3.6.0 <4.0.0'
+  flutter: ">=3.27.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -42,22 +42,18 @@ dependencies:
   # 状态管理
   provider: ^6.1.2
 
-  # 微信登录
-  fluwx: ^3.13.1
+  # 微信登录（5.x 起官方支持 ohos，自带 ArkTS 实现）
+  fluwx: ^5.7.5
   
-  # 路由管理
-  go_router:
-    git:
-      url: https://gitcode.com/openharmony-tpc/flutter_packages.git
-      path: packages/go_router
-      ref: 3.7.12-ohos-1.1.1
+  # 路由管理（纯 Dart，无 OHOS 适配需求，直接用 pub.dev）
+  go_router: ^10.1.2
 
   # 本地存储
   shared_preferences:
     git:
       url: https://gitcode.com/openharmony-tpc/flutter_packages.git
       path: packages/shared_preferences/shared_preferences
-      ref: 3.7.12-ohos-1.1.1
+      ref: br_shared_preferences-v2.5.3_ohos
   
   # 图片加载
   cached_network_image: ^3.2.0
@@ -67,7 +63,7 @@ dependencies:
     git:
       url: https://gitcode.com/openharmony-tpc/flutter_packages.git
       path: packages/video_player/video_player
-      ref: 3.7.12-ohos-1.1.1
+      ref: br_video_player-v2.10.0_ohos
   
   # 3D模型渲染
   # flutter_3d_obj: ^0.1.6  # 暂时注释，需要找到合适的版本
@@ -77,7 +73,7 @@ dependencies:
     git:
         url: https://gitcode.com/openharmony-tpc/flutter_packages.git
         path: packages/webview_flutter/webview_flutter
-        ref: 3.7.12-ohos-1.1.1
+        ref: br_webview_flutter-v4.8.0_ohos
 
   # 下拉刷新（pin 到 3.3.x：3.4.0+ 使用 Flutter 3.13 的 ScrollPhysics.toleranceFor，
   # 并引入 flutter_spinkit 5.2.2（使用 Flutter 3.27 的 Color.withValues），均与 3.7.12 不兼容）
@@ -97,14 +93,14 @@ dependencies:
     git:
       url: https://gitcode.com/openharmony-tpc/flutter_packages.git
       path: packages/image_picker/image_picker
-      ref: 3.7.12-ohos-1.1.1
+      ref: br_image_picker-v1.1.2_ohos
 
   # 打开外部链接/系统设置
   url_launcher:
     git:
       url: https://gitcode.com/openharmony-tpc/flutter_packages.git
       path: packages/url_launcher/url_launcher
-      ref: 3.7.12-ohos-1.1.1
+      ref: br_url_launcher-v6.3.0_ohos
 
   # 图片裁剪
   image_cropper:
@@ -133,17 +129,17 @@ dependency_overrides:
     git:
         url: https://gitcode.com/openharmony-tpc/flutter_packages.git
         path: packages/webview_flutter/webview_flutter_platform_interface
-        ref: 3.7.12-ohos-1.1.1
-  # permission_handler：OHOS 适配（flutter_ohos_plugin 全量 Fork）
+        ref: br_webview_flutter-v4.8.0_ohos
+  # permission_handler：OHOS 适配（flutter_ohos_plugin 全量 Fork，v11.3.1 对齐主依赖）
   permission_handler:
     git:
       url: https://gitcode.com/CPF-Flutter/flutter_permission_handler.git
-      ref: 10.4.3-ohos-1.0.0-beta.1
+      ref: 11.3.1-ohos-1.0.0-beta.1
       path: permission_handler
   sqflite:
     git:
       url: https://gitcode.com/CPF-Flutter/flutter_sqflite.git
-      ref: 2.2.8-ohos-1.0.0-beta.1
+      ref: 2.2.8-ohos-1.0.0
       path: sqflite
   # sqflite_ohos:
   #   git:
@@ -159,12 +155,12 @@ dependency_overrides:
     git:
       url: https://gitcode.com/CPF-Flutter/flutter_sqflite.git
       path: sqflite_common
-      ref: 2.2.8-ohos-1.0.0-beta.1
+      ref: 2.2.8-ohos-1.0.0
   path_provider:
     git:
       url: https://gitcode.com/openharmony-tpc/flutter_packages.git
       path: packages/path_provider/path_provider
-      ref: 3.7.12-ohos-1.1.1
+      ref: br_path_provider-v2.1.5_ohos
   # easy_refresh：本地 vendored 副本（3.3.5+1），已修补 Dart 3 exhaustive switch 以兼容 Dart 2.19。
   easy_refresh:
     path: packages/easy_refresh

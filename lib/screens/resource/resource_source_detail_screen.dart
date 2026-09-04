@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// 源详情页（占位）
 ///
-/// 由资源模块入口携带 extra（Map<String, dynamic>）跳转，
+/// 由资源模块入口携带 extra（`Map<String, dynamic>`）跳转，
 /// extra 通常含 data / isliCode / goodsName 等键：
 /// - goodsName / data.goodsName：源所属出版物名称
 /// - isliCode：完整 ISLI 链码（可带连字符）
@@ -12,8 +12,7 @@ class ResourceSourceDetailScreen extends StatelessWidget {
   /// 路由 extra 参数
   final Map<String, dynamic> extra;
 
-  const ResourceSourceDetailScreen({Key? key, required this.extra})
-      : super(key: key);
+  const ResourceSourceDetailScreen({super.key, required this.extra});
 
   /// extra['data']：容错读取为 Map
   Map<String, dynamic> get _data {

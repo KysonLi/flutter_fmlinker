@@ -40,7 +40,7 @@ import 'package:fmlink/screens/resource/widgets/video_player_view.dart';
 class ResourcePlayScreen extends StatefulWidget {
   final Map<String, dynamic> extra;
 
-  const ResourcePlayScreen({Key? key, required this.extra}) : super(key: key);
+  const ResourcePlayScreen({super.key, required this.extra});
 
   @override
   State<ResourcePlayScreen> createState() => _ResourcePlayScreenState();

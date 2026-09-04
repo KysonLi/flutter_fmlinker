@@ -39,14 +39,14 @@ class VideoPlayerView extends StatefulWidget {
   final ValueChanged<bool> onFullscreenChanged;
 
   const VideoPlayerView({
-    Key? key,
+    super.key,
     required this.controller,
     required this.pageControlsVisible,
     this.bottomBarHeight = 52,
     required this.onTogglePageControls,
     required this.onInteract,
     required this.onFullscreenChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<VideoPlayerView> createState() => _VideoPlayerViewState();
