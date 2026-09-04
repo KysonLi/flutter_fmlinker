@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Directory;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/screens/resource/widgets/audio_player_view.dart';
 import 'package:fmlink/screens/resource/widgets/center_column.dart';
 import 'package:fmlink/screens/resource/widgets/chain_code_sheet.dart';
+import 'package:fmlink/screens/resource/widgets/cover_image.dart';
 import 'package:fmlink/screens/resource/widgets/image_view.dart';
 import 'package:fmlink/screens/resource/widgets/text_view.dart';
 import 'package:fmlink/screens/resource/widgets/video_player_view.dart';
@@ -692,9 +694,10 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
           resource: r,
           url: _httpsUrl(r.cleanAddress),
           hasAddress: r.cleanAddress.isNotEmpty,
+          coverUrls: _coverCandidates(r),
         );
       case ResourceType.model3d:
-        return const _Model3dCard();
+        return _Model3dCard(coverUrls: _coverCandidates(r));
       case ResourceType.unknown:
         return const CenterColumn(icon: Icons.help_outline, text: '暂不支持该资源类型');
     }
@@ -918,165 +921,228 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   }
 }
 
-/// Web 资源：基本信息卡 + 进入独立 webview
+/// Web 资源：高斯模糊封面背景 + 深色玻璃信息卡 + 进入独立 webview
 class _WebCard extends StatelessWidget {
   final ScanResource resource;
   final String url;
   final bool hasAddress;
+  final List<String> coverUrls;
 
   const _WebCard({
     required this.resource,
     required this.url,
     required this.hasAddress,
+    required this.coverUrls,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(40),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x40000000),
-              blurRadius: 24,
-              offset: Offset(0, 8),
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        // 背景：高斯模糊封面 + 暗色渐变遮罩（与音频视图一致），避免纯白过亮
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+          child: CoverImage(
+            urls: coverUrls,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: const DecoratedBox(
+              decoration: BoxDecoration(color: Color(0xFF1B1C22)),
             ),
-          ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F7FF),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Image.asset(
-                'assets/icons/resource/html_review_icon.png',
-                width: 56,
-                height: 56,
-                fit: BoxFit.contain,
-              ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[Color(0x59000000), Color(0xE6000000)],
             ),
-            const SizedBox(height: 16),
-            Text(
-              resource.resourceName ?? '网页资源',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '网页类型资源 · 在线浏览',
-              style: TextStyle(fontSize: 12, color: Color(0xFF8C8C8C)),
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () {
-                if (!hasAddress) {
-                  EasyLoading.showToast('该资源暂无地址');
-                  return;
-                }
-                context.push('/webview?url=${Uri.encodeComponent(url)}'
-                    '&title=${Uri.encodeComponent(resource.resourceName ?? '网页')}');
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2F7BFF),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Text(
-                  '在网页中打开',
-                  style: TextStyle(fontSize: 14, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        Center(
+          child: Container(
+            margin: const EdgeInsets.all(40),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+            decoration: BoxDecoration(
+              color: const Color(0xD91E2229),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white12),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Image.asset(
+                    'assets/icons/resource/html_review_icon.png',
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  resource.resourceName ?? '网页资源',
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '网页类型资源 · 在线浏览',
+                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: () {
+                    if (!hasAddress) {
+                      EasyLoading.showToast('该资源暂无地址');
+                      return;
+                    }
+                    context.push('/webview?url=${Uri.encodeComponent(url)}'
+                        '&title=${Uri.encodeComponent(resource.resourceName ?? '网页')}');
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2F7BFF),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Text(
+                      '在网页中打开',
+                      style: TextStyle(fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// 3D 资源占位（详情页另行展示）
+/// 3D 资源占位：高斯模糊封面背景 + 深色玻璃信息卡（详情页另行展示）
 class _Model3dCard extends StatelessWidget {
-  const _Model3dCard();
+  final List<String> coverUrls;
+
+  const _Model3dCard({required this.coverUrls});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(40),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x40000000),
-              blurRadius: 24,
-              offset: Offset(0, 8),
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        // 背景：高斯模糊封面 + 暗色渐变遮罩（与音频视图一致），避免纯白过亮
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+          child: CoverImage(
+            urls: coverUrls,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: const DecoratedBox(
+              decoration: BoxDecoration(color: Color(0xFF1B1C22)),
             ),
-          ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7E6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Image.asset(
-                'assets/icons/resource/obj_review_icon.png',
-                width: 56,
-                height: 56,
-                fit: BoxFit.contain,
-              ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[Color(0x59000000), Color(0xE6000000)],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '3D 模型资源',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '3D 展示功能开发中',
-              style: TextStyle(fontSize: 12, color: Color(0xFF8C8C8C)),
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () => context.push(kResourceModel3dRoute),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2F7BFF),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Text(
-                  '进入 3D 模型页',
-                  style: TextStyle(fontSize: 14, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        Center(
+          child: Container(
+            margin: const EdgeInsets.all(40),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+            decoration: BoxDecoration(
+              color: const Color(0xD91E2229),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white12),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Image.asset(
+                    'assets/icons/resource/obj_review_icon.png',
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '3D 模型资源',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '3D 展示功能开发中',
+                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: () => context.push(kResourceModel3dRoute),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2F7BFF),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Text(
+                      '进入 3D 模型页',
+                      style: TextStyle(fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
