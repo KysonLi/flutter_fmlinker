@@ -282,6 +282,10 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, size: 28),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Text(
           '资源列表',
           style: TextStyle(fontSize: 16, color: Colors.black),

@@ -697,7 +697,10 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
           coverUrls: _coverCandidates(r),
         );
       case ResourceType.model3d:
-        return _Model3dCard(coverUrls: _coverCandidates(r));
+        return _Model3dCard(
+          coverUrls: _coverCandidates(r),
+          url: r.cleanAddress.isEmpty ? null : r.cleanAddress,
+        );
       case ResourceType.unknown:
         return const CenterColumn(icon: Icons.help_outline, text: '暂不支持该资源类型');
     }
@@ -753,65 +756,98 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   }
 
   List<Widget> _buildOverlays() {
+    final double topInset = MediaQuery.paddingOf(context).top;
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    // 顶部黑色渐变：从状态栏浓黑缓慢淡出到画面里，而不是在导航栏下沿戛然而止。
+    // 用 5 段缓动 stop 保证曲线圆润，末端 alpha 归零无分割线；作用区向画面延伸
+    // 120px，横屏时同样细腻。装饰层与导航栏分离，避免遮挡视频点击。
+    const List<Color> fadeColors = <Color>[
+      Color(0xE6000000),
+      Color(0xB3000000),
+      Color(0x73000000),
+      Color(0x26000000),
+      Color(0x00000000),
+    ];
+    const List<double> fadeStops = <double>[0.0, 0.14, 0.38, 0.68, 1.0];
     return <Widget>[
-      // 顶部导航栏
+      // 顶部渐变装饰层
       Positioned(
         top: 0,
         left: 0,
         right: 0,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: <Color>[Color(0xB3000000), Color(0x00000000)],
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: SizedBox(
-              height: 64,
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new,
-                        color: Colors.white, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Expanded(child: _navCenter()),
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz,
-                        color: Colors.white, size: 22),
-                    onPressed: _openMore,
-                  ),
-                ],
+        height: topInset + 64 + 120,
+        child: IgnorePointer(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: fadeColors,
+                stops: fadeStops,
               ),
             ),
           ),
         ),
       ),
-      // 底部：媒体控制条 + 操作栏
+      // 顶部导航栏
+      Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new,
+                      color: Colors.white, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(child: _navCenter()),
+                IconButton(
+                  icon: const Icon(Icons.more_horiz,
+                      color: Colors.white, size: 22),
+                  onPressed: _openMore,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // 底部渐变装饰层（向上延伸 140px 缓慢淡出，不挡视频交互）
       Positioned(
         left: 0,
         right: 0,
         bottom: 0,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: <Color>[Color(0xB3000000), Color(0x00000000)],
+        height: bottomInset + 52 + 140,
+        child: IgnorePointer(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: fadeColors,
+                stops: fadeStops,
+              ),
             ),
           ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              // 底部操作栏始终显示；视频/音频控制组件均内嵌于各自媒体视图
-              children: <Widget>[
-                _buildOpBar(),
-              ],
-            ),
+        ),
+      ),
+      // 底部操作栏：媒体控制条 + 操作栏
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            // 底部操作栏始终显示；视频/音频控制组件均内嵌于各自媒体视图
+            children: <Widget>[
+              _buildOpBar(),
+            ],
           ),
         ),
       ),
@@ -1046,8 +1082,9 @@ class _WebCard extends StatelessWidget {
 /// 3D 资源占位：高斯模糊封面背景 + 深色玻璃信息卡（详情页另行展示）
 class _Model3dCard extends StatelessWidget {
   final List<String> coverUrls;
+  final String? url;
 
-  const _Model3dCard({required this.coverUrls});
+  const _Model3dCard({required this.coverUrls, this.url});
 
   @override
   Widget build(BuildContext context) {
@@ -1124,7 +1161,8 @@ class _Model3dCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: () => context.push(kResourceModel3dRoute),
+                  onTap: () =>
+                      context.push(kResourceModel3dRoute, extra: url),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 30, vertical: 10),

@@ -115,7 +115,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/resource/model3d',
-        builder: (context, state) => const ResourceModel3dScreen(),
+        builder: (context, state) {
+          final String? url = state.extra as String?;
+          return ResourceModel3dScreen(url: url);
+        },
       ),
       GoRoute(
         path: '/isli/copyright',

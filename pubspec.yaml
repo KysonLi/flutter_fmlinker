@@ -65,9 +65,6 @@ dependencies:
       path: packages/video_player/video_player
       ref: br_video_player-v2.10.0_ohos
   
-  # 3D模型渲染
-  # flutter_3d_obj: ^0.1.6  # 暂时注释，需要找到合适的版本
-  
   # HTML渲染
   webview_flutter:
     git:
@@ -112,6 +109,10 @@ dependencies:
 
   sqflite: any
   fast_gbk: ^1.0.0
+  # 3D模型渲染（纯 Dart：OBJ/MTL/贴图；经 Model3dCache 下载到本地后以 isAsset:false 加载）
+  flutter_cube:
+    path: packages/flutter_cube
+  archive: ^4.2.0
 dependency_overrides:
   # 本地补丁副本：移除已被 Flutter 3.29+ 删除的 v1 embedding (PluginRegistry.Registrar) 死代码。
   # dart 主包仍走 git fork（保留 OHOS 适配），仅覆盖 android 平面子包。

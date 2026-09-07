@@ -16,8 +16,11 @@ class AppTheme {
       // 默认导航栏：白底 + 深色内容，无阴影（发现/出版等未单独配色的页面统一生效）
       backgroundColor: Colors.white,
       foregroundColor: Color(0xFF333333),
+      // 仅在内容滚动到导航栏下方（页面向上滑动）时显示淡阴影，
+      // 初始置顶时无阴影；滚动检测由 Scaffold/AppBar 内建完成，无需逐页配置。
       elevation: 0,
-      scrolledUnderElevation: 0,
+      scrolledUnderElevation: 4,
+      shadowColor: Color(0x1A000000),
       surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
         // 与 iOS 系统导航栏标题（17pt semibold）保持一致

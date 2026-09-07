@@ -273,7 +273,6 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       appBar: AppBar(
         title: Text(_navBarTitle, style: const TextStyle(fontSize: 14)),
         backgroundColor: Colors.white,
-        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
