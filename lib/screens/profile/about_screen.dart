@@ -119,10 +119,9 @@ class AboutScreen extends StatelessWidget {
                   _latestVersion,
                   style: TextStyle(
                     fontSize: 12,
-                    color:
-                        _latestVersion == '暂无新版'
-                            ? Colors.grey
-                            : const Color(0xFF2376E3),
+                    color: _latestVersion == '暂无新版'
+                        ? Colors.grey
+                        : const Color(0xFF2376E3),
                   ),
                 ),
               ],
@@ -171,7 +170,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Copyright©2017-${DateTime.now().year} 深圳市天朗时代科技有限公司',
+            'Copyright©2017-${DateTime.now().year} 深圳市泛媒网络有限公司',
             style: const TextStyle(fontSize: 9, color: Colors.grey),
           ),
         ],

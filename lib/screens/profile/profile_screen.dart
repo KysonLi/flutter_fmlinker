@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/user_service.dart';
@@ -13,12 +16,15 @@ class MyScreen extends StatefulWidget {
 class _MyScreenState extends State<MyScreen> {
   final ScrollController _scrollController = ScrollController();
   final UserService _userService = UserService();
-  
+
   bool _isLoggedIn = false;
   String _avatarUrl = '';
   String _nickName = '用户12345';
   String _phoneNumber = '138****8888';
   final double _blueAreaHeight = 230.0;
+
+  /// 横向区块（账号安全栏）估算高度：padding 20*2 + 图标 26 + 间距 5 + 文字 ~14
+  static const double _horizontalSectionHeight = 85;
 
   double _scrollOffset = 0;
   static const double _maxScrollExtent = 150.0;
@@ -42,12 +48,48 @@ class _MyScreenState extends State<MyScreen> {
     setState(() {
       _isLoggedIn = isLoggedIn;
     });
-    
+
     _nickName = await _userService.getNickName();
     _phoneNumber = await _userService.getMaskedPhone();
     _avatarUrl = await _userService.getAvatarUrl();
-    
+
     setState(() {});
+  }
+
+  /// 需要登录的操作：未登录时弹窗引导去登录，登录成功后刷新用户信息
+  Future<void> _requireLogin(VoidCallback action) async {
+    final bool loggedIn = await _userService.checkLoginStatus();
+    if (!mounted) return;
+    if (loggedIn) {
+      action();
+      return;
+    }
+
+    // 未登录：弹窗提示去登录
+    final bool? goLogin = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('提示', style: TextStyle(fontSize: 16)),
+        content: const Text('请先登录后再操作'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('去登录'),
+          ),
+        ],
+      ),
+    );
+    if (goLogin != true || !mounted) return;
+
+    final result = await context.push('/login');
+    if (!mounted) return;
+    if (result is Map && result['refresh'] == true) {
+      await _loadUserInfo();
+    }
   }
 
   void _onScroll() {
@@ -75,7 +117,6 @@ class _MyScreenState extends State<MyScreen> {
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double gradientStop = _blueAreaHeight / screenHeight;
 
     return Scaffold(
       body: Stack(
@@ -96,41 +137,55 @@ class _MyScreenState extends State<MyScreen> {
               ),
             ),
           ),
-          SingleChildScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            child: Container(
-              height: screenHeight,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: const [
-                    Color(0xFF2376E3),
-                    Color(0xFF4DA6FF),
-                    Color(0xFFF5F5F5),
-                    Color(0xFFF5F5F5),
-                  ],
-                  stops: [0.0, gradientStop, gradientStop, 1.0],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // 视口可用高度（已扣除底部导航栏等），内容高度与视口一致，
+              // 使 maxScrollExtent=0，滑动仅触发 overscroll，松手回弹到起始位置
+              final double viewportHeight = constraints.maxHeight;
+              // 蓝色区域底线对齐横向区块（账号安全栏）中心：
+              // 顶部间距 48 + 头部区域 + 间距 20 + 横向区块半高
+              final double horizontalCenter = 48 +
+                  (_blueAreaHeight - 90) +
+                  20 +
+                  _horizontalSectionHeight / 2;
+              final double gradientStop = horizontalCenter / viewportHeight;
+              return SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 30),
-                  Transform.scale(
-                    scale: _scaleFactor,
-                    child: _buildHeaderContent(context),
+                child: Container(
+                  height: viewportHeight,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: const [
+                        Color(0xFF2376E3),
+                        Color(0xFF4DA6FF),
+                        Color(0xFFF5F5F5),
+                        Color(0xFFF5F5F5),
+                      ],
+                      stops: [0.0, gradientStop, gradientStop, 1.0],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  _buildHorizontalSection(),
-                  const SizedBox(height: 20),
-                  _buildListSection(),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 48),
+                      Transform.scale(
+                        scale: _scaleFactor,
+                        child: _buildHeaderContent(context),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildHorizontalSection(),
+                      const SizedBox(height: 20),
+                      _buildListSection(),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           if (_showAppBar)
             Positioned(
@@ -169,7 +224,8 @@ class _MyScreenState extends State<MyScreen> {
                             GestureDetector(
                               onTap: () async {
                                 final result = await context.push('/login');
-                                if (result is Map && result['refresh'] == true) {
+                                if (result is Map &&
+                                    result['refresh'] == true) {
                                   await _loadUserInfo();
                                 }
                               },
@@ -270,7 +326,8 @@ class _MyScreenState extends State<MyScreen> {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
@@ -313,16 +370,24 @@ class _MyScreenState extends State<MyScreen> {
           _buildHorizontalItem(
             'assets/icons/my_account_safe.png',
             '账号安全',
-            () async {
-              final result = await context.push('/profile/account-security');
-              if (result is Map && result['refresh'] == true) {
-                await _loadUserInfo();
-              }
-            },
+            () =>
+                _requireLogin(() => context.push('/profile/account-security')),
           ),
-          _buildHorizontalItem('assets/icons/my_like.png', '我的点赞', () => context.push('/profile/my-like')),
-          _buildHorizontalItem('assets/icons/my_order_list.png', '购买记录', () {}),
-          _buildHorizontalItem('assets/icons/my_cache.png', '我的缓存', () {}),
+          _buildHorizontalItem(
+            'assets/icons/my_like.png',
+            '我的点赞',
+            () => _requireLogin(() => context.push('/profile/my-like')),
+          ),
+          _buildHorizontalItem(
+            'assets/icons/my_order_list.png',
+            '购买记录',
+            () => _requireLogin(() => context.push('/profile/purchase-record')),
+          ),
+          _buildHorizontalItem(
+            'assets/icons/my_cache.png',
+            '我的缓存',
+            () => _requireLogin(() => EasyLoading.showToast('功能开发中')),
+          ),
         ],
       ),
     );
@@ -351,6 +416,8 @@ class _MyScreenState extends State<MyScreen> {
   }
 
   Widget _buildListSection() {
+    // 我的账户仅 iOS 平台展示（Android/鸿蒙隐藏）
+    final bool showAccount = Platform.isIOS;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -359,15 +426,23 @@ class _MyScreenState extends State<MyScreen> {
       ),
       child: Column(
         children: [
-          _buildListItem('assets/icons/my_account.png', '我的账户', () {}),
-          const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
+          if (showAccount) ...[
+            _buildListItem(
+              'assets/icons/my_account.png',
+              '我的账户',
+              () => _requireLogin(() => EasyLoading.showToast('功能开发中')),
+            ),
+            const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
+          ],
           _buildListItem('assets/icons/my_clear_memery.png', '清除缓存', () {}),
           const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
           _buildListItem('assets/icons/my_feedback.png', '意见反馈', () {}),
           const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
-          _buildListItem('assets/icons/my_question.png', '常见问题', () => context.push('/profile/faq')),
+          _buildListItem('assets/icons/my_question.png', '常见问题',
+              () => context.push('/profile/faq')),
           const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
-          _buildListItem('assets/icons/my_about.png', '关于', () => context.push('/profile/about')),
+          _buildListItem('assets/icons/my_about.png', '关于',
+              () => context.push('/profile/about')),
         ],
       ),
     );
@@ -387,10 +462,14 @@ class _MyScreenState extends State<MyScreen> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.bold),
               ),
             ),
-            Image.asset('assets/icons/right_arrow.png', width: 12 * s, height: 12 * s),
+            Image.asset('assets/icons/right_arrow.png',
+                width: 12 * s, height: 12 * s),
           ],
         ),
       ),

@@ -91,4 +91,53 @@ class ResourceService {
       'https://apigateway.mpreader.com/pics/v1/isliContents/$code',
     );
   }
+
+  /// 点赞资源：/target-goods/app/v1/resource/like
+  ///
+  /// 参数全部放 query（不放 body）：
+  /// - [goodsId]：出版物 ID
+  /// - [resourceId]：资源 ID（对应 resource.id）
+  /// - [resourceOldId]：资源旧 ID（对应 resource.resourceId）
+  /// - [targetIdentifier]：目标标识
+  /// - [unificationId]：用户统一 ID（需登录）
+  Future<Map<String, dynamic>> likeResource({
+    required String goodsId,
+    required String resourceId,
+    required String resourceOldId,
+    required String targetIdentifier,
+    required String unificationId,
+  }) async {
+    return _apiService.post(
+      '/target-goods/app/v1/resource/like',
+      queryParameters: <String, dynamic>{
+        'goodsId': goodsId,
+        'resourceId': resourceId,
+        'resourceOldId': resourceOldId,
+        'targetIdentifier': targetIdentifier,
+        'unificationId': unificationId,
+      },
+    );
+  }
+
+  /// 取消点赞：/target-goods/app/v1/resource/unlike
+  ///
+  /// 参数与点赞一致，全部放 query。
+  Future<Map<String, dynamic>> unlikeResource({
+    required String goodsId,
+    required String resourceId,
+    required String resourceOldId,
+    required String targetIdentifier,
+    required String unificationId,
+  }) async {
+    return _apiService.post(
+      '/target-goods/app/v1/resource/unlike',
+      queryParameters: <String, dynamic>{
+        'goodsId': goodsId,
+        'resourceId': resourceId,
+        'resourceOldId': resourceOldId,
+        'targetIdentifier': targetIdentifier,
+        'unificationId': unificationId,
+      },
+    );
+  }
 }

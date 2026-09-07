@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
+import 'package:fmlink/common/app_navigator.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/screens/auth/login_screen.dart';
 import 'package:fmlink/screens/discover/discover_screen.dart';
 import 'package:fmlink/screens/publish/publish_screen.dart';
+import 'package:fmlink/screens/publish/publish_search_screen.dart';
 import 'package:fmlink/screens/publish/publication_detail_screen.dart';
 import 'package:fmlink/screens/publish/publication_desc_screen.dart';
 import 'package:fmlink/screens/publish/publisher_detail_screen.dart';
@@ -24,6 +27,7 @@ import 'package:fmlink/screens/profile/set_password_screen.dart';
 import 'package:fmlink/screens/profile/device_management_screen.dart';
 import 'package:fmlink/screens/profile/delete_account_screen.dart';
 import 'package:fmlink/screens/profile/my_like_screen.dart';
+import 'package:fmlink/screens/profile/purchase_record_screen.dart';
 import 'package:fmlink/screens/scan/scan_screen.dart';
 import 'package:fmlink/screens/scan/scan_result_screen.dart';
 import 'package:fmlink/screens/scan/scan_help_screen.dart';
@@ -33,6 +37,7 @@ import 'package:fmlink/screens/main/main_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
+    navigatorKey: appNavigatorKey,
     initialLocation: '/',
     routes: [
       GoRoute(
@@ -50,6 +55,26 @@ class AppRouter {
       GoRoute(
         path: '/publish',
         builder: (context, state) => const PublishScreen(),
+      ),
+      GoRoute(
+        path: '/publish/search',
+        // 带轻微放大淡入的过渡，模拟从搜索按钮展开的效果
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: const PublishSearchScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final tween = Tween<double>(begin: 0.96, end: 1.0).chain(
+              CurveTween(curve: Curves.easeOutCubic),
+            );
+            return FadeTransition(
+              opacity: animation,
+              child:
+                  ScaleTransition(scale: animation.drive(tween), child: child),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 260),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+        ),
       ),
       GoRoute(
         path: '/publication-detail',
@@ -131,7 +156,8 @@ class AppRouter {
         path: '/purchase',
         builder: (context, state) {
           // 购买页参数与小程序购买页 onLoad options 一致，由入口（源/资源页）以 extra 传入
-          final data = state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
+          final data =
+              state.extra as Map<String, dynamic>? ?? <String, dynamic>{};
           return PurchaseScreen(params: data);
         },
       ),
@@ -178,6 +204,10 @@ class AppRouter {
       GoRoute(
         path: '/profile/my-like',
         builder: (context, state) => const MyLikeScreen(),
+      ),
+      GoRoute(
+        path: '/profile/purchase-record',
+        builder: (context, state) => const PurchaseRecordScreen(),
       ),
       GoRoute(
         path: '/scan',

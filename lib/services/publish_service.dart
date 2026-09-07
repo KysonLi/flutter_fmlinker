@@ -8,24 +8,32 @@ class PublishService {
 
   PublishService._internal();
 
-  // 获取出版物列表
+  // 获取出版物列表（searchText 可选，传则搜索）
   Future<Map<String, dynamic>> getPublications(
-      {int page = 1, int pageSize = 20}) async {
-    return await _apiService
-        .get('/target-goods/app/v1/goods', queryParameters: {
+      {int page = 1, int pageSize = 20, String? searchText}) async {
+    final queryParameters = <String, dynamic>{
       'pageIndex': page,
       'pageSize': pageSize,
-    });
+    };
+    if (searchText != null && searchText.isNotEmpty) {
+      queryParameters['searchText'] = searchText;
+    }
+    return await _apiService.get('/target-goods/app/v1/goods',
+        queryParameters: queryParameters);
   }
 
-  // 获取出版者列表
+  // 获取出版者列表（searchText 可选，传则搜索）
   Future<Map<String, dynamic>> getPublishers(
-      {int page = 1, int pageSize = 20}) async {
-    return await _apiService
-        .get('/target-goods/app/v1/publications', queryParameters: {
+      {int page = 1, int pageSize = 20, String? searchText}) async {
+    final queryParameters = <String, dynamic>{
       'pageIndex': page,
       'pageSize': pageSize,
-    });
+    };
+    if (searchText != null && searchText.isNotEmpty) {
+      queryParameters['searchText'] = searchText;
+    }
+    return await _apiService.get('/target-goods/app/v1/publications',
+        queryParameters: queryParameters);
   }
 
   // 获取出版物详情
@@ -107,5 +115,19 @@ class PublishService {
       '/target-goods/app/v1/derate-goods/$unificationId/$goodsId',
       queryParameters: queryParameters,
     );
+  }
+
+  // 获取购买记录（/pos/v1/order/target）
+  // userId 对应登录后的 unificationId；分页参数 key 名固定为 page/pageCount
+  Future<Map<String, dynamic>> getPurchaseOrders({
+    required String userId,
+    int page = 1,
+    int pageCount = 20,
+  }) async {
+    return await _apiService.get('/pos/v1/order/target', queryParameters: {
+      'userId': userId,
+      'page': page,
+      'pageCount': pageCount,
+    });
   }
 }

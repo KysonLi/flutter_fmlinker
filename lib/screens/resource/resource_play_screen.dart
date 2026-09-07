@@ -30,7 +30,8 @@ import 'package:fmlink/screens/resource/widgets/video_player_view.dart';
 /// 点击切换显隐并自动隐藏。
 ///
 /// 音频播放方案：与视频一致使用 video_player（方案 B）。
-/// 点赞为本地状态（计数/高亮来自接口 likeCount/hasLike，接口待接入）。
+/// 点赞：调用 /target-goods/app/v1/resource/like（点赞）与
+/// /target-goods/app/v1/resource/unlike（取消点赞），需登录。
 ///
 /// 路由参数（extra）：
 /// - isliCode：当前链码（纯数字）
@@ -394,12 +395,68 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     });
   }
 
-  void _toggleLike() {
+  Future<void> _toggleLike() async {
     final ScanResource? r = _current;
     if (r == null) return;
-    // TODO(点赞接口): 后端点赞/取消接口待接入后替换为真实请求；
-    // 目前保持展示接口返回的 likeCount/hasLike。
-    EasyLoading.showToast('点赞功能开发中');
+
+    // 点赞需登录：未登录先跳转登录页
+    final bool loggedIn = await UserService().checkLoginStatus();
+    if (!loggedIn) {
+      if (!mounted) return;
+      await context.push('/login');
+      if (!mounted) return;
+      final bool loggedAfter = await UserService().checkLoginStatus();
+      if (!loggedAfter) return;
+    }
+
+    // 冷启动后重新水合 token，并取用户 unificationId
+    await UserService().refreshToken();
+    final String unificationId = await UserService().getUnificationId();
+    if (unificationId.isEmpty) {
+      EasyLoading.showToast('获取用户信息失败，请重新登录');
+      return;
+    }
+
+    final SourceScanData? data = _data;
+    final String goodsId = data?.goodsId ?? '';
+    final String resourceId = r.id?.toString() ?? '';
+    final String resourceOldId = r.resourceId ?? '';
+    final String targetIdentifier = data?.currentTarget?.targetIdentifier ?? '';
+    if (goodsId.isEmpty ||
+        resourceId.isEmpty ||
+        resourceOldId.isEmpty ||
+        targetIdentifier.isEmpty) {
+      EasyLoading.showToast('资源信息缺失，无法点赞');
+      return;
+    }
+
+    final bool liked = r.hasLike == true;
+    final Map<String, dynamic> res = liked
+        ? await _service.unlikeResource(
+            goodsId: goodsId,
+            resourceId: resourceId,
+            resourceOldId: resourceOldId,
+            targetIdentifier: targetIdentifier,
+            unificationId: unificationId,
+          )
+        : await _service.likeResource(
+            goodsId: goodsId,
+            resourceId: resourceId,
+            resourceOldId: resourceOldId,
+            targetIdentifier: targetIdentifier,
+            unificationId: unificationId,
+          );
+    if (!mounted) return;
+    if (res['status'] == true) {
+      setState(() {
+        final int count = r.likeCount ?? 0;
+        r.raw['hasLike'] = !liked;
+        r.raw['likeCount'] = liked ? (count > 0 ? count - 1 : 0) : count + 1;
+      });
+      EasyLoading.showToast(liked ? '已取消点赞' : '点赞成功');
+    } else {
+      EasyLoading.showToast(res['msg']?.toString() ?? '操作失败');
+    }
   }
 
   Future<void> _cacheCurrent() async {
@@ -1058,8 +1115,8 @@ class _WebCard extends StatelessWidget {
                         '&title=${Uri.encodeComponent(resource.resourceName ?? '网页')}');
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2F7BFF),
                       borderRadius: BorderRadius.circular(22),
@@ -1161,11 +1218,10 @@ class _Model3dCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: () =>
-                      context.push(kResourceModel3dRoute, extra: url),
+                  onTap: () => context.push(kResourceModel3dRoute, extra: url),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2F7BFF),
                       borderRadius: BorderRadius.circular(22),
