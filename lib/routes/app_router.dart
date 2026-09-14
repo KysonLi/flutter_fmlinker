@@ -3,6 +3,7 @@ import 'package:fmlink/common/app_navigator.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/screens/auth/login_screen.dart';
+import 'package:fmlink/screens/auth/south_cloud_login_screen.dart';
 import 'package:fmlink/screens/discover/discover_screen.dart';
 import 'package:fmlink/screens/publish/publish_screen.dart';
 import 'package:fmlink/screens/publish/publish_search_screen.dart';
@@ -47,6 +48,10 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/login/south-cloud',
+        builder: (context, state) => const SouthCloudLoginScreen(),
       ),
       GoRoute(
         path: '/discover',

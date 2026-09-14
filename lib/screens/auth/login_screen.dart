@@ -196,14 +196,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 打开用户协议
   void _openUserAgreement() {
-    // 这里应该导航到用户协议页面
-    debugPrint('打开用户协议');
+    context
+        .push('/webview?url=${Uri.encodeComponent(Constants.userAgreementUrl)}'
+            '&title=${Uri.encodeComponent('用户协议')}');
   }
 
   // 打开隐私政策
   void _openPrivacyPolicy() {
-    // 这里应该导航到隐私政策页面
-    debugPrint('打开隐私政策');
+    context
+        .push('/webview?url=${Uri.encodeComponent(Constants.privacyPolicyUrl)}'
+            '&title=${Uri.encodeComponent('隐私政策')}');
   }
 
   Future<void> _sendThirdPartyLogin(
@@ -253,6 +255,106 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       ThirdPartyManager.weChatLogin();
     }
+  }
+
+  // 显示更多登录方式底部弹窗
+  void _showMoreLoginOptions() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // 顶部指示条
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E5E5),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '更多登录方式',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 南方云教育平台
+              _buildMoreLoginOption(
+                sheetContext,
+                icon: Icons.cloud_outlined,
+                label: '南方云教育平台',
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  // 进入南方云教育平台登录页
+                  final result = await context
+                      .push<Map<String, dynamic>>('/login/south-cloud');
+                  if (!mounted) return;
+                  // 根据返回结果切换登录方式
+                  final loginType = result?['loginType'];
+                  if (loginType == 'sms') {
+                    _switchLoginType(LoginType.sms);
+                  } else if (loginType == 'password') {
+                    _switchLoginType(LoginType.password);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 底部弹窗中的登录方式选项
+  Widget _buildMoreLoginOption(
+    BuildContext sheetContext, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F6FF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: const Color(0xFF2376E3), size: 22),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Color(0xFFBBBBBB)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -624,7 +726,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2376E3).withValues(alpha: 0.3),
+                              color: const Color(0xFF2376E3)
+                                  .withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -811,9 +914,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(width: 24),
                             ],
-                            // 南方云平台登录（暂无专属图标，先用「更多」图标）
+                            // 更多登录方式（点击弹出底部弹窗）
                             GestureDetector(
-                              onTap: () => _thirdPartyLogin('south_cloud'),
+                              onTap: _showMoreLoginOptions,
                               child: Container(
                                 width: 50,
                                 height: 50 * s,
