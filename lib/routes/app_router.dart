@@ -27,6 +27,7 @@ import 'package:fmlink/screens/profile/bind_phone_screen.dart';
 import 'package:fmlink/screens/profile/set_password_screen.dart';
 import 'package:fmlink/screens/profile/device_management_screen.dart';
 import 'package:fmlink/screens/profile/delete_account_screen.dart';
+import 'package:fmlink/screens/profile/feedback_screen.dart';
 import 'package:fmlink/screens/profile/my_like_screen.dart';
 import 'package:fmlink/screens/profile/purchase_record_screen.dart';
 import 'package:fmlink/screens/scan/scan_screen.dart';
@@ -213,6 +214,10 @@ class AppRouter {
       GoRoute(
         path: '/profile/purchase-record',
         builder: (context, state) => const PurchaseRecordScreen(),
+      ),
+      GoRoute(
+        path: '/profile/feedback',
+        builder: (context, state) => const FeedbackScreen(),
       ),
       GoRoute(
         path: '/scan',
