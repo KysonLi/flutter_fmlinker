@@ -66,7 +66,8 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     final Map<String, dynamic> extra = widget.extra;
-    _isliCode = (extra['isliCode']?.toString() ?? '').replaceAll(RegExp(r'\D'), '');
+    _isliCode =
+        (extra['isliCode']?.toString() ?? '').replaceAll(RegExp(r'\D'), '');
     _fromScan = extra['fromScan'] == true;
     final String? version = extra['versionCode']?.toString();
     _versionCode = (version == null || version.isEmpty) ? null : version;
@@ -91,8 +92,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     try {
       await UserService().refreshToken();
 
-      final Map<String, dynamic> res =
-          await ResourceService().fetchSourceScan(
+      final Map<String, dynamic> res = await ResourceService().fetchSourceScan(
         _isliCode,
         pageIndex: 1,
         pageSize: _pageSize,
@@ -181,8 +181,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     });
     try {
       await UserService().refreshToken();
-      final Map<String, dynamic> res =
-          await ResourceService().fetchSourceScan(
+      final Map<String, dynamic> res = await ResourceService().fetchSourceScan(
         _isliCode,
         pageIndex: _pageIndex + 1,
         pageSize: _pageSize,
@@ -207,7 +206,8 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
         _data = data;
         _resources = <ScanResource>[..._resources, ...more];
         _loadingMore = false;
-        _hasMore = more.isNotEmpty && _hasMoreResources(data, _resources.length);
+        _hasMore =
+            more.isNotEmpty && _hasMoreResources(data, _resources.length);
       });
     } catch (e) {
       if (!mounted) return;
@@ -435,8 +435,9 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     }
 
     final String? identifier = data.source?.sourceIdentifier;
-    final String codeText =
-        (identifier != null && identifier.isNotEmpty) ? identifier : _hyphenCode(_isliCode);
+    final String codeText = (identifier != null && identifier.isNotEmpty)
+        ? identifier
+        : _hyphenCode(_isliCode);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -577,7 +578,8 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
           top: false,
           child: Row(
             children: <Widget>[
-              _buildAction(Icons.list_alt_outlined, '链码列表', _openChainCodeSheet),
+              _buildAction(
+                  Icons.list_alt_outlined, '链码列表', _openChainCodeSheet),
               _buildAction(Icons.qr_code_scanner, '扫码', _openScan),
               _buildAction(Icons.info_outline, '源详情', _openSourceDetail),
             ],

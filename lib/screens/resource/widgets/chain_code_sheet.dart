@@ -194,8 +194,9 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
 
         final Map<String, dynamic> data =
             (response['data'] as Map).cast<String, dynamic>();
-        final List<dynamic> sources =
-            data['sourceList'] is List ? data['sourceList'] as List : <dynamic>[];
+        final List<dynamic> sources = data['sourceList'] is List
+            ? data['sourceList'] as List
+            : <dynamic>[];
         all.addAll(sources);
 
         if (_goodsName.isEmpty && data['goodsName'] != null) {
@@ -392,8 +393,9 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
     final String sourceNo = source['sourceNo']?.toString() ?? '${index + 1}';
     final String fragment = source['sourceFragment']?.toString() ?? '';
     final String identifier = source['sourceIdentifier']?.toString() ?? '';
-    final String titleText =
-        fragment.isNotEmpty ? fragment : (identifier.isNotEmpty ? identifier : '链码');
+    final String titleText = fragment.isNotEmpty
+        ? fragment
+        : (identifier.isNotEmpty ? identifier : '链码');
     final int? bookPageNo = _toInt(source['bookPageNo']);
 
     return Container(
@@ -428,7 +430,8 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        color: current ? _kCurrentColor : const Color(0xFF585959),
+                        color:
+                            current ? _kCurrentColor : const Color(0xFF585959),
                       ),
                     ),
                     const SizedBox(height: 4),

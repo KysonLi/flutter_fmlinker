@@ -9,7 +9,8 @@ class UpdateHistoryDialog extends StatefulWidget {
   final String goodsId;
   final String goodsName;
 
-  const UpdateHistoryDialog({super.key, required this.goodsId, required this.goodsName});
+  const UpdateHistoryDialog(
+      {super.key, required this.goodsId, required this.goodsName});
 
   @override
   State<UpdateHistoryDialog> createState() => _UpdateHistoryDialogState();
@@ -21,7 +22,7 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
   );
-  
+
   List<dynamic> _historyList = [];
 
   Future<void> _loadHistory({bool isRefresh = false}) async {
@@ -31,10 +32,13 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
 
     try {
       await _userService.refreshToken();
-      
-      Map<String, dynamic> response = await _publishService.getPublicationUpdateRecord(widget.goodsId);
-      
-      if (response['status'] && response['data'] != null && response['data'] is List) {
+
+      Map<String, dynamic> response =
+          await _publishService.getPublicationUpdateRecord(widget.goodsId);
+
+      if (response['status'] &&
+          response['data'] != null &&
+          response['data'] is List) {
         List<dynamic> data = response['data'];
         // 为每条记录添加更新描述
         for (int i = data.length - 1; i >= 0; i--) {
@@ -58,10 +62,12 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
     if (index == data.length - 1) {
       return '发布资源';
     }
-    
-    int currentCount = int.tryParse(data[index]['resourceCount']?.toString() ?? '0') ?? 0;
-    int prevCount = int.tryParse(data[index + 1]['resourceCount']?.toString() ?? '0') ?? 0;
-    
+
+    int currentCount =
+        int.tryParse(data[index]['resourceCount']?.toString() ?? '0') ?? 0;
+    int prevCount =
+        int.tryParse(data[index + 1]['resourceCount']?.toString() ?? '0') ?? 0;
+
     if (currentCount > prevCount) {
       return '新增优质资源';
     } else if (currentCount < prevCount) {
@@ -147,41 +153,42 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
                 onRefresh: () => _onRefresh(),
                 header: RefreshConfig.buildHeader(),
                 child: SingleChildScrollView(
-                        child: Center(
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // 图书名称
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                  child: Text(
-                                    widget.goodsName,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    maxLines: 2,
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                                const SizedBox(height: 16),
-                                // 更新记录列表
-                                if (_historyList.isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 40),
-                                    child: Text('暂无更新记录'),
-                                  )
-                                else
-                                  ..._buildTimeline(),
-                              ],
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 图书名称
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          child: Text(
+                            widget.goodsName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                        const SizedBox(height: 16),
+                        // 更新记录列表
+                        if (_historyList.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40),
+                            child: Text('暂无更新记录'),
+                          )
+                        else
+                          ..._buildTimeline(),
+                      ],
                     ),
                   ),
+                ),
+              ),
             ),
           ],
         ),
@@ -206,7 +213,8 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
     String dateStr = '--';
     String yearStr = '--';
     if (updateTime != null) {
-      dateStr = '${updateTime.month.toString().padLeft(2, '0')}-${updateTime.day.toString().padLeft(2, '0')}';
+      dateStr =
+          '${updateTime.month.toString().padLeft(2, '0')}-${updateTime.day.toString().padLeft(2, '0')}';
       yearStr = updateTime.year.toString();
     }
 
@@ -251,18 +259,26 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
             child: Column(
               children: [
                 // 上竖线（第一条记录不显示）
-                Container(width: 1, height: 25, color: !isFirst ? Colors.grey : Colors.transparent),
+                Container(
+                    width: 1,
+                    height: 25,
+                    color: !isFirst ? Colors.grey : Colors.transparent),
                 // 圆点
                 Container(
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    border: Border.all(color: isFirst ? const Color(0xFF4A90E2) : Colors.grey, width: 2),
+                    border: Border.all(
+                        color: isFirst ? const Color(0xFF4A90E2) : Colors.grey,
+                        width: 2),
                     shape: BoxShape.circle,
                   ),
                 ),
                 // 下竖线（最后一条不显示）
-                Container(width: 1, height: 25, color: !isLast ? Colors.grey : Colors.transparent),
+                Container(
+                    width: 1,
+                    height: 25,
+                    color: !isLast ? Colors.grey : Colors.transparent),
               ],
             ),
           ),
@@ -287,7 +303,8 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
                 // 更新描述
                 Text(
                   '更新说明: $updateDesc',
-                  style: TextStyle(fontSize: 8, color: isFirst ? Colors.black : Colors.grey),
+                  style: TextStyle(
+                      fontSize: 8, color: isFirst ? Colors.black : Colors.grey),
                 ),
               ],
             ),

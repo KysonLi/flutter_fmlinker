@@ -26,7 +26,9 @@ class SetPasswordScreenWithExtra extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final type = extra?['type'] == 'find' ? PasswordType.findPassword : PasswordType.setPassword;
+    final type = extra?['type'] == 'find'
+        ? PasswordType.findPassword
+        : PasswordType.setPassword;
     return SetPasswordScreen(type: type);
   }
 }
@@ -67,14 +69,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
   void _startCountDown() {
     if (!mounted) return;
-    
+
     setState(() {
       _isCountingDown = true;
     });
 
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
-      
+
       if (_countDownSeconds > 0) {
         setState(() {
           _countDownSeconds--;
@@ -105,8 +107,10 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     });
 
     try {
-      String type = widget.type == PasswordType.setPassword ? 'change_password' : 'find_password';
-      
+      String type = widget.type == PasswordType.setPassword
+          ? 'change_password'
+          : 'find_password';
+
       final response = await _apiService.post(
         '/chain-server/api/link_code_system/login/get_verification_code',
         data: {
@@ -226,7 +230,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     String title = widget.type == PasswordType.setPassword ? '设置登录密码' : '找回密码';
-    String buttonText = widget.type == PasswordType.setPassword ? '设置密码' : '确认修改';
+    String buttonText =
+        widget.type == PasswordType.setPassword ? '设置密码' : '确认修改';
 
     return Scaffold(
       appBar: AppBar(
@@ -259,8 +264,10 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                       decoration: InputDecoration(
                         hintText: '请输入手机号',
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 16),
+                        hintStyle:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
@@ -286,10 +293,13 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             decoration: InputDecoration(
                               hintText: '请输入验证码',
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                              hintStyle: const TextStyle(
+                                  fontSize: 14, color: Colors.grey),
                               prefixIcon: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: Image.asset(
                                   'assets/icons/login_code.png',
                                   width: 20,
@@ -305,12 +315,18 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: _isCountingDown || _isLoading ? null : _getSmsCode,
+                          onPressed: _isCountingDown || _isLoading
+                              ? null
+                              : _getSmsCode,
                           child: Text(
-                            _isCountingDown ? '$_countDownSeconds秒后重新获取' : '获取验证码',
+                            _isCountingDown
+                                ? '$_countDownSeconds秒后重新获取'
+                                : '获取验证码',
                             style: TextStyle(
                               fontSize: 12,
-                              color: _isCountingDown ? Colors.grey : const Color(0xFF2376E3),
+                              color: _isCountingDown
+                                  ? Colors.grey
+                                  : const Color(0xFF2376E3),
                             ),
                           ),
                         ),
@@ -323,8 +339,10 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                       decoration: InputDecoration(
                         hintText: '请输入密码（6-16位）',
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 16),
+                        hintStyle:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
@@ -339,7 +357,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                         ),
                         suffixIcon: IconButton(
                           icon: Image.asset(
-                            _isPasswordVisible ? 'assets/icons/eye_open.png' : 'assets/icons/eye_close.png',
+                            _isPasswordVisible
+                                ? 'assets/icons/eye_open.png'
+                                : 'assets/icons/eye_close.png',
                             width: 20,
                             height: 20,
                           ),
@@ -377,7 +397,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           )
                         : Text(
                             buttonText,
-                            style: const TextStyle(fontSize: 14, color: Colors.white),
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.white),
                           ),
                   ),
                 ),

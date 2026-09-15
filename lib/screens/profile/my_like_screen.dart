@@ -20,7 +20,7 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
   );
-  
+
   List<dynamic> _likeList = [];
   bool _isLoading = true;
 
@@ -43,7 +43,7 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
 
     try {
       await _userService.refreshToken();
-      
+
       String unificationId = await _userService.getUnificationId();
       if (unificationId.isEmpty) {
         EasyLoading.showToast('用户未登录');
@@ -101,7 +101,10 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
                 children: [
                   Text(
                     goodsName,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black54),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -110,7 +113,8 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
                     children: [
                       Text(
                         '点赞：$likeCount',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -144,9 +148,11 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset('assets/images/empty_list.png', width: 80, height: 80),
+                        Image.asset('assets/images/empty_list.png',
+                            width: 80, height: 80),
                         const SizedBox(height: 16),
-                        const Text('暂无点赞内容', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                        const Text('暂无点赞内容',
+                            style: TextStyle(fontSize: 14, color: Colors.grey)),
                       ],
                     ),
                   )
@@ -156,9 +162,10 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
                     header: RefreshConfig.buildHeader(),
                     child: ListView.separated(
                       itemCount: _likeList.length,
-                      separatorBuilder: (context, index) => 
+                      separatorBuilder: (context, index) =>
                           const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                      itemBuilder: (context, index) => _buildLikeItem(_likeList[index]),
+                      itemBuilder: (context, index) =>
+                          _buildLikeItem(_likeList[index]),
                     ),
                   ),
       ),

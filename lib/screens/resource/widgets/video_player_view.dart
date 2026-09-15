@@ -74,8 +74,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
   }
 
   /// 非全屏：视频控制栏显隐跟随页面控制栏
-  bool get _inlineControlsVisible =>
-      !_fullscreen && widget.pageControlsVisible;
+  bool get _inlineControlsVisible => !_fullscreen && widget.pageControlsVisible;
 
   void _onAreaTap() {
     if (_fullscreen) {
@@ -191,8 +190,8 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: widget.bottomBarHeight +
-                MediaQuery.of(context).padding.bottom,
+            bottom:
+                widget.bottomBarHeight + MediaQuery.of(context).padding.bottom,
             child: _buildControlBar(),
           ),
       ],

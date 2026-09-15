@@ -32,14 +32,14 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
 
   void _startCountDown() {
     if (!mounted) return;
-    
+
     setState(() {
       _isCountingDown = true;
     });
 
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
-      
+
       if (_countDownSeconds > 0) {
         setState(() {
           _countDownSeconds--;
@@ -197,8 +197,10 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
                       decoration: InputDecoration(
                         hintText: '请输入手机号',
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 16),
+                        hintStyle:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Image.asset(
@@ -224,10 +226,13 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
                             decoration: InputDecoration(
                               hintText: '请输入验证码',
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                              hintStyle: const TextStyle(
+                                  fontSize: 14, color: Colors.grey),
                               prefixIcon: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: Image.asset(
                                   'assets/icons/login_code.png',
                                   width: 20,
@@ -243,12 +248,18 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: _isCountingDown || _isLoading ? null : _getSmsCode,
+                          onPressed: _isCountingDown || _isLoading
+                              ? null
+                              : _getSmsCode,
                           child: Text(
-                            _isCountingDown ? '$_countDownSeconds秒后重新获取' : '获取验证码',
+                            _isCountingDown
+                                ? '$_countDownSeconds秒后重新获取'
+                                : '获取验证码',
                             style: TextStyle(
                               fontSize: 12,
-                              color: _isCountingDown ? Colors.grey : const Color(0xFF2376E3),
+                              color: _isCountingDown
+                                  ? Colors.grey
+                                  : const Color(0xFF2376E3),
                             ),
                           ),
                         ),

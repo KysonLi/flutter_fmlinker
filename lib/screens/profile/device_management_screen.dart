@@ -69,7 +69,8 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
       if (!hasLocal) {
         String deviceName = await DeviceInfoUtil.getDeviceName();
         DateTime now = DateTime.now();
-        String time = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+        String time =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
         DeviceModel localDevice = DeviceModel(
           name: '$deviceName（本机）',
           deviceID: localDeviceId,
@@ -116,7 +117,8 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('删除设备', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        title: const Text('删除设备',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         content: const Text('删除后将清除设备上的数据，请谨慎操作'),
         actions: [
           TextButton(
@@ -189,13 +191,15 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                border: Border.all(color: const Color(0xFFEEEEEE)),
+                                border:
+                                    Border.all(color: const Color(0xFFEEEEEE)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Center(
                                 child: Text(
                                   '${index + 1}',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey),
                                 ),
                               ),
                             ),
@@ -211,7 +215,8 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     device.time,
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -221,7 +226,8 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                                 onPressed: () => _confirmDelete(device),
                                 child: const Text(
                                   '移除',
-                                  style: TextStyle(fontSize: 12, color: Colors.red),
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.red),
                                 ),
                               ),
                             const SizedBox(width: 16),

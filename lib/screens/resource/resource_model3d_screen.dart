@@ -7,11 +7,20 @@ import 'package:fmlink/services/model3d/model3d_cache.dart';
 ///
 /// 通过 [url] 传入 obj 资源地址，先经 [Model3dCache] 下载缓存到本地，
 /// 再由 flutter_cube 渲染（拖动旋转 / 双指缩放）。
+/// 若传入 [localZipPath]（已缓存的 zip 包），则直接解压本地包，不再下载。
 class ResourceModel3dScreen extends StatefulWidget {
   final String? title;
   final String? url;
 
-  const ResourceModel3dScreen({super.key, this.title, this.url});
+  /// 本地已缓存的 zip 包路径（有则直接解压，跳过网络下载）
+  final String? localZipPath;
+
+  const ResourceModel3dScreen({
+    super.key,
+    this.title,
+    this.url,
+    this.localZipPath,
+  });
 
   @override
   State<ResourceModel3dScreen> createState() => _ResourceModel3dScreenState();
@@ -43,7 +52,8 @@ class _ResourceModel3dScreenState extends State<ResourceModel3dScreen> {
       _readyTries = 0;
     });
     final String url = (widget.url ?? '').trim();
-    if (url.isEmpty) {
+    final String? localZip = widget.localZipPath;
+    if (url.isEmpty && (localZip == null || localZip.isEmpty)) {
       setState(() {
         _state = _LoadState.error;
         _error = '未提供模型资源地址';
@@ -51,8 +61,13 @@ class _ResourceModel3dScreenState extends State<ResourceModel3dScreen> {
       return;
     }
     try {
-      final String localObj =
-          await Model3dCache.instance.ensureDownloaded(url);
+      final String localObj;
+      if (localZip != null && localZip.isNotEmpty) {
+        // 本地已缓存 zip：直接解压，不下载
+        localObj = await Model3dCache.instance.extractLocalZip(localZip);
+      } else {
+        localObj = await Model3dCache.instance.ensureDownloaded(url);
+      }
       if (!mounted) return;
       setState(() {
         _localObjPath = localObj;
@@ -119,8 +134,8 @@ class _ResourceModel3dScreenState extends State<ResourceModel3dScreen> {
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.black45,
                     borderRadius: BorderRadius.circular(14),

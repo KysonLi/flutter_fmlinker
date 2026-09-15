@@ -31,10 +31,12 @@ class PublicationSourceListScreen extends StatefulWidget {
   });
 
   @override
-  State<PublicationSourceListScreen> createState() => _PublicationSourceListScreenState();
+  State<PublicationSourceListScreen> createState() =>
+      _PublicationSourceListScreenState();
 }
 
-class _PublicationSourceListScreenState extends State<PublicationSourceListScreen> {
+class _PublicationSourceListScreenState
+    extends State<PublicationSourceListScreen> {
   final PublishService _publishService = PublishService();
   final UserService _userService = UserService();
   final EasyRefreshController _refreshController = EasyRefreshController(
@@ -52,7 +54,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
   int _totalCodes = 0;
   bool _isLoading = false;
   double _affixThreshold = 0;
-  
+
   int _pageIndex = 1;
   final int _pageSize = 50;
   bool _hasMore = true;
@@ -61,7 +63,7 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
   Future<void> _loadSources({bool isRefresh = false}) async {
     if (_isLoading) return;
     if (!isRefresh && !_hasMore) return;
-    
+
     _isLoading = true;
     if (!isRefresh) {
       EasyLoading.show();
@@ -69,13 +71,14 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
 
     try {
       await _userService.refreshToken();
-      
+
       String? unificationId = await _userService.getUnificationId();
       if (unificationId.isEmpty) {
         unificationId = await DeviceInfoUtil.getDeviceId();
       }
 
-      Map<String, dynamic> response = await _publishService.getPublicationSourceList(
+      Map<String, dynamic> response =
+          await _publishService.getPublicationSourceList(
         widget.serviceCode,
         widget.prefixCode,
         versionCode: widget.versionCode,
@@ -86,14 +89,17 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
 
       if (response['status'] && response['data'] != null) {
         Map<String, dynamic> data = response['data'];
-        
+
         setState(() {
-          _totalChapters = int.tryParse(data['chapter']?.toString() ?? '0') ?? 0;
-          _totalSources = int.tryParse(data['resourceCount']?.toString() ?? '0') ?? 0;
-          _totalCodes = int.tryParse(data['sourceCount']?.toString() ?? '0') ?? 0;
-          
+          _totalChapters =
+              int.tryParse(data['chapter']?.toString() ?? '0') ?? 0;
+          _totalSources =
+              int.tryParse(data['resourceCount']?.toString() ?? '0') ?? 0;
+          _totalCodes =
+              int.tryParse(data['sourceCount']?.toString() ?? '0') ?? 0;
+
           List<dynamic> sources = data['sourceList'] ?? [];
-          
+
           if (isRefresh) {
             _allSources = sources;
             _pageIndex = 2; // 已加载第 1 页，下次加载从第 2 页继续
@@ -101,11 +107,11 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
             _allSources.addAll(sources);
             _pageIndex++;
           }
-          
+
           _hasMore = sources.length >= _pageSize;
           _chapterGroups = _groupByChapter(_allSources);
         });
-        
+
         _onDataLoaded();
       }
     } catch (e) {
@@ -120,21 +126,20 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
         _refreshController.finishLoad(
           _hasMore ? IndicatorResult.success : IndicatorResult.noMore,
         );
-
       }
     }
   }
 
   List<dynamic> _groupByChapter(List<dynamic> sources) {
     Map<String, dynamic> groups = {};
-    
+
     for (var source in sources) {
       String chapter = source['chapter']?.toString() ?? '';
       String chapterTitle = source['chapterTitle']?.toString() ?? '';
       String article = source['article']?.toString() ?? '';
-      
+
       String key = '$article-$chapter';
-      
+
       if (!groups.containsKey(key)) {
         groups[key] = {
           'article': article,
@@ -145,15 +150,16 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
       }
       groups[key]['sources'].add(source);
     }
-    
-    return groups.values.toList()..sort((a, b) {
-      int articleA = int.tryParse(a['article'] ?? '0') ?? 0;
-      int articleB = int.tryParse(b['article'] ?? '0') ?? 0;
-      if (articleA != articleB) return articleA.compareTo(articleB);
-      int chapterA = int.tryParse(a['chapter'] ?? '0') ?? 0;
-      int chapterB = int.tryParse(b['chapter'] ?? '0') ?? 0;
-      return chapterA.compareTo(chapterB);
-    });
+
+    return groups.values.toList()
+      ..sort((a, b) {
+        int articleA = int.tryParse(a['article'] ?? '0') ?? 0;
+        int articleB = int.tryParse(b['article'] ?? '0') ?? 0;
+        if (articleA != articleB) return articleA.compareTo(articleB);
+        int chapterA = int.tryParse(a['chapter'] ?? '0') ?? 0;
+        int chapterB = int.tryParse(b['chapter'] ?? '0') ?? 0;
+        return chapterA.compareTo(chapterB);
+      });
   }
 
   /// 点击链码条目 → 以 sourceIdentifier 进入资源模块
@@ -197,7 +203,8 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
 
   void _calculateAffixThreshold() {
     if (_bookInfoKey.currentContext != null) {
-      final RenderBox renderBox = _bookInfoKey.currentContext!.findRenderObject() as RenderBox;
+      final RenderBox renderBox =
+          _bookInfoKey.currentContext!.findRenderObject() as RenderBox;
       // _affixThreshold = 图书信息卡高度 + 25
       _affixThreshold = renderBox.size.height + 25;
       setState(() {});
@@ -296,10 +303,12 @@ class _PublicationSourceListScreenState extends State<PublicationSourceListScree
                   widget.goodsImage,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return Image.asset('assets/images/default_cover.png', fit: BoxFit.cover);
+                    return Image.asset('assets/images/default_cover.png',
+                        fit: BoxFit.cover);
                   },
                 )
-              : Image.asset('assets/images/default_cover.png', fit: BoxFit.cover),
+              : Image.asset('assets/images/default_cover.png',
+                  fit: BoxFit.cover),
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(

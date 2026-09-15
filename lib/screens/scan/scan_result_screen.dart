@@ -198,7 +198,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     if (lower.endsWith('.html') || lower.endsWith('.htm')) {
       return '网页';
     }
-    if (lower.endsWith('.glb') || lower.endsWith('.obj') || lower.endsWith('.gltf')) {
+    if (lower.endsWith('.glb') ||
+        lower.endsWith('.obj') ||
+        lower.endsWith('.gltf')) {
       return '3D模型';
     }
     return null;
@@ -406,8 +408,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 40,
           height: 40,

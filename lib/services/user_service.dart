@@ -35,7 +35,7 @@ class UserService {
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? userInfoStr = prefs.getString(Constants.kUserInfo);
-      
+
       if (userInfoStr == null || userInfoStr.isEmpty) {
         return null;
       }
@@ -229,7 +229,8 @@ class UserService {
       String unificationId = userInfo.unificationId;
       String deviceId = await DeviceInfoUtil.getDeviceId();
 
-      String timestamp = DateTime.now().toString().replaceAll(RegExp(r'[^0-9]'), '');
+      String timestamp =
+          DateTime.now().toString().replaceAll(RegExp(r'[^0-9]'), '');
       String fileName = '${unificationId}_$timestamp.jpg';
 
       dio.FormData formData = dio.FormData.fromMap({
@@ -239,8 +240,9 @@ class UserService {
         ),
       });
 
-      String url = '/target-goods/app/v1/image/upload?unificationId=$unificationId&deviceId=$deviceId';
-      
+      String url =
+          '/target-goods/app/v1/image/upload?unificationId=$unificationId&deviceId=$deviceId';
+
       Map<String, dynamic> result = await _apiService.upload(url, formData);
 
       if (result['status'] == true) {
@@ -279,7 +281,8 @@ class UserService {
   }
 
   // 注销账户
-  Future<Map<String, dynamic>> deleteAccount(String code, String password) async {
+  Future<Map<String, dynamic>> deleteAccount(
+      String code, String password) async {
     try {
       await refreshToken();
 

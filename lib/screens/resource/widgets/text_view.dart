@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:fast_gbk/fast_gbk.dart';
@@ -11,10 +12,14 @@ class TextView extends StatefulWidget {
   final String url;
   final bool hasAddress;
 
+  /// 本地缓存文件路径（有则直接读本地，不请求网络）
+  final String? localPath;
+
   const TextView({
     super.key,
     required this.url,
     required this.hasAddress,
+    this.localPath,
   });
 
   @override
@@ -28,7 +33,7 @@ class _TextViewState extends State<TextView> {
   @override
   void initState() {
     super.initState();
-    if (widget.hasAddress) {
+    if (widget.hasAddress || (widget.localPath?.isNotEmpty ?? false)) {
       _loadText();
     }
   }
@@ -36,6 +41,19 @@ class _TextViewState extends State<TextView> {
   Future<void> _loadText() async {
     setState(() => _loading = true);
     try {
+      final String? localPath = widget.localPath;
+      if (localPath != null &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync()) {
+        // 本地缓存：直接读文件字节解码
+        final List<int> bytes = await File(localPath).readAsBytes();
+        if (!mounted) return;
+        setState(() {
+          _text = (bytes.isEmpty) ? '' : _decodeText(bytes, null);
+          _loading = false;
+        });
+        return;
+      }
       final Response<List<int>> resp = await Dio().get<List<int>>(
         widget.url,
         options: Options(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/services/user_service.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -12,7 +13,7 @@ class DeleteAccountScreen extends StatefulWidget {
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   final UserService _userService = UserService();
-  
+
   int _currentStep = 1;
   bool _agreeChecked = false;
   String _inputPhone = '';
@@ -52,10 +53,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
     EasyLoading.show(status: '处理中...');
     try {
-      Map<String, dynamic> response = await _userService.deleteAccount(_inputPhone, _code);
+      Map<String, dynamic> response =
+          await _userService.deleteAccount(_inputPhone, _code);
       if (response['status']) {
         EasyLoading.showToast('注销申请已提交，请在15天内不要登录');
         await _userService.clearUserInfo();
+        // 缓存元数据按账号隔离：注销后立即切回未登录视角
+        await CacheService().syncAccount();
         if (!mounted) return;
         context.go('/login');
       } else {
@@ -75,10 +79,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     }
     try {
       await _userService.refreshToken();
-      Map<String, dynamic> response = await _userService.sendSmsCode(
-        _inputPhone, 
-        'delete_account'
-      );
+      Map<String, dynamic> response =
+          await _userService.sendSmsCode(_inputPhone, 'delete_account');
       if (response['status']) {
         EasyLoading.showToast('验证码发送成功');
       } else {
@@ -178,7 +180,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           children: [
             Checkbox(
               value: _agreeChecked,
-              onChanged: (value) => setState(() => _agreeChecked = value ?? false),
+              onChanged: (value) =>
+                  setState(() => _agreeChecked = value ?? false),
               activeColor: const Color(0xFFFF4757),
             ),
             const Expanded(
@@ -196,7 +199,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             onPressed: _nextStep,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              backgroundColor: _agreeChecked ? const Color(0xFFFF4757) : Colors.grey[300],
+              backgroundColor:
+                  _agreeChecked ? const Color(0xFFFF4757) : Colors.grey[300],
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(4)),
               ),
@@ -231,7 +235,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               borderSide: BorderSide(color: Color(0xFF2376E3)),
               borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
             prefixIcon: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -266,7 +271,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               borderSide: BorderSide(color: Color(0xFF2376E3)),
               borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
             counterText: '',
             prefixIcon: Padding(
@@ -346,7 +352,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         ),
       ),
       body: Container(
-        height: double.infinity, 
+        height: double.infinity,
         color: Colors.white,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -358,8 +364,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 child: Text(
                   _getStepTitle(),
                   style: const TextStyle(
-                    fontSize: 20, 
-                    fontWeight: FontWeight.bold, 
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     height: 1.2,
                     color: Colors.black,
                   ),

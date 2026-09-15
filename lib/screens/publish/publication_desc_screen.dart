@@ -5,7 +5,8 @@ class PublicationDescScreen extends StatefulWidget {
   final String title;
   final String content;
 
-  const PublicationDescScreen({super.key, required this.title, required this.content});
+  const PublicationDescScreen(
+      {super.key, required this.title, required this.content});
 
   @override
   State<PublicationDescScreen> createState() => _PublicationDescScreenState();
@@ -113,8 +114,7 @@ class _PublicationDescScreenState extends State<PublicationDescScreen> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );

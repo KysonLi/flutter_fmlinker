@@ -38,12 +38,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
         NavigationDelegate(
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url.toLowerCase();
-            
+
             if (_isExternalProtocol(url)) {
               _launchExternalUrl(url);
               return NavigationDecision.prevent;
             }
-            
+
             return NavigationDecision.navigate;
           },
           onPageStarted: (String url) {
@@ -64,8 +64,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView resource error: ${error.description}, code: ${error.errorCode}, url: ${error.url}');
-            
+            debugPrint(
+                'WebView resource error: ${error.description}, code: ${error.errorCode}, url: ${error.url}');
+
             if (!_pageLoaded) {
               setState(() {
                 _isLoading = false;
@@ -82,9 +83,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   bool _isExternalProtocol(String url) {
     final protocols = [
-      'tel:', 
-      'mailto:', 
-      'sms:', 
+      'tel:',
+      'mailto:',
+      'sms:',
       'intent:',
       'market:',
       'geo:',
@@ -99,7 +100,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       'itms-services:',
       'android-app:',
     ];
-    
+
     for (final protocol in protocols) {
       if (url.startsWith(protocol)) {
         return true;
@@ -126,11 +127,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
   Future<void> _loadUrl() async {
     try {
       String url = widget.url.trim();
-      
+
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://$url';
       }
-      
+
       final uri = Uri.parse(url);
       debugPrint('Loading URL: $uri');
       _controller.loadRequest(uri);
@@ -158,7 +159,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title ?? _pageTitle ?? '网页', style: const TextStyle(fontSize: 14)),
+        title: Text(widget.title ?? _pageTitle ?? '网页',
+            style: const TextStyle(fontSize: 14)),
         backgroundColor: Colors.white,
         centerTitle: true,
         leading: IconButton(

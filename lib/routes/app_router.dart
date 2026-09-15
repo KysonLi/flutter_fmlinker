@@ -28,6 +28,8 @@ import 'package:fmlink/screens/profile/set_password_screen.dart';
 import 'package:fmlink/screens/profile/device_management_screen.dart';
 import 'package:fmlink/screens/profile/delete_account_screen.dart';
 import 'package:fmlink/screens/profile/feedback_screen.dart';
+import 'package:fmlink/screens/cache/cache_screen.dart';
+import 'package:fmlink/screens/cache/cache_publication_detail_screen.dart';
 import 'package:fmlink/screens/profile/my_like_screen.dart';
 import 'package:fmlink/screens/profile/purchase_record_screen.dart';
 import 'package:fmlink/screens/scan/scan_screen.dart';
@@ -147,7 +149,14 @@ class AppRouter {
       GoRoute(
         path: '/resource/model3d',
         builder: (context, state) {
-          final String? url = state.extra as String?;
+          final dynamic extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return ResourceModel3dScreen(
+              url: extra['url']?.toString(),
+              localZipPath: extra['localZipPath']?.toString(),
+            );
+          }
+          final String? url = extra as String?;
           return ResourceModel3dScreen(url: url);
         },
       ),
@@ -218,6 +227,19 @@ class AppRouter {
       GoRoute(
         path: '/profile/feedback',
         builder: (context, state) => const FeedbackScreen(),
+      ),
+      GoRoute(
+        path: '/cache',
+        builder: (context, state) => const CacheScreen(),
+      ),
+      GoRoute(
+        path: '/cache/publication',
+        builder: (context, state) {
+          final data = state.extra as Map<String, dynamic>?;
+          return CachePublicationDetailScreen(
+            extra: data ?? <String, dynamic>{},
+          );
+        },
       ),
       GoRoute(
         path: '/scan',

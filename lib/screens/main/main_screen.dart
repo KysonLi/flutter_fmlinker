@@ -32,7 +32,8 @@ class _TabbarCurvePainter extends CustomPainter {
     //   圆心 (cx, yc)，yc = (half² - h²) / 2h，半径 r = h + yc
     final double half = bumpWidth / 2;
     final double cx = w / 2;
-    final double yc = (half * half - bumpHeight * bumpHeight) / (2 * bumpHeight);
+    final double yc =
+        (half * half - bumpHeight * bumpHeight) / (2 * bumpHeight);
     final double r = bumpHeight + yc;
     final double startAngle = math.atan2(-yc, -half);
     final double sweepAngle = math.atan2(-yc, half) - startAngle;
@@ -40,7 +41,8 @@ class _TabbarCurvePainter extends CustomPainter {
     final Path top = Path()
       ..moveTo(0, 0)
       ..lineTo(cx - half, 0)
-      ..arcTo(Rect.fromCircle(center: Offset(cx, yc), radius: r), startAngle, sweepAngle, false)
+      ..arcTo(Rect.fromCircle(center: Offset(cx, yc), radius: r), startAngle,
+          sweepAngle, false)
       ..lineTo(w, 0);
 
     // 背景填充：顶边 + 三条边包围到底，确保整个 tabbar（含凸起区域）铺满白色

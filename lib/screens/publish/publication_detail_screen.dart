@@ -88,11 +88,13 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
     double newOpacity = 0.0;
     final segmentTriggerOffset = bookSectionHeight * 0.9;
     if (scrollOffset > segmentTriggerOffset) {
-      newOpacity = ((scrollOffset - segmentTriggerOffset) / 100).clamp(0.0, 1.0);
+      newOpacity =
+          ((scrollOffset - segmentTriggerOffset) / 100).clamp(0.0, 1.0);
     }
 
     int newSegment = 0;
-    final descriptionMiddle = descriptionSectionTop + descriptionSectionHeight / 2;
+    final descriptionMiddle =
+        descriptionSectionTop + descriptionSectionHeight / 2;
     if (descriptionMiddle > 0 && descriptionMiddle < screenHeight) {
       newSegment = 1;
     } else {
@@ -106,7 +108,9 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       }
     }
 
-    if (_navBarTitle != newTitle || _segmentOpacity != newOpacity || _selectedSegment != newSegment) {
+    if (_navBarTitle != newTitle ||
+        _segmentOpacity != newOpacity ||
+        _selectedSegment != newSegment) {
       setState(() {
         _navBarTitle = newTitle;
         _segmentOpacity = newOpacity;
@@ -187,11 +191,13 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       final box = sourceContext.findRenderObject() as RenderBox;
       final offset =
           box.localToGlobal(Offset.zero).dy + _scrollController.offset - 100;
-      _scrollController.animateTo(
+      _scrollController
+          .animateTo(
         offset.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-      ).then((_) {
+      )
+          .then((_) {
         _isUserScrolling = false;
       });
     }
@@ -206,15 +212,16 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       });
       final box = descriptionContext.findRenderObject() as RenderBox;
       final screenHeight = MediaQuery.of(context).size.height;
-      final targetOffset =
-          box.localToGlobal(Offset.zero).dy +
+      final targetOffset = box.localToGlobal(Offset.zero).dy +
           _scrollController.offset -
           (screenHeight - box.size.height) / 2;
-      _scrollController.animateTo(
+      _scrollController
+          .animateTo(
         targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-      ).then((_) {
+      )
+          .then((_) {
         _isUserScrolling = false;
       });
     }
@@ -283,22 +290,22 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: Image.asset('assets/icons/my_question.png', width: 20, height: 20),
+            icon: Image.asset('assets/icons/my_question.png',
+                width: 20, height: 20),
             onPressed: () {
               context.push('/scan/book-help');
             },
           ),
         ],
-        bottom:
-            _segmentOpacity > 0
-                ? PreferredSize(
-                  preferredSize: const Size.fromHeight(40),
-                  child: Opacity(
-                    opacity: _segmentOpacity,
-                    child: _buildSegmentControl(),
-                  ),
-                )
-                : null,
+        bottom: _segmentOpacity > 0
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(40),
+                child: Opacity(
+                  opacity: _segmentOpacity,
+                  child: _buildSegmentControl(),
+                ),
+              )
+            : null,
       ),
       body: _buildBody(),
     );
@@ -476,7 +483,10 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
           // 图书名称
           Text(
             _publicationDetail!['goodsName'] ?? '未知出版物',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -521,7 +531,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
     String? shopDesc = _publicationDetail!['shopDesc']?.toString() ?? '';
     String? shopBrief = _publicationDetail!['shopBrief']?.toString() ?? '';
     String? shopLogo = _publicationDetail!['shopLogo']?.toString() ?? '';
-    
+
     List<dynamic> sourceList = [];
     if (_publicationDetail!.containsKey('sourceList') &&
         _publicationDetail!['sourceList'] is List) {
@@ -542,14 +552,18 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
             iconPath: 'assets/icons/publish_press.png',
             text: shopName ?? '',
             onTap: () {
-              if (shopId != null && shopId.isNotEmpty && shopName != null && shopName.isNotEmpty) {
+              if (shopId != null &&
+                  shopId.isNotEmpty &&
+                  shopName != null &&
+                  shopName.isNotEmpty) {
                 final publisher = PublisherModel(
                   shopId: shopId,
                   shopName: shopName,
                   shopDesc: shopDesc,
                   shopBrief: shopBrief,
                   createTime: '',
-                  nameInitial: shopName.isNotEmpty ? shopName.substring(0, 1) : '?',
+                  nameInitial:
+                      shopName.isNotEmpty ? shopName.substring(0, 1) : '?',
                   logo: shopLogo,
                   isliLogo: '',
                   goodsCount: '0',
@@ -566,19 +580,24 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
             iconPath: 'assets/icons/publish_code.png',
             text: '链码$sourceCount(资源$resourceCount)',
             onTap: () {
-              String? serviceCode = _publicationDetail!['serviceCode']?.toString();
-              String? prefixCode = _publicationDetail!['prefixCode']?.toString();
+              String? serviceCode =
+                  _publicationDetail!['serviceCode']?.toString();
+              String? prefixCode =
+                  _publicationDetail!['prefixCode']?.toString();
               int versionCode = _publicationDetail!['versionCode'] ?? 1;
-              String? goodsImage = _publicationDetail!['goodsImage']?.toString();
+              String? goodsImage =
+                  _publicationDetail!['goodsImage']?.toString();
               String? goodsName = _publicationDetail!['goodsName']?.toString();
               List<dynamic> resourceFormats = [];
               if (_publicationDetail!.containsKey('resourceForamt') &&
                   _publicationDetail!['resourceForamt'] is List) {
                 resourceFormats = _publicationDetail!['resourceForamt'];
               }
-              
-              if (serviceCode != null && serviceCode.isNotEmpty && 
-                  prefixCode != null && prefixCode.isNotEmpty) {
+
+              if (serviceCode != null &&
+                  serviceCode.isNotEmpty &&
+                  prefixCode != null &&
+                  prefixCode.isNotEmpty) {
                 context.push('/publication-source-list', extra: {
                   'goodsId': widget.goodsId,
                   'goodsName': goodsName ?? '',
@@ -615,7 +634,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
   // ==================== 视频介绍板块 ====================
   Widget _buildVideoSection() {
     String? videoUrl = _publicationDetail!['goodsIntroduceVideo'];
-    
+
     if (videoUrl == null || videoUrl.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -652,67 +671,66 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
           // 第二行: 视频内容
           GestureDetector(
             onTap: () => _toggleVideo(videoUrl),
-            child:
-                _isVideoPlaying && _videoController != null
-                    ? AspectRatio(
-                      aspectRatio: _videoController!.value.aspectRatio,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          VideoPlayer(_videoController!),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () => _toggleVideo(videoUrl),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+            child: _isVideoPlaying && _videoController != null
+                ? AspectRatio(
+                    aspectRatio: _videoController!.value.aspectRatio,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        VideoPlayer(_videoController!),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () => _toggleVideo(videoUrl),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    )
-                    : Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        videoCover != null && videoCover.isNotEmpty
-                            ? Image.network(
-                                videoCover,
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.asset(
-                                    'assets/images/publish_video_cover.jpg',
-                                    width: double.infinity,
-                                    height: 200,
-                                    fit: BoxFit.cover,
-                                  );
-                                },
-                              )
-                            : Image.asset(
-                                'assets/images/publish_video_cover.jpg',
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.cover,
-                              ),
-                        Image.asset(
-                          'assets/icons/publish_play.png',
-                          width: 50,
-                          height: 50,
                         ),
                       ],
                     ),
+                  )
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      videoCover != null && videoCover.isNotEmpty
+                          ? Image.network(
+                              videoCover,
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/publish_video_cover.jpg',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'assets/images/publish_video_cover.jpg',
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
+                      Image.asset(
+                        'assets/icons/publish_play.png',
+                        width: 50,
+                        height: 50,
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -1157,7 +1175,8 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
 
             return Column(
               children: [
-                _buildPlatformRow(name: platformName ?? '', url: platformUrl ?? ''),
+                _buildPlatformRow(
+                    name: platformName ?? '', url: platformUrl ?? ''),
                 if (index < platformGoodsURLs.length - 1)
                   const Divider(height: 1, color: Color(0xFFEEEEEE)),
               ],
@@ -1178,7 +1197,8 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
         if (url.isNotEmpty) {
           try {
             String urlToLaunch = url.trim();
-            if (!urlToLaunch.startsWith('http://') && !urlToLaunch.startsWith('https://')) {
+            if (!urlToLaunch.startsWith('http://') &&
+                !urlToLaunch.startsWith('https://')) {
               urlToLaunch = 'https://$urlToLaunch';
             }
             final uri = Uri.parse(urlToLaunch);

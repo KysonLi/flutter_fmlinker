@@ -17,7 +17,7 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
@@ -33,7 +33,7 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
           },
         ),
       );
-    
+
     _loadHtmlContent();
   }
 
@@ -44,15 +44,18 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
 
   Future<void> _loadHtmlContent() async {
     try {
-      String htmlContent = await rootBundle.loadString('assets/html/book/link_book_help.html');
-      
-      String mprLogoBase64 = await _imageToBase64('assets/html/book/MPRlogo@3x.png');
+      String htmlContent =
+          await rootBundle.loadString('assets/html/book/link_book_help.html');
+
+      String mprLogoBase64 =
+          await _imageToBase64('assets/html/book/MPRlogo@3x.png');
       String mpr1Base64 = await _imageToBase64('assets/html/book/mpr1@3x.png');
       String mpr2Base64 = await _imageToBase64('assets/html/book/mpr2@3x.png');
       String mpr3Base64 = await _imageToBase64('assets/html/book/mpr3@3x.png');
 
       htmlContent = htmlContent
-          .replaceAll('./MPRlogo@3x.png', 'data:image/png;base64,$mprLogoBase64')
+          .replaceAll(
+              './MPRlogo@3x.png', 'data:image/png;base64,$mprLogoBase64')
           .replaceAll('./mpr1@3x.png', 'data:image/png;base64,$mpr1Base64')
           .replaceAll('./mpr2@3x.png', 'data:image/png;base64,$mpr2Base64')
           .replaceAll('./mpr3@3x.png', 'data:image/png;base64,$mpr3Base64');
@@ -85,8 +88,7 @@ class _BookHelpScreenState extends State<BookHelpScreen> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );

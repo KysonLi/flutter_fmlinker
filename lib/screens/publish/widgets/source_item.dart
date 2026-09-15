@@ -89,7 +89,8 @@ class SourceItem extends StatelessWidget {
       softWrap: false,
       style: TextStyle(
         fontSize: 11,
-        color: isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF4F5960),
+        color:
+            isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF4F5960),
         fontWeight: FontWeight.bold,
       ),
     );
@@ -139,7 +140,8 @@ class SourceItem extends StatelessWidget {
       _getSourceName(),
       style: TextStyle(
         fontSize: 13,
-        color: isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF585959),
+        color:
+            isCurrentTarget ? const Color(0xFF00AFFE) : const Color(0xFF585959),
       ),
     );
   }
@@ -148,12 +150,12 @@ class SourceItem extends StatelessWidget {
     return Row(
       children: [
         Text(
-            '资源 $resourceCount',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF666666),
-            ),
+          '资源 $resourceCount',
+          style: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF666666),
           ),
+        ),
         const SizedBox(width: 12),
         Text(
           bookPageNo > 0 ? '页码 P$bookPageNo' : '页码 P-',

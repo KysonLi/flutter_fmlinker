@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/routes/app_router.dart';
 import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/themes/app_theme.dart';
@@ -45,6 +46,9 @@ void main() {
       child: const MyApp(),
     ),
   );
+
+  // 初始化缓存服务：加载缓存记录、注册生命周期观察者、询问未完成任务
+  CacheService().init();
 }
 
 class MyApp extends StatelessWidget {
@@ -69,7 +73,8 @@ class MyApp extends StatelessWidget {
     final mq = MediaQuery.of(context);
     final scale = (mq.size.width / 375.0).clamp(1.0, 1.2).toDouble();
     return MediaQuery(
-      data: mq.copyWith(textScaler: TextScaler.linear(mq.textScaler.scale(1.0) * scale)),
+      data: mq.copyWith(
+          textScaler: TextScaler.linear(mq.textScaler.scale(1.0) * scale)),
       child: app,
     );
   }

@@ -24,7 +24,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
     controlFinishRefresh: true,
     controlFinishLoad: true,
   );
-  
+
   // 管理模式相关
   bool _isManageMode = false;
   final Set<String> _selectedItems = {};
@@ -51,7 +51,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
 
       // 获取unificationId
       String unificationId = await UserService().getUnificationId();
-      
+
       if (unificationId.isEmpty) {
         setState(() {});
         return;
@@ -74,7 +74,8 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
         if (data != null && data is Map) {
           // 处理数据
           List<dynamic> linkInfoList = [];
-          if (data.containsKey('linkInfoList') && data['linkInfoList'] is List) {
+          if (data.containsKey('linkInfoList') &&
+              data['linkInfoList'] is List) {
             linkInfoList = data['linkInfoList'];
           }
 
@@ -135,10 +136,12 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
     Widget? icon;
     if (statusInt == 0) {
       // 下架图标
-      icon = Image.asset('assets/icons/order_status_soldout.png', width: 32, height: 32);
+      icon = Image.asset('assets/icons/order_status_soldout.png',
+          width: 32, height: 32);
     } else if (statusInt == 2 || statusInt == 3) {
       // 删除图标
-      icon = Image.asset('assets/icons/order_status_delete.png', width: 32, height: 32);
+      icon = Image.asset('assets/icons/order_status_delete.png',
+          width: 32, height: 32);
     }
 
     if (icon != null) {
@@ -173,7 +176,8 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
         _selectedItems.add(itemId);
       }
       // 检查是否所有项目都被选中
-      _isSelectAll = _selectedItems.length == _linkHistory.length && _linkHistory.isNotEmpty;
+      _isSelectAll = _selectedItems.length == _linkHistory.length &&
+          _linkHistory.isNotEmpty;
     });
   }
 
@@ -238,23 +242,23 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
   Future<void> _performDelete() async {
     try {
       EasyLoading.show(status: '删除中...');
-      
+
       // 获取unificationId
       String unificationId = await UserService().getUnificationId();
       if (unificationId.isEmpty) {
         EasyLoading.showError('用户未登录');
         return;
       }
-      
+
       // 构建goodsIds参数
       String goodsIds = _selectedItems.join(',');
-      
+
       // 调用删除接口
       final response = await LinkService().deleteGoodsLink(
         unificationId,
         goodsIds,
       );
-      
+
       if (response['status']) {
         // 删除成功，重置页面状态
         setState(() {
@@ -262,10 +266,10 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
           _selectedItems.clear();
           _isSelectAll = false;
         });
-        
+
         // 刷新列表数据
         _loadLinkHistory(isRefresh: true);
-        
+
         EasyLoading.showSuccess('删除成功');
       } else {
         EasyLoading.showError(response['msg'] ?? '删除失败');
@@ -282,7 +286,10 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('关联MPR出版物（全媒版）', style: TextStyle(fontSize: 14),),
+        title: const Text(
+          '关联MPR出版物（全媒版）',
+          style: TextStyle(fontSize: 14),
+        ),
         leading: IconButton(
           icon: Image.asset('assets/icons/back.png', width: 20, height: 20),
           onPressed: () {
@@ -304,187 +311,206 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
         ],
       ),
       body: Stack(
-              children: [
-                EasyRefresh(
-                  controller: _refreshController,
-                  onRefresh: () => _onRefresh(),
-                  onLoad: () => _onLoading(),
-                  header: RefreshConfig.buildHeader(),
-                  footer: RefreshConfig.buildFooter(),
-                  child: _linkHistory.isEmpty
-                      ? ListView(
+        children: [
+          EasyRefresh(
+            controller: _refreshController,
+            onRefresh: () => _onRefresh(),
+            onLoad: () => _onLoading(),
+            header: RefreshConfig.buildHeader(),
+            footer: RefreshConfig.buildFooter(),
+            child: _linkHistory.isEmpty
+                ? ListView(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.5,
+                            Image.asset(
+                              'assets/images/empty_list.png',
+                              width: 80,
+                              height: 80,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '暂无关联数据',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView(
+                    padding: EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      top: 12,
+                      bottom: _isManageMode
+                          ? 70 + MediaQuery.of(context).padding.bottom
+                          : 12,
+                    ),
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 10,
+                        runSpacing: 15,
+                        children: _linkHistory.map((item) {
+                          String? itemId = _getItemId(item);
+                          bool isSelected =
+                              itemId != null && _selectedItems.contains(itemId);
+
+                          return GestureDetector(
+                            onTap: () {
+                              if (_isManageMode && itemId != null) {
+                                // 编辑模式下响应选中事件
+                                _toggleItemSelection(itemId);
+                              } else {
+                                // 非编辑模式下响应其他事件
+                                // TODO: 跳转到详情页面或其他操作
+                              }
+                            },
+                            child: SizedBox(
+                              width: (MediaQuery.of(context).size.width -
+                                      24 -
+                                      20) /
+                                  3,
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Image.asset(
-                                    'assets/images/empty_list.png',
-                                    width: 80,
-                                    height: 80,
+                                  // 封面
+                                  Stack(
+                                    children: [
+                                      BookCover(
+                                        imageUrl: item['goodsImage'] ?? '',
+                                        width:
+                                            (MediaQuery.of(context).size.width -
+                                                    24 -
+                                                    20) /
+                                                3,
+                                        height: ((MediaQuery.of(context)
+                                                        .size
+                                                        .width -
+                                                    24 -
+                                                    20) /
+                                                3) *
+                                            1.4,
+                                      ),
+                                      // 状态图标
+                                      if (item.containsKey('goodsStatus'))
+                                        _buildStatusIcon(item['goodsStatus']),
+                                      // 选择框
+                                      if (_isManageMode && itemId != null)
+                                        Positioned(
+                                          top: 8,
+                                          left: 8,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              _toggleItemSelection(itemId);
+                                            },
+                                            child: Image.asset(
+                                              isSelected
+                                                  ? 'assets/icons/item_selected.png'
+                                                  : 'assets/icons/item_unselect.png',
+                                              width: 20,
+                                              height: 20,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    '暂无关联数据',
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                  const SizedBox(height: 6),
+                                  // 名称
+                                  Text(
+                                    item['goodsName'] ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  // 已扫码次数
+                                  Text(
+                                    '已扫码: ${item['linkSourceCount'] ?? 0}/${item['resourceCount'] ?? 0}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
                                       color: Colors.grey,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        )
-                      : ListView(
-                          padding: EdgeInsets.only(
-                            left: 12,
-                            right: 12,
-                            top: 12,
-                            bottom: _isManageMode
-                                ? 70 + MediaQuery.of(context).padding.bottom
-                                : 12,
-                          ),
-                          children: [
-                            Wrap(
-                              alignment: WrapAlignment.start,
-                              spacing: 10,
-                              runSpacing: 15,
-                              children: _linkHistory.map((item) {
-                                String? itemId = _getItemId(item);
-                                bool isSelected = itemId != null && _selectedItems.contains(itemId);
-                                
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (_isManageMode && itemId != null) {
-                                      // 编辑模式下响应选中事件
-                                      _toggleItemSelection(itemId);
-                                    } else {
-                                      // 非编辑模式下响应其他事件
-                                      // TODO: 跳转到详情页面或其他操作
-                                    }
-                                  },
-                                  child: SizedBox(
-                                    width: (MediaQuery.of(context).size.width - 24 - 20) / 3,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // 封面
-                                        Stack(
-                                          children: [
-                                            BookCover(
-                                              imageUrl: item['goodsImage'] ?? '',
-                                              width: (MediaQuery.of(context).size.width - 24 - 20) / 3,
-                                              height: ((MediaQuery.of(context).size.width - 24 - 20) / 3) * 1.4,
-                                            ),
-                                            // 状态图标
-                                            if (item.containsKey('goodsStatus'))
-                                              _buildStatusIcon(item['goodsStatus']),
-                                            // 选择框
-                                            if (_isManageMode && itemId != null)
-                                              Positioned(
-                                                top: 8,
-                                                left: 8,
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    _toggleItemSelection(itemId);
-                                                  },
-                                                  child: Image.asset(
-                                                    isSelected ? 'assets/icons/item_selected.png' : 'assets/icons/item_unselect.png',
-                                                    width: 20,
-                                                    height: 20,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        // 名称
-                                        Text(
-                                          item['goodsName'] ?? '',
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        // 已扫码次数
-                                        Text(
-                                          '已扫码: ${item['linkSourceCount'] ?? 0}/${item['resourceCount'] ?? 0}',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                ),
-                // 底部工具栏
-                if (_isManageMode)
-                  Positioned(
-                    // 背景块紧贴屏幕底部，底部安全区高度只由内部 SafeArea 为内容让位
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        border: Border(top: BorderSide(color: Colors.grey[200]!)),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 3,
-                            offset: const Offset(0, -1),
-                          ),
-                        ],
+                          );
+                        }).toList(),
                       ),
-                      child: SafeArea(
-                        top: false,
+                    ],
+                  ),
+          ),
+          // 底部工具栏
+          if (_isManageMode)
+            Positioned(
+              // 背景块紧贴屏幕底部，底部安全区高度只由内部 SafeArea 为内容让位
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 3,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    children: [
+                      // 全选按钮
+                      GestureDetector(
+                        onTap: _toggleSelectAll,
                         child: Row(
                           children: [
-                            // 全选按钮
-                            GestureDetector(
-                              onTap: _toggleSelectAll,
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    _isSelectAll ? 'assets/icons/all_selected.png' : 'assets/icons/all_unselect.png',
-                                    width: 20,
-                                    height: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text('全选'),
-                                ],
-                              ),
+                            Image.asset(
+                              _isSelectAll
+                                  ? 'assets/icons/all_selected.png'
+                                  : 'assets/icons/all_unselect.png',
+                              width: 20,
+                              height: 20,
                             ),
-                            // 已选择数量
-                            Expanded(
-                              child: Center(
-                                child: Text('已选择 ${_selectedItems.length} 条'),
-                              ),
-                            ),
-                            // 删除按钮
-                            DeleteActionButton(
-                              enabled: _selectedItems.isNotEmpty,
-                              onPressed: _deleteSelectedItems,
-                            ),
+                            const SizedBox(width: 8),
+                            const Text('全选'),
                           ],
                         ),
                       ),
-                    ),
+                      // 已选择数量
+                      Expanded(
+                        child: Center(
+                          child: Text('已选择 ${_selectedItems.length} 条'),
+                        ),
+                      ),
+                      // 删除按钮
+                      DeleteActionButton(
+                        enabled: _selectedItems.isNotEmpty,
+                        onPressed: _deleteSelectedItems,
+                      ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
+        ],
+      ),
     );
   }
 }

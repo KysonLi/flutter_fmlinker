@@ -1,3 +1,4 @@
+import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
@@ -88,6 +89,8 @@ class AuthService {
   // 登出
   Future<Map<String, dynamic>> logout() async {
     await _userService.clearUserInfo();
+    // 缓存元数据按账号隔离：退出后立即切回未登录视角（文件本体保留供后续账号复用）
+    await CacheService().syncAccount();
     return await _apiService.post('/chain-server/api/link_code_system/logout');
   }
 
@@ -105,6 +108,8 @@ class AuthService {
         }
 
         await _userService.getUserInfo();
+        // 缓存元数据按账号隔离：登录后立即加载该账号的缓存状态
+        await CacheService().syncAccount();
       }
     }
   }

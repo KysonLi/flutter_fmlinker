@@ -386,7 +386,7 @@ class _MyScreenState extends State<MyScreen> {
           _buildHorizontalItem(
             'assets/icons/my_cache.png',
             '我的缓存',
-            () => _requireLogin(() => EasyLoading.showToast('功能开发中')),
+            () => context.push('/cache'),
           ),
         ],
       ),

@@ -154,7 +154,8 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       } else {
         _selectedItems.add(itemId);
       }
-      _isSelectAll = _selectedItems.length == _scanHistory.length && _scanHistory.isNotEmpty;
+      _isSelectAll = _selectedItems.length == _scanHistory.length &&
+          _scanHistory.isNotEmpty;
     });
   }
 
@@ -301,8 +302,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             footer: RefreshConfig.buildFooter(),
             child: _buildContent(),
           ),
-          if (_isManageMode)
-            _buildBottomToolbar(),
+          if (_isManageMode) _buildBottomToolbar(),
         ],
       ),
     );
@@ -310,7 +310,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return  Container();
+      return Container();
     }
 
     return ListView(
@@ -455,7 +455,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                 child: Row(
                   children: [
                     Image.asset(
-                      _isSelectAll ? 'assets/icons/all_selected.png' : 'assets/icons/all_unselect.png',
+                      _isSelectAll
+                          ? 'assets/icons/all_selected.png'
+                          : 'assets/icons/all_unselect.png',
                       width: 20,
                       height: 20,
                     ),
@@ -466,7 +468,8 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
               ),
               Expanded(
                 child: Center(
-                  child: Text('已选择 ${_selectedItems.length} 条', style: const TextStyle(fontSize: 12)),
+                  child: Text('已选择 ${_selectedItems.length} 条',
+                      style: const TextStyle(fontSize: 12)),
                 ),
               ),
               DeleteActionButton(
@@ -557,7 +560,9 @@ class ScanHistoryItem extends StatelessWidget {
             GestureDetector(
               onTap: onTap,
               child: Image.asset(
-                isSelected ? 'assets/icons/item_selected.png' : 'assets/icons/item_unselect_outline.png',
+                isSelected
+                    ? 'assets/icons/item_selected.png'
+                    : 'assets/icons/item_unselect_outline.png',
                 width: 20,
                 height: 20,
               ),

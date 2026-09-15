@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -42,6 +43,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Future<void> _logout() async {
     await _userService.clearUserInfo();
+    // 缓存元数据按账号隔离：退出后立即切回未登录视角
+    await CacheService().syncAccount();
     _needRefresh = true;
     if (!mounted) return;
     Navigator.pop(context, {'refresh': true});

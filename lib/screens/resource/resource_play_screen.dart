@@ -1,20 +1,23 @@
 import 'dart:async';
-import 'dart:io' show Directory;
+import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:fmlink/cache/cache_record.dart';
+import 'package:fmlink/cache/cache_service.dart';
+import 'package:fmlink/cache/local_media_server.dart';
+import 'package:fmlink/resource/offline_source.dart';
 import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/resource/resource_service.dart';
 import 'package:fmlink/resource/resource_types.dart';
 import 'package:fmlink/resource/source_detail.dart';
-import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/network_info_util.dart';
 import 'package:fmlink/screens/resource/widgets/audio_player_view.dart';
 import 'package:fmlink/screens/resource/widgets/center_column.dart';
 import 'package:fmlink/screens/resource/widgets/chain_code_sheet.dart';
@@ -49,7 +52,6 @@ class ResourcePlayScreen extends StatefulWidget {
 
 class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   final ResourceService _service = ResourceService();
-  final ApiService _apiService = ApiService();
 
   late String _isliCode;
   late bool _fromScan;
@@ -61,6 +63,9 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   SourceScanData? _data;
   List<ScanResource> _resources = const [];
   int _index = 0;
+
+  /// 是否处于离线（本地缓存）模式：无网络或接口失败时用本地已缓存资源兜底
+  bool _offline = false;
 
   /// 分页：每次请求 20 条，target.resources 按页返回
   static const int _pageSize = 20;
@@ -111,16 +116,23 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     _versionCode = (version == null || version.isEmpty) ? null : version;
     final dynamic si = extra['startIndex'];
     _startIndex = si is int && si > 0 ? si : 0;
+    CacheService().addListener(_onCacheChanged);
     _load();
   }
 
   @override
   void dispose() {
+    CacheService().removeListener(_onCacheChanged);
     _hideTimer?.cancel();
     _restoreSystemUi(); // 兜底恢复系统状态栏/导航栏，避免全屏退出时残留沉浸式
     _pageController?.dispose();
     _disposeMedia();
     super.dispose();
+  }
+
+  /// 缓存状态变化（下载进度/完成/删除）时刷新缓存按钮
+  void _onCacheChanged() {
+    if (mounted) setState(() {});
   }
 
   // ==================== 数据加载 ====================
@@ -130,6 +142,23 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       _loading = true;
       _error = null;
     });
+
+    // 缓存元数据按账号隔离：进入页面先对齐当前账号（登录/退出/切号后重新加载）
+    await CacheService().syncAccount();
+    if (!mounted) return;
+
+    // 无网络（飞行模式等）：直接走本地缓存，避免等待接口超时且保证已下载资源可播放
+    final NetworkType net = await NetworkInfoUtil.getNetworkType();
+    if (net == NetworkType.none) {
+      if (await _loadOffline()) return;
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '当前离线且无本地缓存，请联网后重试';
+      });
+      return;
+    }
+
     try {
       await UserService().refreshToken();
       // 分页拉取：数据为 target.resources 按页返回，逐页累加，
@@ -149,6 +178,9 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         );
         if (!mounted) return;
         if (res['status'] != true || res['data'] == null) {
+          // 接口失败（含无网络导致的请求失败）：若本地有缓存则降级为离线播放
+          if (await _loadOffline()) return;
+          if (!mounted) return;
           setState(() {
             _loading = false;
             _error = res['msg']?.toString() ?? '获取资源失败';
@@ -173,6 +205,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       _pageController?.dispose();
       _pageController = PageController(initialPage: _index);
       setState(() {
+        _offline = false;
         _data = data;
         _resources = all;
         _pageIndex = page;
@@ -185,11 +218,51 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       _ensureMedia();
     } catch (e) {
       if (!mounted) return;
+      // 网络异常同样优先降级为本地缓存播放
+      if (await _loadOffline()) return;
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _error = '网络异常，请重试';
       });
     }
+  }
+
+  /// 离线兜底：用本地已缓存资源构造资源列表（各资源视图本地优先，可直接播放）
+  ///
+  /// 返回是否成功加载（无本地缓存时返回 false，由调用方决定错误提示）
+  Future<bool> _loadOffline() async {
+    final List<CacheRecord> records =
+        CacheService().cachedByIsli(_isliCode, versionCode: _versionCode);
+    final SourceScanData? data = buildOfflineScanData(
+      records,
+      isliCode: _isliCode,
+      versionCode: _versionCode,
+    );
+    if (data == null) return false;
+
+    final List<ScanResource> all = data.currentResources;
+    if (all.isEmpty) return false;
+
+    _index = _startIndex < all.length ? _startIndex : 0;
+    _pageController?.dispose();
+    _pageController = PageController(initialPage: _index);
+    if (!mounted) return true;
+    setState(() {
+      _offline = true;
+      _data = data;
+      _resources = all;
+      _pageIndex = 1;
+      _hasMore = false; // 离线仅能展示已缓存资源，无更多分页
+      _loadingMore = false;
+      _loadMoreFailed = false;
+      _loading = false;
+      _error = null;
+    });
+    _scheduleHide();
+    _ensureMedia();
+    EasyLoading.showToast('离线模式：已加载 ${all.length} 个已缓存资源');
+    return true;
   }
 
   /// 依据后端返回判断是否还有更多：优先使用 target.resourceCount；
@@ -203,6 +276,8 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   /// 左滑到末尾占位页时加载下一页资源（追加到 _resources）
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore) return;
+    // 离线模式：只展示已缓存资源，不再请求网络
+    if (_offline) return;
     setState(() {
       _loadingMore = true;
       _loadMoreFailed = false;
@@ -273,26 +348,87 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   }
 
   /// 按当前资源初始化媒体控制器（仅视频/音频；其它类型仅释放）
+  ///
+  /// 本地优先：当前资源有已完成的本地缓存时，直接播放本地文件，不加载网络；
+  /// 本地初始化失败（文件损坏 / 平台不支持本地播放）时自动回退网络地址，
+  /// 避免已下载资源反而无法播放。
   Future<void> _ensureMedia() async {
     _disposeMedia();
+    // 每次资源成为当前项都记一次访问（账号维度元数据）
+    _markCurrentAccessed();
     if (!_currentIsMedia) return;
     final ScanResource r = _current!;
-    final String url = _httpsUrl(r.cleanAddress);
-    if (url.isEmpty) return; // 无地址场景由内容区兜底
-    final VideoPlayerController vc =
-        VideoPlayerController.networkUrl(Uri.parse(url));
-    vc.addListener(_onMediaTick);
-    _vc = vc;
-    setState(() {});
-    try {
-      await vc.initialize();
-      if (!mounted || _vc != vc) return;
-      setState(() => _vcInitialized = true);
-      await vc.play();
-    } catch (e) {
-      if (!mounted || _vc != vc) return;
-      setState(() => _vcFailed = true);
+
+    // 候选控制器：本地缓存优先，网络地址兜底
+    final List<VideoPlayerController> candidates = <VideoPlayerController>[];
+    final String? localPath = _localPathFor(r);
+    if (localPath != null && localPath.isNotEmpty) {
+      candidates
+          .add(await _localController(CacheService().recordFor(r), localPath));
     }
+    final String url = _httpsUrl(r.cleanAddress);
+    if (url.isNotEmpty) {
+      candidates.add(VideoPlayerController.networkUrl(Uri.parse(url)));
+    }
+    if (candidates.isEmpty) return; // 无地址场景由内容区兜底
+
+    for (final VideoPlayerController vc in candidates) {
+      vc.addListener(_onMediaTick);
+      _vc = vc;
+      setState(() {});
+      try {
+        await vc.initialize();
+        if (!mounted || _vc != vc) return;
+        setState(() => _vcInitialized = true);
+        await vc.play();
+        return;
+      } catch (e) {
+        if (!mounted) return;
+        print('媒体初始化失败: ${vc.dataSource} $e');
+        vc.removeListener(_onMediaTick);
+        await vc.dispose();
+        if (_vc == vc) _vc = null;
+      }
+    }
+    if (!mounted) return;
+    setState(() => _vcFailed = true);
+  }
+
+  /// 记录一次资源访问（播放/打开）：写当前账号的访问记录，便于后续统计与排序
+  void _markCurrentAccessed() {
+    final ScanResource? r = _current;
+    if (r == null) return;
+    final CacheRecord? cache = CacheService().recordFor(r);
+    if (cache == null || !cache.isCompleted) return;
+    CacheService().touchAccess(cache);
+  }
+
+  /// 本地缓存对应的播放控制器
+  ///
+  /// HLS(m3u8) 走回环 HTTP：播放器需以播放列表地址为基准解析相对路径的分片与密钥，
+  /// 直接用 file:// 在部分平台会失败（如 OHOS 端会被转成 fd://，失去基准地址）；
+  /// 其它资源直接用 file:// 播放，少一层转发效率更高。
+  Future<VideoPlayerController> _localController(
+      CacheRecord? cache, String localPath) async {
+    if (cache != null && cache.isHlsLocal) {
+      final String? localUrl =
+          await LocalMediaServer.instance.urlForLocalPath(localPath);
+      if (localUrl != null && localUrl.isNotEmpty) {
+        print('HLS本地播放: $localUrl');
+        return VideoPlayerController.networkUrl(Uri.parse(localUrl));
+      }
+    }
+    return VideoPlayerController.file(File(localPath));
+  }
+
+  /// 当前资源的本地缓存路径（已缓存且文件存在时返回，否则 null）
+  ///
+  /// HLS(m3u8) 视频的本地路径为分段目录下的 index.m3u8 入口，
+  /// 路径解析统一交给 CacheService 处理（兼容容器路径迁移）。
+  String? _localPathFor(ScanResource r) {
+    final CacheRecord? cache = CacheService().recordFor(r);
+    if (cache == null) return null;
+    return CacheService().localPathFor(cache);
   }
 
   // ==================== 显隐控制 ====================
@@ -459,35 +595,96 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     }
   }
 
+  /// 缓存当前资源（含网络判断与移动网络确认）
   Future<void> _cacheCurrent() async {
     final ScanResource? r = _current;
     if (r == null) return;
-    final String url = _httpsUrl(r.cleanAddress);
-    if (url.isEmpty) {
-      EasyLoading.showToast('该资源暂无可缓存地址');
-      return;
-    }
-    try {
-      EasyLoading.show(status: '缓存中...');
-      final Directory dir = await getApplicationDocumentsDirectory();
-      final String file = _cacheFileName(r, url);
-      await _apiService.download(url, '${dir.path}/$file');
-      EasyLoading.dismiss();
-      if (mounted) EasyLoading.showToast('已缓存到本地');
-    } catch (e) {
-      EasyLoading.dismiss();
-      if (mounted) EasyLoading.showToast('缓存失败');
+    final SourceScanData? data = _data;
+    if (data == null) return;
+
+    final CacheAddResult result = await CacheService().addToCache(
+      r,
+      data,
+      isliCode: _isliCode,
+      resourceIndex: _index,
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case CacheAddResult.alreadyCached:
+        // 已缓存：提供删除入口
+        _confirmRemoveCache(r);
+        break;
+      case CacheAddResult.alreadyQueued:
+        EasyLoading.showToast('已在缓存队列');
+        break;
+      case CacheAddResult.added:
+        EasyLoading.showToast('已加入缓存队列');
+        break;
+      case CacheAddResult.reused:
+        // 命中全局共享文件本体：切换账号后无需重新下载
+        EasyLoading.showToast('已复用本地缓存文件');
+        break;
+      case CacheAddResult.needConfirm:
+        _confirmCellularDownload();
+        break;
+      case CacheAddResult.noAddress:
+        EasyLoading.showToast('该资源暂无可缓存地址');
+        break;
+      case CacheAddResult.noPermission:
+        EasyLoading.showToast('购买后可离线缓存');
+        break;
     }
   }
 
-  String _cacheFileName(ScanResource r, String url) {
-    String name = url.split('?').first.split('/').last.trim();
-    if (name.isEmpty || name.contains('.')) {
-      final String? suffix = r.resourceSuffix;
-      name = 'resource_${DateTime.now().millisecondsSinceEpoch}'
-          '${(suffix == null || suffix.isEmpty) ? '' : '.$suffix'}';
+  /// 移动网络缓存确认弹窗
+  Future<void> _confirmCellularDownload() async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('移动网络缓存', style: TextStyle(fontSize: 16)),
+        content: const Text('当前为移动网络，缓存将消耗较多流量，是否继续？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('继续'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await CacheService().confirmCellularAndStart();
     }
-    return name;
+  }
+
+  /// 已缓存资源：删除确认
+  Future<void> _confirmRemoveCache(ScanResource r) async {
+    final CacheRecord? cache = CacheService().recordFor(r);
+    if (cache == null) return;
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('删除缓存', style: TextStyle(fontSize: 16)),
+        content: Text('确定删除「${cache.resourceName}」的本地缓存吗？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除', style: TextStyle(color: Color(0xFFF56C6C))),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await CacheService().removeCache(cache.id!);
+    }
   }
 
   void _openMore() {
@@ -640,7 +837,42 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         children: <Widget>[
           Positioned.fill(child: _buildPages()),
           if (_overlayVisible) ..._buildOverlays(),
+          // 离线提示与上下控制栏一起显隐：常驻会遮挡文本/图片等资源内容
+          if (_overlayVisible && _offline) _buildOfflineBadge(),
         ],
+      ),
+    );
+  }
+
+  /// 离线模式提示：明确告知当前仅展示已缓存资源
+  ///
+  /// 位于导航栏（高 64）下方，随控制栏一起显隐并自动隐藏
+  Widget _buildOfflineBadge() {
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 64 + 4,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.cloud_off_outlined, size: 13, color: Colors.white70),
+                SizedBox(width: 4),
+                Text(
+                  '离线模式 · 仅显示已缓存资源',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -731,16 +963,20 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       return _LockView(onPurchase: _openPurchase);
     }
 
+    final String? localPath = _localPathFor(r);
+
     switch (r.type) {
       case ResourceType.text:
         return TextView(
           url: _httpsUrl(r.cleanAddress),
           hasAddress: r.cleanAddress.isNotEmpty,
+          localPath: localPath,
         );
       case ResourceType.image:
         return ImageView(
           url: _httpsUrl(r.cleanAddress),
           hasAddress: r.cleanAddress.isNotEmpty,
+          localPath: localPath,
         );
       case ResourceType.video:
         return _buildMediaView(r, withPlayerWidget: true);
@@ -757,6 +993,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         return _Model3dCard(
           coverUrls: _coverCandidates(r),
           url: r.cleanAddress.isEmpty ? null : r.cleanAddress,
+          localPath: localPath,
         );
       case ResourceType.unknown:
         return const CenterColumn(icon: Icons.help_outline, text: '暂不支持该资源类型');
@@ -965,6 +1202,30 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     final bool liked = r?.hasLike == true;
     // 网页资源为在线浏览，不支持缓存到本地
     final bool cacheDisabled = r?.type == ResourceType.web;
+    // 缓存按钮三态：未缓存 / 缓存中 / 已缓存
+    final CacheRecord? cache = r == null ? null : CacheService().recordFor(r);
+    final CacheStatus? cacheStatus = cache?.statusEnum;
+    final bool cacheActive = cacheStatus == CacheStatus.completed;
+    final bool cacheBusy = cacheStatus == CacheStatus.downloading;
+    final IconData cacheIcon;
+    final String cacheLabel;
+    if (cacheDisabled) {
+      cacheIcon = Icons.download_outlined;
+      cacheLabel = '缓存';
+    } else if (cacheStatus == CacheStatus.completed) {
+      cacheIcon = Icons.check_circle_outline;
+      cacheLabel = '已缓存';
+    } else if (cacheStatus == CacheStatus.downloading) {
+      cacheIcon = Icons.downloading;
+      cacheLabel = '缓存中';
+    } else if (cacheStatus == CacheStatus.pending ||
+        cacheStatus == CacheStatus.failed) {
+      cacheIcon = Icons.schedule;
+      cacheLabel = '待缓存';
+    } else {
+      cacheIcon = Icons.download_outlined;
+      cacheLabel = '缓存';
+    }
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 48),
@@ -979,10 +1240,13 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
             active: liked,
           ),
           _opItem(
-            Icons.download_outlined,
-            '缓存',
+            cacheIcon,
+            cacheLabel,
             _cacheCurrent,
             enabled: !cacheDisabled,
+            active: cacheActive,
+            activeColor: const Color(0xFF67C23A),
+            busy: cacheBusy,
           ),
         ],
       ),
@@ -990,11 +1254,14 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   }
 
   Widget _opItem(IconData icon, String label, VoidCallback onTap,
-      {bool active = false, bool enabled = true}) {
+      {bool active = false,
+      bool enabled = true,
+      bool busy = false,
+      Color activeColor = const Color(0xFFFF6B6B)}) {
     final Color color = !enabled
         ? Colors.white24
         : active
-            ? const Color(0xFFFF6B6B)
+            ? activeColor
             : Colors.white;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1002,7 +1269,16 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Icon(icon, color: color, size: 22),
+          busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white70,
+                  ),
+                )
+              : Icon(icon, color: color, size: 22),
           const SizedBox(height: 2),
           Text(
             label,
@@ -1141,7 +1417,10 @@ class _Model3dCard extends StatelessWidget {
   final List<String> coverUrls;
   final String? url;
 
-  const _Model3dCard({required this.coverUrls, this.url});
+  /// 本地已缓存的 zip 包路径（有则直接解压，跳过网络下载）
+  final String? localPath;
+
+  const _Model3dCard({required this.coverUrls, this.url, this.localPath});
 
   @override
   Widget build(BuildContext context) {
@@ -1218,7 +1497,11 @@ class _Model3dCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: () => context.push(kResourceModel3dRoute, extra: url),
+                  onTap: () => context
+                      .push(kResourceModel3dRoute, extra: <String, dynamic>{
+                    'url': url,
+                    'localZipPath': localPath,
+                  }),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 30, vertical: 10),

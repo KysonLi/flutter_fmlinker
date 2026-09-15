@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "fmlink"
+    },
+    {
+      "name": "network_info_reason",
+      "value": "Get network status to determine cache download environment"
     }
   ]
 }

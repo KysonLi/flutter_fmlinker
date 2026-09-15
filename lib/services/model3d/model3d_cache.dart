@@ -125,6 +125,15 @@ class Model3dCache {
     }
   }
 
+  /// 解压本地 zip 包并定位其中的 obj（供资源缓存功能使用）。
+  ///
+  /// [zipPath] 为已下载到本地的 zip 包路径，解压目录以 zip 路径为基准派生，
+  /// 已解压过则直接返回缓存的 obj 路径。
+  Future<String> extractLocalZip(String zipPath) async {
+    final Directory dir = Directory('${zipPath}_extracted');
+    return _extract(zipPath, dir);
+  }
+
   /// 解压 zip 到 `extracted/` 并定位其中的 .obj，已解压过则直接返回。
   ///
   /// 首次解压在后台 isolate 完成（见 [_extractSync]），避免阻塞 UI 线程。
@@ -171,8 +180,7 @@ class Model3dCache {
     if (response.statusCode == null ||
         response.statusCode! < 200 ||
         response.statusCode! >= 300) {
-      throw Model3dLoadException(
-          '下载失败：HTTP ${response.statusCode}');
+      throw Model3dLoadException('下载失败：HTTP ${response.statusCode}');
     }
   }
 

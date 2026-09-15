@@ -169,7 +169,8 @@ class _ScanScreenState extends State<ScanScreen>
     Size imageSize = Size.zero,
   }) async {
     // 1) native ISLI 解码器直接产出（线码/图标码）：走新分流
-    if (format == BarcodeFormat.isli || format == BarcodeFormat.isli_line_code) {
+    if (format == BarcodeFormat.isli ||
+        format == BarcodeFormat.isli_line_code) {
       _handleIsli(value, format);
       return;
     }
@@ -270,7 +271,8 @@ class _ScanScreenState extends State<ScanScreen>
     final ModalRoute? route = ModalRoute.of(context);
     if (route == null || !route.isCurrent) {
       // 还在跳转中，稍后重试
-      Future<void>.delayed(const Duration(milliseconds: 500), _resumeWhenVisible);
+      Future<void>.delayed(
+          const Duration(milliseconds: 500), _resumeWhenVisible);
       return;
     }
     // 已返回当前页，重启相机
@@ -330,7 +332,9 @@ class _ScanScreenState extends State<ScanScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            permissionDenied ? Icons.no_photography_outlined : Icons.error_outline,
+            permissionDenied
+                ? Icons.no_photography_outlined
+                : Icons.error_outline,
             color: Colors.white54,
             size: 48,
           ),
@@ -367,56 +371,56 @@ class _ScanScreenState extends State<ScanScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-      backgroundColor: Colors.black,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final Size fullSize = constraints.biggest;
-          final Rect middle = _middleRectFor(fullSize);
-          final Rect window = _windowFor(middle);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // 相机预览铺满全屏（视频内容显示在最底部，上下栏为半透明覆盖层）
-              MobileScanner(
-                controller: _controller,
-                onDetect: _onDetect,
-                scanWindow: window,
-                errorBuilder: _buildErrorWidget,
-                overlayBuilder: (context, c) => AnimatedBuilder(
-                  animation: _lineController,
-                  builder: (context, _) => CustomPaint(
-                    size: c.biggest,
-                    painter: _ScannerOverlayPainter(
-                      window: window,
-                      lineProgress: _lineController.value,
-                      featurePoints: _featurePoints,
-                      imageSize: _imageSize,
+        backgroundColor: Colors.black,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final Size fullSize = constraints.biggest;
+            final Rect middle = _middleRectFor(fullSize);
+            final Rect window = _windowFor(middle);
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // 相机预览铺满全屏（视频内容显示在最底部，上下栏为半透明覆盖层）
+                MobileScanner(
+                  controller: _controller,
+                  onDetect: _onDetect,
+                  scanWindow: window,
+                  errorBuilder: _buildErrorWidget,
+                  overlayBuilder: (context, c) => AnimatedBuilder(
+                    animation: _lineController,
+                    builder: (context, _) => CustomPaint(
+                      size: c.biggest,
+                      painter: _ScannerOverlayPainter(
+                        window: window,
+                        lineProgress: _lineController.value,
+                        featurePoints: _featurePoints,
+                        imageSize: _imageSize,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              // 顶部导航条（黑色半透明覆盖层）
-              Align(
-                alignment: Alignment.topCenter,
-                child: _buildTopBar(),
-              ),
-              // 中间扫码区域：类型 + 提示 + 焦距 + 灯光，围绕扫码框垂直居中
-              Positioned(
-                top: _topBarHeight,
-                bottom: _bottomBarHeight,
-                left: 0,
-                right: 0,
-                child: _buildMiddleControls(window),
-              ),
-              // 底部控制台（黑色半透明覆盖层）
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: _buildBottomBar(),
-              ),
-            ],
-          );
-        },
-      ),
+                // 顶部导航条（黑色半透明覆盖层）
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: _buildTopBar(),
+                ),
+                // 中间扫码区域：类型 + 提示 + 焦距 + 灯光，围绕扫码框垂直居中
+                Positioned(
+                  top: _topBarHeight,
+                  bottom: _bottomBarHeight,
+                  left: 0,
+                  right: 0,
+                  child: _buildMiddleControls(window),
+                ),
+                // 底部控制台（黑色半透明覆盖层）
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _buildBottomBar(),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -537,7 +541,8 @@ class _ScanScreenState extends State<ScanScreen>
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 5.0,
                         activeTrackColor: const Color(0xFF5E7A9A),
-                        inactiveTrackColor: Colors.white.withValues(alpha: 0.18),
+                        inactiveTrackColor:
+                            Colors.white.withValues(alpha: 0.18),
                         thumbColor: Colors.white.withValues(alpha: 0.65),
                         thumbShape: const RoundSliderThumbShape(
                           enabledThumbRadius: 7,
@@ -714,9 +719,11 @@ class _ScannerOverlayPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTRB(0, 0, size.width, window.top), dim);
     canvas.drawRect(
         Rect.fromLTRB(0, window.bottom, size.width, size.height), dim);
-    canvas.drawRect(Rect.fromLTRB(0, window.top, window.left, window.bottom), dim);
     canvas.drawRect(
-        Rect.fromLTRB(window.right, window.top, size.width, window.bottom), dim);
+        Rect.fromLTRB(0, window.top, window.left, window.bottom), dim);
+    canvas.drawRect(
+        Rect.fromLTRB(window.right, window.top, size.width, window.bottom),
+        dim);
 
     // 四角括号
     final Paint corner = Paint()
@@ -744,8 +751,7 @@ class _ScannerOverlayPainter extends CustomPainter {
     }
 
     // 扫描线（框内上下往返）
-    final double y =
-        window.top + 4 + (window.height - 8) * lineProgress;
+    final double y = window.top + 4 + (window.height - 8) * lineProgress;
     final Rect lineRect = Rect.fromLTRB(
       window.left + 6,
       y,

@@ -92,12 +92,12 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
     try {
       await _userService.refreshToken();
 
-      Map<String, dynamic> response = await _publishService
-          .getPublicationsByShopId(
-            _getShopId(),
-            page: _pageIndex,
-            pageSize: _pageSize,
-          );
+      Map<String, dynamic> response =
+          await _publishService.getPublicationsByShopId(
+        _getShopId(),
+        page: _pageIndex,
+        pageSize: _pageSize,
+      );
 
       if (response['status'] && response['data'] != null) {
         List<dynamic> newPublications = response['data']['list'] ?? [];
@@ -178,21 +178,20 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
                         width: double.infinity,
                         height: 30,
                         margin: const EdgeInsets.symmetric(horizontal: 10),
-                        child:
-                            widget.publisher.logo.isNotEmpty
-                                ? CachedNetworkImage(
-                                  imageUrl: widget.publisher.logo,
-                                  fit: BoxFit.contain,
-                                  errorWidget:
-                                      (context, url, error) => Image.asset(
-                                        'assets/images/publisher_logo_default.png',
-                                        fit: BoxFit.contain,
-                                      ),
-                                )
-                                : Image.asset(
+                        child: widget.publisher.logo.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: widget.publisher.logo,
+                                fit: BoxFit.contain,
+                                errorWidget: (context, url, error) =>
+                                    Image.asset(
                                   'assets/images/publisher_logo_default.png',
                                   fit: BoxFit.contain,
                                 ),
+                              )
+                            : Image.asset(
+                                'assets/images/publisher_logo_default.png',
+                                fit: BoxFit.contain,
+                              ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -280,10 +279,9 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
                 '出版者',
                 style: TextStyle(fontSize: 14, color: titleColor),
               ),
-              backgroundColor:
-                  opacity > 0
-                      ? Colors.white.withValues(alpha: opacity)
-                      : Colors.transparent,
+              backgroundColor: opacity > 0
+                  ? Colors.white.withValues(alpha: opacity)
+                  : Colors.transparent,
               centerTitle: true,
               leading: IconButton(
                 icon: Icon(Icons.chevron_left, color: titleColor, size: 28),

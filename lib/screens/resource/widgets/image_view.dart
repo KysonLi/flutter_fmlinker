@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -8,17 +10,40 @@ class ImageView extends StatelessWidget {
   final String url;
   final bool hasAddress;
 
+  /// 本地缓存文件路径（有则直接显示本地图片，不请求网络）
+  final String? localPath;
+
   const ImageView({
     super.key,
     required this.url,
     required this.hasAddress,
+    this.localPath,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!hasAddress) {
+    final String? localPath = this.localPath;
+    final bool hasLocal = localPath != null &&
+        localPath.isNotEmpty &&
+        File(localPath).existsSync();
+    if (!hasAddress && !hasLocal) {
       return const CenterColumn(
           icon: Icons.image_not_supported_outlined, text: '该资源暂未提供地址');
+    }
+    // 本地缓存优先
+    if (hasLocal) {
+      return Center(
+        child: InteractiveViewer(
+          maxScale: 4,
+          child: Image.file(
+            File(localPath),
+            fit: BoxFit.contain,
+            errorBuilder: (BuildContext c, Object e, StackTrace? s) =>
+                const CenterColumn(
+                    icon: Icons.broken_image_outlined, text: '图片加载失败'),
+          ),
+        ),
+      );
     }
     return Center(
       child: InteractiveViewer(

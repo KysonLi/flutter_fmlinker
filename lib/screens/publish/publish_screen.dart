@@ -286,109 +286,105 @@ class _PublishScreenState extends State<PublishScreen> {
           width: MediaQuery.of(context).size.width * 1 / 2,
           child: Row(
             children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (!_showPublications) {
-                              setState(() {
-                                _showPublications = true;
-                              });
-                              _loadData();
-                            }
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ), // 缩小控件大小
-                            child: Container(
-                              // 蓝色下划线只包住文字宽度，而非整行
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: _showPublications
-                                        ? Colors.blue
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                '出版物',
-                                style: TextStyle(
-                                  color: _showPublications
-                                      ? Colors.blue
-                                      : Colors.grey,
-                                  fontWeight: _showPublications
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 13, // 缩小字体大小
-                                ),
-                              ),
-                            ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (!_showPublications) {
+                      setState(() {
+                        _showPublications = true;
+                      });
+                      _loadData();
+                    }
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                    ), // 缩小控件大小
+                    child: Container(
+                      // 蓝色下划线只包住文字宽度，而非整行
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _showPublications
+                                ? Colors.blue
+                                : Colors.transparent,
+                            width: 2,
                           ),
                         ),
                       ),
-                      Container(
-                        width: 1,
-                        height: 20, // 缩小分隔线高度
-                        color: Colors.grey.shade300,
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_showPublications) {
-                              setState(() {
-                                _showPublications = false;
-                              });
-                              _loadData();
-                            }
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ), // 缩小控件大小
-                            child: Container(
-                              // 蓝色下划线只包住文字宽度，而非整行
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: !_showPublications
-                                        ? Colors.blue
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                '出版者',
-                                style: TextStyle(
-                                  color: !_showPublications
-                                      ? Colors.blue
-                                      : Colors.grey,
-                                  fontWeight: !_showPublications
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 14, // 缩小字体大小
-                                ),
-                              ),
-                            ),
-                          ),
+                      child: Text(
+                        '出版物',
+                        style: TextStyle(
+                          color: _showPublications ? Colors.blue : Colors.grey,
+                          fontWeight: _showPublications
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 13, // 缩小字体大小
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
+              Container(
+                width: 1,
+                height: 20, // 缩小分隔线高度
+                color: Colors.grey.shade300,
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_showPublications) {
+                      setState(() {
+                        _showPublications = false;
+                      });
+                      _loadData();
+                    }
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                    ), // 缩小控件大小
+                    child: Container(
+                      // 蓝色下划线只包住文字宽度，而非整行
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: !_showPublications
+                                ? Colors.blue
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        '出版者',
+                        style: TextStyle(
+                          color: !_showPublications ? Colors.blue : Colors.grey,
+                          fontWeight: !_showPublications
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 14, // 缩小字体大小
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: Column(
         children: [
           // 固定标题栏

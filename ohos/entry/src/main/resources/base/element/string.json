@@ -19,6 +19,10 @@
     {
       "name": "camera_reason",
       "value": "扫描识别图书中的ISLI链码/图标码，需要使用相机"
+    },
+    {
+      "name": "network_info_reason",
+      "value": "获取网络状态以判断缓存下载环境"
     }
   ]
 }
