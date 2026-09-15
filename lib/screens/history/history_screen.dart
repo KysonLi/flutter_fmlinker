@@ -11,7 +11,12 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.isActive = true});
+
+  /// 是否为当前可见的底部 tab（由 MainScreen 传入；作为独立路由使用时恒为 true）
+  ///
+  /// 切回来时静默刷新：失败只弹提示，保持原列表展示
+  final bool isActive;
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -26,6 +31,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _checkLoginStatus();
+  }
+
+  /// 重新可见时静默刷新（失败保留原列表，只弹提示）
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _checkLoginStatus();
+    }
   }
 
   // 检查登录状态
@@ -50,7 +64,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     } catch (e) {
       debugPrint('检查登录状态失败: $e');
       setState(() {
-        _isLoggedIn = false;
+        // 已有数据时保留原列表，避免网络/状态异常把内容换成引导页
+        if (_linkHistory.isEmpty) _isLoggedIn = false;
         _isLoading = false;
       });
     }

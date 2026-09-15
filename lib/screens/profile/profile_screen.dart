@@ -7,7 +7,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/user_service.dart';
 
 class MyScreen extends StatefulWidget {
-  const MyScreen({super.key});
+  const MyScreen({super.key, this.isActive = true});
+
+  /// 是否为当前可见的底部 tab（由 MainScreen 传入）
+  ///
+  /// 页面在 tab 保活后不再重建，故切回来时需重新读取登录态/用户信息（纯本地读取）
+  final bool isActive;
 
   @override
   State<MyScreen> createState() => _MyScreenState();
@@ -34,6 +39,15 @@ class _MyScreenState extends State<MyScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadUserInfo();
+  }
+
+  /// 重新可见时同步登录态（页面常驻，登录/退出发生在别处时不会自动重建）
+  @override
+  void didUpdateWidget(covariant MyScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadUserInfo();
+    }
   }
 
   @override

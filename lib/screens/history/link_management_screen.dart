@@ -325,7 +325,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
             onLoad: () => _onLoading(),
             header: RefreshConfig.buildHeader(),
             footer: RefreshConfig.buildFooter(),
-            child: _error != null
+            child: _error != null && _linkHistory.isEmpty
                 ? ListView(
                     children: <Widget>[
                       SizedBox(

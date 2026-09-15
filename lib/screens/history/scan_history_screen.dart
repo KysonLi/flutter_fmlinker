@@ -400,7 +400,8 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   Widget _buildList() {
-    if (_error != null) {
+    // 已有数据时保留原数据展示（刷新失败只用轻提示告知），无数据才占用整页失败态
+    if (_error != null && _scanHistory.isEmpty) {
       return DefaultStateView.fromError(
         message: _error,
         onRetry: () => _loadScanHistory(isRefresh: true),

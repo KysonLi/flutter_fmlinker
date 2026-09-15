@@ -75,33 +75,53 @@ class _TabbarCurvePainter extends CustomPainter {
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  /// 底部导航可切换的 tab 下标（2 = 扫码，是独立路由，不是 tab 页）
+  static const List<int> _tabOrder = <int>[0, 1, 3, 4];
+
+  /// 已进入过的 tab：首次进入才创建页面，之后常驻保活
+  ///
+  /// 保活的意义：切 tab 若销毁 State，页面内存中的列表数据会随之丢失，
+  /// 断网状态下切回来只剩「请求失败」→ 会错误地显示网络异常/空数据占位。
+  /// 保活后切回来仍是原列表，页面自身再静默刷新（失败只弹提示、不清数据）。
+  final Set<int> _visitedTabs = <int>{0};
+
+  /// tab 下标 → IndexedStack 下标（非法值回落到首项）
+  int _stackIndexOf(int tabIndex) {
+    final int index = _tabOrder.indexOf(tabIndex);
+    return index < 0 ? 0 : index;
+  }
+
+  /// 未进入过的 tab 用空占位，避免首屏同时发起多个请求
+  Widget _tabPage(int tabIndex, Widget page) {
+    return _visitedTabs.contains(tabIndex) ? page : const SizedBox.shrink();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tabProvider = Provider.of<TabProvider>(context);
-    int currentIndex = tabProvider.currentIndex;
-
-    Widget getCurrentPage() {
-      switch (currentIndex) {
-        case 0:
-          return const HistoryScreen();
-        case 1:
-          return const PublishScreen();
-        case 3:
-          return const DiscoverScreen();
-        case 4:
-          return const MyScreen();
-        default:
-          // 2 = 中间「扫码」：无 tab 页，入口是独立路由 /scan（TabProvider 已拦截该下标）；
-          // 异常下标一律回到关联页，避免出现空白
-          return const HistoryScreen();
-      }
-    }
+    final int currentIndex = tabProvider.currentIndex;
+    _visitedTabs.add(currentIndex);
 
     return Scaffold(
-      body: getCurrentPage(),
+      // IndexedStack：切 tab 不销毁页面（保活），数据与滚动位置都保留；
+      // 中间扫码按钮走独立路由 /scan，不占用这里的位置
+      body: IndexedStack(
+        index: _stackIndexOf(currentIndex),
+        children: <Widget>[
+          _tabPage(0, HistoryScreen(isActive: currentIndex == 0)),
+          _tabPage(1, PublishScreen(isActive: currentIndex == 1)),
+          _tabPage(3, DiscoverScreen(isActive: currentIndex == 3)),
+          _tabPage(4, MyScreen(isActive: currentIndex == 4)),
+        ],
+      ),
       bottomNavigationBar: SizedBox(
         // 栏高 58 + 底部安全区
         height: 56 + MediaQuery.of(context).padding.bottom,

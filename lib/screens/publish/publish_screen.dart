@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/utils/error_handler.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/models/publisher_model.dart';
 
 class PublishScreen extends StatefulWidget {
-  const PublishScreen({super.key});
+  const PublishScreen({super.key, this.isActive = true});
+
+  /// 是否为当前可见的底部 tab（由 MainScreen 传入；作为独立路由使用时恒为 true）
+  ///
+  /// 切回来时静默刷新：失败只弹提示，保持原列表展示
+  final bool isActive;
 
   @override
   State<PublishScreen> createState() => _PublishScreenState();
@@ -65,6 +72,15 @@ class _PublishScreenState extends State<PublishScreen> {
       }
     });
     _loadData();
+  }
+
+  /// 重新可见时静默刷新（失败保留原列表，只弹提示）
+  @override
+  void didUpdateWidget(covariant PublishScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _refreshData();
+    }
   }
 
   @override
@@ -128,17 +144,12 @@ class _PublishScreenState extends State<PublishScreen> {
       } else {
         String errorMessage = publicationsResponse['msg'] ?? '加载出版物失败';
         debugPrint('Failed to load publications: $errorMessage');
-        setState(() {
-          _hasErrorPublications = true;
-          _errorMessagePublications = errorMessage;
-        });
+        _handlePublicationsError(errorMessage);
       }
     } catch (e) {
       debugPrint('Error loading publications: $e');
-      setState(() {
-        _hasErrorPublications = true;
-        _errorMessagePublications = '加载数据失败，请稍后重试';
-      });
+      _handlePublicationsError(
+          ErrorHandler().fromError(e, fallback: '加载数据失败，请稍后重试'));
     } finally {
       setState(() {
         _isLoadingPublications = false;
@@ -190,23 +201,45 @@ class _PublishScreenState extends State<PublishScreen> {
       } else {
         String errorMessage = publishersResponse['msg'] ?? '加载出版者失败';
         debugPrint('Failed to load publishers: $errorMessage');
-        setState(() {
-          _hasErrorPublishers = true;
-          _errorMessagePublishers = errorMessage;
-        });
+        _handlePublishersError(errorMessage);
       }
     } catch (e) {
       debugPrint('Error loading publishers: $e');
-      setState(() {
-        _hasErrorPublishers = true;
-        _errorMessagePublishers = '加载数据失败，请稍后重试';
-      });
+      _handlePublishersError(
+          ErrorHandler().fromError(e, fallback: '加载数据失败，请稍后重试'));
     } finally {
       setState(() {
         _isLoadingPublishers = false;
         _isLoadingMorePublishers = false;
       });
     }
+  }
+
+  /// 出版物加载失败处理
+  ///
+  /// 已有数据时**保留原数据展示**：下拉刷新/加载更多失败不应把列表清空或换成失败页，
+  /// 只用轻提示告知失败；一条数据都还没有时才占用整页失败态（带重试）。
+  void _handlePublicationsError(String message) {
+    if (_publications.isNotEmpty) {
+      EasyLoading.showError(message);
+      return;
+    }
+    setState(() {
+      _hasErrorPublications = true;
+      _errorMessagePublications = message;
+    });
+  }
+
+  /// 出版者加载失败处理（规则同 [_handlePublicationsError]）
+  void _handlePublishersError(String message) {
+    if (_publishers.isNotEmpty) {
+      EasyLoading.showError(message);
+      return;
+    }
+    setState(() {
+      _hasErrorPublishers = true;
+      _errorMessagePublishers = message;
+    });
   }
 
   Future<void> _refreshData() async {

@@ -11,7 +11,12 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class DiscoverScreen extends StatefulWidget {
-  const DiscoverScreen({super.key});
+  const DiscoverScreen({super.key, this.isActive = true});
+
+  /// 是否为当前可见的底部 tab（由 MainScreen 传入；作为独立路由使用时恒为 true）
+  ///
+  /// 切回来时静默刷新：失败只弹提示，不清空已有数据、不显示骨架
+  final bool isActive;
 
   @override
   State<DiscoverScreen> createState() => _DiscoverScreenState();
@@ -37,6 +42,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         data['likeMost'] != null;
   }
 
+  /// 重新可见时静默刷新（失败保留原数据）
+  @override
+  void didUpdateWidget(covariant DiscoverScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadDiscoverData();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +59,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   void _loadDiscoverData() async {
     setState(() {
-      _isLoading = true;
+      // 已有数据时不显示骨架（失败也不清空，保持原数据展示），仅首次加载才占位
+      _isLoading = _discoverData == null;
       _error = null;
     });
     try {

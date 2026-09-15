@@ -155,7 +155,7 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
         color: const Color(0xFFF5F5F5),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _error != null
+            : _error != null && _likeList.isEmpty
                 ? DefaultStateView.fromError(
                     message: _error,
                     onRetry: _loadLikeList,

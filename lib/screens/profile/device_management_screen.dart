@@ -183,7 +183,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
               controller: _refreshController,
               onRefresh: () => _loadDeviceList(),
               header: RefreshConfig.buildHeader(),
-              child: _error != null
+              child: _error != null && _devices.isEmpty
                   ? DefaultStateView.fromError(
                       message: _error,
                       onRetry: _loadDeviceList,

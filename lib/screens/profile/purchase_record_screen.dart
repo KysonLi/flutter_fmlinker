@@ -520,7 +520,7 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
             ? _buildLoginEmpty()
             : _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _error != null
+                : _error != null && _list.isEmpty
                     ? DefaultStateView.fromError(
                         message: _error,
                         onRetry: () => _loadOrders(isRefresh: true),
