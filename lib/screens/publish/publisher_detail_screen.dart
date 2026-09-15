@@ -8,6 +8,7 @@ import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class PublisherDetailScreen extends StatefulWidget {
   final PublisherModel publisher;
@@ -120,7 +121,7 @@ class _PublisherDetailScreenState extends State<PublisherDetailScreen> {
         });
       }
     } catch (e) {
-      EasyLoading.showToast('获取出版物列表失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取出版物列表失败'));
     } finally {
       setState(() {
         _isLoadingMore = false;

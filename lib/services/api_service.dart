@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/common/app_navigator.dart';
 import 'package:fmlink/common/constants.dart';
-import 'package:fmlink/common/error_strings.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -67,17 +67,26 @@ class ApiService {
           'msg': responseData['resultMsg'] ?? responseData['message'] ?? '请求成功'
         };
       } else {
-        // 失败
-        String errorMsg =
-            responseData['resultMsg'] ?? responseData['message'] ?? '';
-        if (errorMsg.isEmpty) {
-          errorMsg = ErrorStrings.getErrorMsg(resultCode);
-        }
-        return {'status': false, 'data': null, 'msg': errorMsg};
+        // 失败：错误码文案（JSON）→ 服务端 message（仅当适合展示）→ 通用提示
+        return {
+          'status': false,
+          'data': null,
+          'msg': ErrorHandler().messageFor(
+            code: resultCode.toString(),
+            serverMessage:
+                (responseData['resultMsg'] ?? responseData['message'])
+                    ?.toString(),
+            statusCode: statusCode,
+          ),
+        };
       }
     }
-    // 非预期的响应格式
-    return {'status': false, 'data': null, 'msg': '请求失败: 响应格式错误'};
+    // 非预期的响应格式（如网关返回 HTML 错误页）：按 HTTP 状态码给文案
+    return {
+      'status': false,
+      'data': null,
+      'msg': ErrorHandler().messageFor(statusCode: statusCode),
+    };
   }
 
   /// 是否正在处理 token 过期（防止多个请求同时 401 导致重复弹窗/跳转）
@@ -130,8 +139,12 @@ class ApiService {
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
       print('GET请求失败: $e');
-      // 网络错误
-      return {'status': false, 'data': null, 'msg': '网络请求失败: $e'};
+      // 连接层错误 → 统一中文文案（不透出 Dio/系统英文原文）
+      return {
+        'status': false,
+        'data': null,
+        'msg': ErrorHandler().fromError(e)
+      };
     }
   }
 
@@ -148,8 +161,12 @@ class ApiService {
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
       print('POST请求失败: $e');
-      // 网络错误
-      return {'status': false, 'data': null, 'msg': '网络请求失败: $e'};
+      // 连接层错误 → 统一中文文案
+      return {
+        'status': false,
+        'data': null,
+        'msg': ErrorHandler().fromError(e)
+      };
     }
   }
 
@@ -162,8 +179,12 @@ class ApiService {
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
       print('文件上传失败: $e');
-      // 网络错误
-      return {'status': false, 'data': null, 'msg': '文件上传失败: $e'};
+      // 连接层错误 → 统一中文文案
+      return {
+        'status': false,
+        'data': null,
+        'msg': ErrorHandler().fromError(e, fallback: '文件上传失败，请稍后重试'),
+      };
     }
   }
 
@@ -192,8 +213,12 @@ class ApiService {
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
       print('DELETE请求失败: $e');
-      // 网络错误
-      return {'status': false, 'data': null, 'msg': '网络请求失败: $e'};
+      // 连接层错误 → 统一中文文案
+      return {
+        'status': false,
+        'data': null,
+        'msg': ErrorHandler().fromError(e)
+      };
     }
   }
 }

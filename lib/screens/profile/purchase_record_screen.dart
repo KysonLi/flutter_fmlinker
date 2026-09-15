@@ -5,6 +5,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 /// 购买记录页
 ///
@@ -108,7 +109,10 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
         });
       }
     } catch (e) {
-      if (mounted) EasyLoading.showToast('获取购买记录失败: $e');
+      if (mounted) {
+        EasyLoading.showError(
+            ErrorHandler().fromError(e, fallback: '获取购买记录失败'));
+      }
     } finally {
       if (mounted) {
         setState(() {

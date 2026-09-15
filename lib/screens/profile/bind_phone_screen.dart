@@ -4,6 +4,7 @@ import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class BindPhoneScreen extends StatefulWidget {
   const BindPhoneScreen({super.key});
@@ -85,7 +86,7 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
         EasyLoading.showToast(response['msg'] ?? '发送失败');
       }
     } catch (e) {
-      EasyLoading.showToast('发送失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '发送失败'));
     } finally {
       setState(() {
         _isLoading = false;
@@ -137,7 +138,7 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
         EasyLoading.showToast(result['msg'] ?? '绑定失败');
       }
     } catch (e) {
-      EasyLoading.showToast('绑定失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '绑定失败'));
     } finally {
       setState(() {
         _isLoading = false;

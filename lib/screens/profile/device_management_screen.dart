@@ -7,6 +7,7 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class DeviceManagementScreen extends StatefulWidget {
   const DeviceManagementScreen({super.key});
@@ -85,7 +86,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
         _devices = devices;
       });
     } catch (e) {
-      EasyLoading.showToast('获取设备列表失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取设备列表失败'));
     } finally {
       _refreshController.finishRefresh();
     }
@@ -107,7 +108,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
         EasyLoading.showToast(response['msg'] ?? '删除失败');
       }
     } catch (e) {
-      EasyLoading.showToast('删除失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '删除失败'));
     } finally {
       setState(() {});
     }

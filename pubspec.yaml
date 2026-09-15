@@ -201,6 +201,8 @@ flutter:
     - assets/icons/resource/
     - assets/html/
     - assets/html/book/
+    # 服务端错误码 → 中英文文案（ErrorHandler 加载）
+    - assets/json/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

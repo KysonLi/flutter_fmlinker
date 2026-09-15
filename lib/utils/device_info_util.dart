@@ -14,17 +14,17 @@ class DeviceInfoUtil {
       // 先从本地存储获取
       final prefs = await SharedPreferences.getInstance();
       String? deviceId = prefs.getString(_kDeviceIdKey);
-      
+
       if (deviceId != null) {
         return deviceId;
       }
 
       // 如果没有，生成新的设备ID
       deviceId = await _generateDeviceId();
-      
+
       // 保存到本地存储
       await prefs.setString(_kDeviceIdKey, deviceId);
-      
+
       return deviceId;
     } catch (e) {
       // 异常情况下生成随机ID
@@ -40,17 +40,17 @@ class DeviceInfoUtil {
         final androidInfo = await _deviceInfoPlugin.androidInfo;
         // 使用Android ID（需要注意：某些设备可能会有相同的Android ID）
         // 为了增加唯一性，我们结合其他信息
-        String androidId = androidInfo.id ;
-        String model = androidInfo.model ;
-        String manufacturer = androidInfo.manufacturer ;
+        String androidId = androidInfo.id;
+        String model = androidInfo.model;
+        String manufacturer = androidInfo.manufacturer;
         return _hashString('$androidId-$model-$manufacturer');
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         // 使用identifierForVendor（需要注意：卸载重装后会改变）
         // 为了增加稳定性，我们结合其他信息
         String identifierForVendor = iosInfo.identifierForVendor ?? '';
-        String model = iosInfo.model ;
-        String name = iosInfo.name ;
+        String model = iosInfo.model;
+        String name = iosInfo.name;
         return _hashString('$identifierForVendor-$model-$name');
       } else if (await _isOhos()) {
         // ohos：通过 device_info_plus_ohos 注册的平台实现获取
@@ -100,14 +100,16 @@ class DeviceInfoUtil {
     try {
       if (await _isAndroid()) {
         final androidInfo = await _deviceInfoPlugin.androidInfo;
-        return androidInfo.model ;
+        return androidInfo.model;
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
-        return iosInfo.name ;
+        return iosInfo.name;
       } else if (await _isOhos()) {
         // TODO(ohos): 优先 marketingName，确认字段名后改为强类型访问
         final m = (await _deviceInfoPlugin.deviceInfo).data;
-        return (m['marketingName'] as String?) ?? (m['model'] as String?) ?? 'OHOS Device';
+        return (m['marketingName'] as String?) ??
+            (m['model'] as String?) ??
+            'OHOS Device';
       } else {
         return 'Unknown Device';
       }
@@ -121,10 +123,10 @@ class DeviceInfoUtil {
     try {
       if (await _isAndroid()) {
         final androidInfo = await _deviceInfoPlugin.androidInfo;
-        return androidInfo.model ;
+        return androidInfo.model;
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
-        return iosInfo.model ;
+        return iosInfo.model;
       } else if (await _isOhos()) {
         final m = (await _deviceInfoPlugin.deviceInfo).data;
         return (m['model'] as String?) ?? 'Unknown Model';
@@ -141,14 +143,16 @@ class DeviceInfoUtil {
     try {
       if (await _isAndroid()) {
         final androidInfo = await _deviceInfoPlugin.androidInfo;
-        return androidInfo.version.release ;
+        return androidInfo.version.release;
       } else if (await _isIOS()) {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
-        return iosInfo.systemVersion ;
+        return iosInfo.systemVersion;
       } else if (await _isOhos()) {
         // TODO(ohos): 确认 osFullName/sdkApiVersion 字段名后改为强类型访问
         final m = (await _deviceInfoPlugin.deviceInfo).data;
-        return (m['osFullName'] as String?) ?? (m['sdkApiVersion']?.toString()) ?? 'Unknown Version';
+        return (m['osFullName'] as String?) ??
+            (m['sdkApiVersion']?.toString()) ??
+            'Unknown Version';
       } else {
         return 'Unknown Version';
       }

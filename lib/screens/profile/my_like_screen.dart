@@ -6,6 +6,7 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class MyLikeScreen extends StatefulWidget {
   const MyLikeScreen({super.key});
@@ -64,7 +65,7 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
         }).toList();
       }
     } catch (e) {
-      EasyLoading.showToast('获取点赞列表失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取点赞列表失败'));
     } finally {
       setState(() => _isLoading = false);
       _refreshController.finishRefresh();

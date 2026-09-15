@@ -26,7 +26,8 @@ class PublisherModel {
     return PublisherModel(
       shopId: json['id']?.toString() ?? json['shopId']?.toString() ?? '',
       shopName: shopName,
-      shopDesc: json['description']?.toString() ?? json['shopDesc']?.toString() ?? '',
+      shopDesc:
+          json['description']?.toString() ?? json['shopDesc']?.toString() ?? '',
       shopBrief: json['shopBrief']?.toString() ?? '',
       createTime: json['createTime']?.toString() ?? '',
       nameInitial: shopName.isNotEmpty ? shopName.substring(0, 1) : '?',

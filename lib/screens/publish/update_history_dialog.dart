@@ -4,6 +4,7 @@ import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class UpdateHistoryDialog extends StatefulWidget {
   final String goodsId;
@@ -49,7 +50,7 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
         });
       }
     } catch (e) {
-      EasyLoading.showToast('获取更新记录失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取更新记录失败'));
     } finally {
       EasyLoading.dismiss();
       if (isRefresh) {

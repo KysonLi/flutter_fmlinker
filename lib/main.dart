@@ -4,38 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/routes/app_router.dart';
 import 'package:fmlink/services/third_party_manager.dart';
+import 'package:fmlink/themes/app_feedback.dart';
 import 'package:fmlink/themes/app_theme.dart';
+import 'package:fmlink/utils/error_handler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:provider/provider.dart';
 import 'provider/tab_provider.dart';
 
-void main() {
+void main() async {
   // 先初始化 Flutter binding，否则 initWeChat()（内部调用 MethodChannel）
   // 会因 ServicesBinding 未构造而崩溃（flutter#BindingBase.checkInstance）。
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 配置 EasyLoading 全局样式
-  EasyLoading.instance
-    ..displayDuration = const Duration(milliseconds: 2000)
-    ..indicatorType = EasyLoadingIndicatorType.fadingCircle
-    ..loadingStyle = EasyLoadingStyle.custom
-    ..indicatorSize = 45.0
-    ..radius = 10.0
-    ..backgroundColor = Colors.white
-    ..indicatorColor = Color(0xFF409EFF)
-    ..textColor = Color(0xFF333333)
-    ..maskColor = Color(0xFF409EFF).withValues(alpha: 0.1)
-    ..textStyle = const TextStyle(color: Color(0xFF333333), fontSize: 12.0)
-    ..userInteractions = true
-    ..dismissOnTap = false
-    ..boxShadow = [
-      BoxShadow(
-        color: const Color(0xFF409EFF).withValues(alpha: 0.15),
-        blurRadius: 20,
-        spreadRadius: 2,
-        offset: const Offset(0, 4),
-      ),
-    ];
+  // 加载服务端错误码配置（assets/json/FMErrorStrings.json）
+  await ErrorHandler().init();
+
+  // 配置 EasyLoading 全局样式（深色胶囊 + 状态图标，统一轻提示/错误提示观感）
+  AppFeedbackTheme.init();
 
   // 初始化微信
   ThirdPartyManager.initWeChat();

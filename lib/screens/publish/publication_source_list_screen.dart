@@ -9,6 +9,7 @@ import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/screens/publish/widgets/book_info_card.dart';
 import 'package:fmlink/screens/publish/widgets/chapter_header.dart';
 import 'package:fmlink/screens/publish/widgets/source_item.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class PublicationSourceListScreen extends StatefulWidget {
   final String goodsId;
@@ -115,7 +116,7 @@ class _PublicationSourceListScreenState
         _onDataLoaded();
       }
     } catch (e) {
-      EasyLoading.showToast('获取链码列表失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取链码列表失败'));
     } finally {
       _isLoading = false;
       EasyLoading.dismiss();

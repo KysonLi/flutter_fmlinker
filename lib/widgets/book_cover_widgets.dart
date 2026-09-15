@@ -25,14 +25,16 @@ class BookCover extends StatelessWidget {
       // 这里加阴影
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4), // 轻微圆角更自然
-        boxShadow: showShadow ? const [
-          BoxShadow(
-            color: Colors.black12, // 淡淡的阴影色
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: 0,
-          ),
-        ] : null,
+        boxShadow: showShadow
+            ? const [
+                BoxShadow(
+                  color: Colors.black12, // 淡淡的阴影色
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
       ),
       // 防止图片溢出阴影
       child: ClipRRect(
@@ -42,11 +44,10 @@ class BookCover extends StatelessWidget {
           fit: fit,
           cacheKey: imageUrl,
           placeholder: (context, url) => Container(color: Colors.grey[200]),
-          errorWidget:
-              (context, url, error) => Container(
-                color: Colors.grey[200],
-                child: Image.asset('assets/images/default_cover.png'),
-              ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[200],
+            child: Image.asset('assets/images/default_cover.png'),
+          ),
         ),
       ),
     );

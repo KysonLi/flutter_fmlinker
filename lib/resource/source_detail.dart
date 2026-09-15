@@ -46,33 +46,43 @@ class ChainSourceInfo {
 
   ChainSourceInfo(this.raw);
 
-  factory ChainSourceInfo.fromJson(Map<String, dynamic> json) => ChainSourceInfo(json);
+  factory ChainSourceInfo.fromJson(Map<String, dynamic> json) =>
+      ChainSourceInfo(json);
 
   /// 源 ID
   int? get sourceId => _toInt(raw['sourceId']);
+
   /// 完整 ISLI 链码（带连字符，如 000000-000026477599999）
   String? get sourceIdentifier => _toStr(raw['sourceIdentifier']);
+
   /// 源序号（链码序号）
   int? get sourceNo => _toInt(raw['sourceNo']);
+
   /// 所在图书页码
   int? get bookPageNo => _toInt(raw['bookPageNo']);
+
   /// 源片段/文字摘要
   String? get sourceFragment => _toStr(raw['sourceFragment']);
+
   /// 章节/篇目信息
   String? get article => _toStr(raw['article']);
   String? get chapter => _toStr(raw['chapter']);
   String? get serviceCode => _toStr(raw['serviceCode']);
   String? get prefixCode => _toStr(raw['prefixCode']);
   int? get versionCode => _toInt(raw['versionCode']);
+
   /// 关联资源总数
   int? get resourceCount => _toInt(raw['resourceCount']);
 
   /// 单源售价
   num? get price => _toNum(raw['price']);
+
   /// 是否免费资源
   bool? get free => _toBool(raw['free']);
+
   /// 是否已购买
   bool? get pay => _toBool(raw['pay']);
+
   /// 是否在售
   bool? get sell => _toBool(raw['sell']);
 
@@ -86,7 +96,8 @@ class ScanResource {
 
   ScanResource(this.raw);
 
-  factory ScanResource.fromJson(Map<String, dynamic> json) => ScanResource(json);
+  factory ScanResource.fromJson(Map<String, dynamic> json) =>
+      ScanResource(json);
 
   int? get id => _toInt(raw['id']);
 
@@ -162,8 +173,12 @@ class ScanTarget {
 
   /// 资源列表
   List<ScanResource> get resources {
-    final List<dynamic> list = raw['resources'] is List ? raw['resources'] as List : const [];
-    return list.map((dynamic e) => ScanResource.fromJson((e as Map).cast<String, dynamic>())).toList();
+    final List<dynamic> list =
+        raw['resources'] is List ? raw['resources'] as List : const [];
+    return list
+        .map((dynamic e) =>
+            ScanResource.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
   }
 }
 
@@ -173,7 +188,8 @@ class SourceScanData {
 
   SourceScanData(this.raw);
 
-  factory SourceScanData.fromJson(Map<String, dynamic> json) => SourceScanData(json);
+  factory SourceScanData.fromJson(Map<String, dynamic> json) =>
+      SourceScanData(json);
 
   String? get serviceCode => _toStr(raw['serviceCode']);
   String? get prefixCode => _toStr(raw['prefixCode']);
@@ -182,8 +198,10 @@ class SourceScanData {
 
   /// 整书总价（原价）
   num? get totalPrice => _toNum(raw['totalPrice']);
+
   /// 整书优惠价
   num? get benefitPrice => _toNum(raw['benefitPrice']);
+
   /// 是否开启优惠
   bool? get isBenefit => _toBool(raw['isBenefit']);
 
@@ -208,8 +226,12 @@ class SourceScanData {
 
   /// target 列表（单个 source 只对应一个 target）
   List<ScanTarget> get targetList {
-    final List<dynamic> list = raw['targetList'] is List ? raw['targetList'] as List : const [];
-    return list.map((dynamic e) => ScanTarget.fromJson((e as Map).cast<String, dynamic>())).toList();
+    final List<dynamic> list =
+        raw['targetList'] is List ? raw['targetList'] as List : const [];
+    return list
+        .map((dynamic e) =>
+            ScanTarget.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
   }
 
   int? get sourceCount => _toInt(raw['sourceCount']);
@@ -221,7 +243,8 @@ class SourceScanData {
   ScanTarget? get currentTarget => targetList.isEmpty ? null : targetList.first;
 
   /// 当前链码资源列表（来自 currentTarget.resources）
-  List<ScanResource> get currentResources => currentTarget?.resources ?? const [];
+  List<ScanResource> get currentResources =>
+      currentTarget?.resources ?? const [];
 
   /// 是否免费策略（整书资源全部免费）
   bool get isAllFreeStrategy => strategyType == PricingStrategy.allFree;
@@ -266,10 +289,12 @@ class IsliCopyrightData {
   String? get issn => _toStr(raw['issn']);
   String? get isrc => _toStr(raw['isrc']);
   String? get mprCode => _toStr(raw['mprCode']);
+
   /// 完整 ISLI 编码（带连字符）
   String? get isliCode => _toStr(raw['isliCode']);
   String? get publisherName => _toStr(raw['publisherName']);
   String? get author => _toStr(raw['author']);
+
   /// 定价，格式 "6,CNY"
   String? get price => _toStr(raw['price']);
   String? get contentType => _toStr(raw['contentType']);

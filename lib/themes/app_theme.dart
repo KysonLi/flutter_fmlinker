@@ -97,5 +97,27 @@ class AppTheme {
         color: Color(0xFF999999),
       ),
     ),
+    // 弹窗（错误提示 / 删除确认 / 登录过期等）：统一 14 圆角白底，
+    // 避免 M3 默认的 28 大圆角与表面着色调（与本项目 M2 风格不一致）
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: const Color(0x1F000000),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 44, vertical: 24),
+      titleTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF333333),
+      ),
+      contentTextStyle: const TextStyle(
+        fontSize: 14,
+        height: 1.5,
+        color: Color(0xFF666666),
+      ),
+    ),
   );
 }

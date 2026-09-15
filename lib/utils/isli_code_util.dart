@@ -19,7 +19,8 @@ class ISLICodeUtil {
     return (value > 0 ? 10 - value : 0).toString();
   }
 
-  static String buildISLICode(String serviceCode, String prefixCode, String suffixCode) {
+  static String buildISLICode(
+      String serviceCode, String prefixCode, String suffixCode) {
     String isliCode = '$serviceCode$prefixCode$suffixCode';
     String sourceName = '$serviceCode-$prefixCode$suffixCode';
     String checkBit = calculateCheckBit(isliCode);

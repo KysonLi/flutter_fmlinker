@@ -94,6 +94,8 @@ class MainScreen extends StatelessWidget {
         case 4:
           return const MyScreen();
         default:
+          // 2 = 中间「扫码」：无 tab 页，入口是独立路由 /scan（TabProvider 已拦截该下标）；
+          // 异常下标一律回到关联页，避免出现空白
           return const HistoryScreen();
       }
     }

@@ -11,8 +11,10 @@ const String kResourcePlayRoute = '/resource/play';
 const String kResourceSourceDetailRoute = '/resource/source-detail';
 const String kResourceModel3dRoute = '/resource/model3d';
 const String kIsliCopyrightRoute = '/isli/copyright';
+
 /// 购买页（既有路由，extra 为 `Map<String, dynamic>` 参数）
 const String kPurchaseRoute = '/purchase';
+
 /// 通用 webview（既有路由，query: url/title）
 const String kWebviewRoute = '/webview';
 
@@ -68,12 +70,14 @@ class ResourceEntry {
       return;
     }
 
-    final SourceScanData data = SourceScanData.fromJson(res['data'] as Map<String, dynamic>);
+    final SourceScanData data =
+        SourceScanData.fromJson(res['data'] as Map<String, dynamic>);
     final String digits = ResourceService().isliDigits(isliCode);
 
-    final int resourceTotal = data.resourceCount ??
-        (data.currentTarget?.resourceCount ?? 0);
-    final bool hasResource = data.currentResources.isNotEmpty || resourceTotal > 0;
+    final int resourceTotal =
+        data.resourceCount ?? (data.currentTarget?.resourceCount ?? 0);
+    final bool hasResource =
+        data.currentResources.isNotEmpty || resourceTotal > 0;
     if (!hasResource) {
       EasyLoading.showToast('未获取到关联资源');
       return;
@@ -90,7 +94,9 @@ class ResourceEntry {
     final bool multi = data.currentResources.length > 1;
     if (multi) {
       _pushList(context,
-          isliCode: digits, fromScan: fromScan, versionCode: data.versionCode?.toString());
+          isliCode: digits,
+          fromScan: fromScan,
+          versionCode: data.versionCode?.toString());
     } else {
       _pushPlay(context,
           isliCode: digits,
@@ -186,6 +192,7 @@ class ResourceEntry {
 
   /// 标志码版权详情页（扫码 2D 标志码 / 链码 ISBN/ISSN 解析 markCode 后进入）
   static void openIsliCopyright(BuildContext context, String mprCode) {
-    context.push('$kIsliCopyrightRoute?mprCode=${Uri.encodeComponent(mprCode)}');
+    context
+        .push('$kIsliCopyrightRoute?mprCode=${Uri.encodeComponent(mprCode)}');
   }
 }

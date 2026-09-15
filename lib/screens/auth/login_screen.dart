@@ -9,6 +9,7 @@ import 'package:fmlink/common/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 // 登录方式枚举
 enum LoginType {
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
         EasyLoading.showToast(response['msg']);
       }
     } catch (e) {
-      EasyLoading.showToast('获取验证码失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取验证码失败'));
     } finally {
       setState(() {
         _isGettingCode = false;
@@ -178,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
           EasyLoading.showToast(response['msg']);
         }
       } catch (e) {
-        EasyLoading.showToast('登录失败: $e');
+        EasyLoading.showError(ErrorHandler().fromError(e, fallback: '登录失败'));
       } finally {
         setState(() {
           _isLoading = false;

@@ -4,6 +4,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/utils/error_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -88,7 +89,7 @@ class _SouthCloudLoginScreenState extends State<SouthCloudLoginScreen> {
         EasyLoading.showToast(response['msg'] ?? '登录失败');
       }
     } catch (e) {
-      EasyLoading.showToast('登录失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '登录失败'));
     } finally {
       if (mounted) {
         setState(() {

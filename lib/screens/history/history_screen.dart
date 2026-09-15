@@ -488,11 +488,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           width: 280, // 固定宽度，确保两个按钮宽度一致
                           child: ElevatedButton(
                             onPressed: () {
-                              // 跳转到扫码页面
-                              Provider.of<TabProvider>(
-                                context,
-                                listen: false,
-                              ).switchTab(2);
+                              // 中间「扫码」不是 tab 页（MainScreen 无 case 2），
+                              // 必须跳转独立路由，否则 switchTab(2) 会落回关联页看似无响应
+                              context.push('/scan');
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(

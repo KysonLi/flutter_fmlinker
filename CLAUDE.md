@@ -43,7 +43,7 @@ FooService._internal();
   {'status': bool, 'data': dynamic, 'msg': String}
   ```
 
-- API success is determined by `_handleResponse`: the raw body's `resultCode`/`status` field equals `'00000000'` or `'0'`. Anything else is a failure whose message comes from the body's `resultMsg`/`message`, falling back to `ErrorStrings.getErrorMsg(code)`.
+- API success is determined by `_handleResponse`: the raw body's `resultCode`/`status` field equals `'00000000'` or `'0'`. Anything else is a failure whose message is resolved by `ErrorHandler.messageFor` (error-code lookup → server message → generic fallback).
 
 > Gotcha: the normalized map key is `'msg'`, but a few call sites read `result['message']`. When touching service-result handling, use the canonical `status` / `data` / `msg` keys.
 
@@ -85,7 +85,7 @@ There is **no auth guard** in the router; login gating is done ad-hoc in screens
 
 ### Error messaging
 
-Backend error codes (e.g. `01010121`, `LOGIN-00030003`, `TARGET-GOODS-00030002`) are mapped to bilingual messages in `lib/common/error_strings.dart`. `ApiService` auto-uses this when the body provides no message; UI code can also call `ErrorStrings.getErrorMsg(code)` directly.
+Backend error codes (e.g. `01010121`, `LOGIN-00030003`, `TARGET-GOODS-00030002`) are mapped to bilingual messages loaded from `assets/json/FMErrorStrings.json` by `ErrorHandler` (`lib/utils/error_handler.dart`), the single source of truth for user-facing error text. `ApiService` uses it for every response and connection error; UI code can call `ErrorHandler().messageFor(...)` / `fromError(e)` directly.
 
 ## Conventions
 

@@ -3,6 +3,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -66,7 +67,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         EasyLoading.showToast(response['msg'] ?? '注销失败');
       }
     } catch (e) {
-      EasyLoading.showToast('注销失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '注销失败'));
     } finally {
       EasyLoading.dismiss();
     }
@@ -87,7 +88,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         EasyLoading.showToast(response['msg'] ?? '发送失败');
       }
     } catch (e) {
-      EasyLoading.showToast('发送失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '发送失败'));
     }
   }
 

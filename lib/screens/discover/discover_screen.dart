@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:fmlink/widgets/icon_text_widgets.dart';
 import 'package:fmlink/widgets/skeletonizer.dart';
+import 'package:fmlink/utils/error_handler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -53,7 +54,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       setState(() {
         _isLoading = false;
       });
-      EasyLoading.showError('加载失败: $e');
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '加载失败'));
     }
   }
 

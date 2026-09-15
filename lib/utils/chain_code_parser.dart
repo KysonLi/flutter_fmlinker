@@ -29,7 +29,8 @@ class ChainCodeInfo {
   });
 
   /// 是否解析为 ISBN/ISSN（当作标志码处理）
-  bool get isMarkStyle => style == ChainCodeStyle.isbn || style == ChainCodeStyle.issn;
+  bool get isMarkStyle =>
+      style == ChainCodeStyle.isbn || style == ChainCodeStyle.issn;
 
   /// 是否 ISON（暂不支持）
   bool get isIson => style == ChainCodeStyle.ison;
@@ -40,7 +41,8 @@ ChainCodeInfo parseChainCode(String code) {
   final String digits = code.replaceAll(RegExp(r'\D'), '');
   final String fullCode = digits.padLeft(21, '0');
   if (fullCode.length != 21) {
-    return ChainCodeInfo(fullCode: fullCode, style: ChainCodeStyle.unknown, markCode: '');
+    return ChainCodeInfo(
+        fullCode: fullCode, style: ChainCodeStyle.unknown, markCode: '');
   }
 
   final String prefixCode = fullCode.substring(0, 6);
@@ -65,8 +67,10 @@ ChainCodeInfo parseChainCode(String code) {
       );
     }
   } else if (prefixCode == '000002') {
-    return ChainCodeInfo(fullCode: fullCode, style: ChainCodeStyle.ison, markCode: '');
+    return ChainCodeInfo(
+        fullCode: fullCode, style: ChainCodeStyle.ison, markCode: '');
   }
 
-  return ChainCodeInfo(fullCode: fullCode, style: ChainCodeStyle.unknown, markCode: '');
+  return ChainCodeInfo(
+      fullCode: fullCode, style: ChainCodeStyle.unknown, markCode: '');
 }

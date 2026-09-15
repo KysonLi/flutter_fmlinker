@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cube/flutter_cube.dart';
 
 import 'package:fmlink/services/model3d/model3d_cache.dart';
+import 'package:fmlink/utils/error_handler.dart';
 
 /// 3D 模型展示页
 ///
@@ -75,11 +76,10 @@ class _ResourceModel3dScreenState extends State<ResourceModel3dScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      // 业务异常用自己的中文文案，其它异常统一收敛，不展示英文原文/堆栈
       final String detail = e is Model3dLoadException
           ? e.message
-          : (e.toString().length > 80
-              ? '${e.toString().substring(0, 80)}…'
-              : e.toString());
+          : ErrorHandler().fromError(e, fallback: '模型文件加载失败');
       setState(() {
         _error = '模型加载失败：$detail';
         _state = _LoadState.error;
