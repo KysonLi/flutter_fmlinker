@@ -6,6 +6,7 @@ import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/widgets/delete_action_button.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:go_router/go_router.dart';
 
 class LinkManagementScreen extends StatefulWidget {
@@ -20,6 +21,9 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
   int _page = 1;
   final int _pageSize = 20;
   bool _hasMore = true;
+
+  /// 加载失败原因（为空表示未失败），用于展示统一失败占位
+  String? _error;
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
     controlFinishLoad: true,
@@ -47,6 +51,7 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
       if (isRefresh) {
         _page = 1;
         _hasMore = true;
+        _error = null;
       }
 
       // 获取unificationId
@@ -91,10 +96,12 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
           });
         }
       } else {
-        EasyLoading.showError(response['msg']);
+        _error = response['msg']?.toString() ?? '';
+        EasyLoading.showError(_error!.isEmpty ? '加载失败，请稍后重试' : _error!);
       }
     } catch (e) {
       debugPrint('加载历史关联数据失败: $e');
+      _error = '加载失败，请稍后重试';
       EasyLoading.showError('加载失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
@@ -318,138 +325,136 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
             onLoad: () => _onLoading(),
             header: RefreshConfig.buildHeader(),
             footer: RefreshConfig.buildFooter(),
-            child: _linkHistory.isEmpty
+            child: _error != null
                 ? ListView(
-                    children: [
+                    children: <Widget>[
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.5,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/images/empty_list.png',
-                              width: 80,
-                              height: 80,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              '暂无关联数据',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
+                        child: DefaultStateView.fromError(
+                          message: _error,
+                          onRetry: () => _loadLinkHistory(isRefresh: true),
                         ),
                       ),
                     ],
                   )
-                : ListView(
-                    padding: EdgeInsets.only(
-                      left: 12,
-                      right: 12,
-                      top: 12,
-                      bottom: _isManageMode
-                          ? 70 + MediaQuery.of(context).padding.bottom
-                          : 12,
-                    ),
-                    children: [
-                      Wrap(
-                        alignment: WrapAlignment.start,
-                        spacing: 10,
-                        runSpacing: 15,
-                        children: _linkHistory.map((item) {
-                          String? itemId = _getItemId(item);
-                          bool isSelected =
-                              itemId != null && _selectedItems.contains(itemId);
+                : _linkHistory.isEmpty
+                    ? ListView(
+                        children: <Widget>[
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: DefaultStateView.empty(text: '暂无关联数据'),
+                          ),
+                        ],
+                      )
+                    : ListView(
+                        padding: EdgeInsets.only(
+                          left: 12,
+                          right: 12,
+                          top: 12,
+                          bottom: _isManageMode
+                              ? 70 + MediaQuery.of(context).padding.bottom
+                              : 12,
+                        ),
+                        children: [
+                          Wrap(
+                            alignment: WrapAlignment.start,
+                            spacing: 10,
+                            runSpacing: 15,
+                            children: _linkHistory.map((item) {
+                              String? itemId = _getItemId(item);
+                              bool isSelected = itemId != null &&
+                                  _selectedItems.contains(itemId);
 
-                          return GestureDetector(
-                            onTap: () {
-                              if (_isManageMode && itemId != null) {
-                                // 编辑模式下响应选中事件
-                                _toggleItemSelection(itemId);
-                              } else {
-                                // 非编辑模式下响应其他事件
-                                // TODO: 跳转到详情页面或其他操作
-                              }
-                            },
-                            child: SizedBox(
-                              width: (MediaQuery.of(context).size.width -
-                                      24 -
-                                      20) /
-                                  3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // 封面
-                                  Stack(
+                              return GestureDetector(
+                                onTap: () {
+                                  if (_isManageMode && itemId != null) {
+                                    // 编辑模式下响应选中事件
+                                    _toggleItemSelection(itemId);
+                                  } else {
+                                    // 非编辑模式下响应其他事件
+                                    // TODO: 跳转到详情页面或其他操作
+                                  }
+                                },
+                                child: SizedBox(
+                                  width: (MediaQuery.of(context).size.width -
+                                          24 -
+                                          20) /
+                                      3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      BookCover(
-                                        imageUrl: item['goodsImage'] ?? '',
-                                        width:
-                                            (MediaQuery.of(context).size.width -
-                                                    24 -
-                                                    20) /
-                                                3,
-                                        height: ((MediaQuery.of(context)
+                                      // 封面
+                                      Stack(
+                                        children: [
+                                          BookCover(
+                                            imageUrl: item['goodsImage'] ?? '',
+                                            width: (MediaQuery.of(context)
                                                         .size
                                                         .width -
                                                     24 -
                                                     20) /
-                                                3) *
-                                            1.4,
-                                      ),
-                                      // 状态图标
-                                      if (item.containsKey('goodsStatus'))
-                                        _buildStatusIcon(item['goodsStatus']),
-                                      // 选择框
-                                      if (_isManageMode && itemId != null)
-                                        Positioned(
-                                          top: 8,
-                                          left: 8,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              _toggleItemSelection(itemId);
-                                            },
-                                            child: Image.asset(
-                                              isSelected
-                                                  ? 'assets/icons/item_selected.png'
-                                                  : 'assets/icons/item_unselect.png',
-                                              width: 20,
-                                              height: 20,
-                                            ),
+                                                3,
+                                            height: ((MediaQuery.of(context)
+                                                            .size
+                                                            .width -
+                                                        24 -
+                                                        20) /
+                                                    3) *
+                                                1.4,
                                           ),
+                                          // 状态图标
+                                          if (item.containsKey('goodsStatus'))
+                                            _buildStatusIcon(
+                                                item['goodsStatus']),
+                                          // 选择框
+                                          if (_isManageMode && itemId != null)
+                                            Positioned(
+                                              top: 8,
+                                              left: 8,
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  _toggleItemSelection(itemId);
+                                                },
+                                                child: Image.asset(
+                                                  isSelected
+                                                      ? 'assets/icons/item_selected.png'
+                                                      : 'assets/icons/item_unselect.png',
+                                                  width: 20,
+                                                  height: 20,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // 名称
+                                      Text(
+                                        item['goodsName'] ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
                                         ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // 已扫码次数
+                                      Text(
+                                        '已扫码: ${item['linkSourceCount'] ?? 0}/${item['resourceCount'] ?? 0}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  // 名称
-                                  Text(
-                                    item['goodsName'] ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  // 已扫码次数
-                                  Text(
-                                    '已扫码: ${item['linkSourceCount'] ?? 0}/${item['resourceCount'] ?? 0}',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
           ),
           // 底部工具栏
           if (_isManageMode)

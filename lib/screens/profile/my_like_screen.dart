@@ -7,6 +7,7 @@ import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 class MyLikeScreen extends StatefulWidget {
   const MyLikeScreen({super.key});
@@ -25,6 +26,9 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
   List<dynamic> _likeList = [];
   bool _isLoading = true;
 
+  /// 加载失败原因（为空表示未失败），用于展示统一失败占位
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +44,7 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
   Future<void> _loadLikeList() async {
     setState(() {
       _isLoading = true;
+      _error = null;
     });
 
     try {
@@ -63,11 +68,17 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
           int status = item['goodsStatus'] ?? 0;
           return status == 1;
         }).toList();
+      } else {
+        _error = response['msg']?.toString() ?? '';
       }
     } catch (e) {
-      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取点赞列表失败'));
+      final String msg = ErrorHandler().fromError(e, fallback: '获取点赞列表失败');
+      _error = msg;
+      EasyLoading.showError(msg);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _refreshController.finishRefresh();
     }
   }
@@ -144,31 +155,25 @@ class _MyLikeScreenState extends State<MyLikeScreen> {
         color: const Color(0xFFF5F5F5),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _likeList.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/images/empty_list.png',
-                            width: 80, height: 80),
-                        const SizedBox(height: 16),
-                        const Text('暂无点赞内容',
-                            style: TextStyle(fontSize: 14, color: Colors.grey)),
-                      ],
-                    ),
+            : _error != null
+                ? DefaultStateView.fromError(
+                    message: _error,
+                    onRetry: _loadLikeList,
                   )
-                : EasyRefresh(
-                    controller: _refreshController,
-                    onRefresh: () => _loadLikeList(),
-                    header: RefreshConfig.buildHeader(),
-                    child: ListView.separated(
-                      itemCount: _likeList.length,
-                      separatorBuilder: (context, index) =>
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                      itemBuilder: (context, index) =>
-                          _buildLikeItem(_likeList[index]),
-                    ),
-                  ),
+                : _likeList.isEmpty
+                    ? DefaultStateView.empty(text: '暂无点赞内容')
+                    : EasyRefresh(
+                        controller: _refreshController,
+                        onRefresh: () => _loadLikeList(),
+                        header: RefreshConfig.buildHeader(),
+                        child: ListView.separated(
+                          itemCount: _likeList.length,
+                          separatorBuilder: (context, index) => const Divider(
+                              height: 1, color: Color(0xFFEEEEEE)),
+                          itemBuilder: (context, index) =>
+                              _buildLikeItem(_likeList[index]),
+                        ),
+                      ),
       ),
     );
   }

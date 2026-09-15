@@ -5,6 +5,7 @@ import 'package:fmlink/resource/resource_service.dart';
 import 'package:fmlink/resource/resource_types.dart';
 import 'package:fmlink/resource/source_detail.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// URL 统一处理：去除反引号/空白后，http 强制转 https 并去掉端口号。
 ///
@@ -379,12 +380,9 @@ class _IsliCopyrightScreenState extends State<IsliCopyrightScreen> {
         ),
         const SizedBox(height: 6),
         if (items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              '暂无版权标识信息',
-              style: TextStyle(fontSize: 13, color: Color(0xFF8C8C8C)),
-            ),
+          DefaultStateView.empty(
+            text: '暂无版权标识信息',
+            compact: true,
           )
         else
           ...items.asMap().entries.map(

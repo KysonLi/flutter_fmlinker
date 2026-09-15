@@ -4,6 +4,7 @@ import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/models/publisher_model.dart';
@@ -430,28 +431,9 @@ class _PublishScreenState extends State<PublishScreen> {
           Expanded(
             child: _showPublications
                 ? (_hasErrorPublications
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 60,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _errorMessagePublications,
-                              style: const TextStyle(fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _refreshData,
-                              child: const Text('重试'),
-                            ),
-                          ],
-                        ),
+                    ? DefaultStateView.fromError(
+                        message: _errorMessagePublications,
+                        onRetry: _refreshData,
                       )
                     : EasyRefresh(
                         controller: _refreshController,
@@ -460,25 +442,8 @@ class _PublishScreenState extends State<PublishScreen> {
                         header: RefreshConfig.buildHeader(),
                         footer: RefreshConfig.buildFooter(),
                         child: _publications.isEmpty && !_isLoadingPublications
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/empty_list.png',
-                                      width: 80,
-                                      height: 80,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      '暂无出版物数据',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ? DefaultStateView.empty(
+                                text: '暂无出版物数据',
                               )
                             : _isLoadingPublications && _publications.isEmpty
                                 ? _buildPublicationSkeleton()
@@ -517,28 +482,9 @@ class _PublishScreenState extends State<PublishScreen> {
                                       ),
                       ))
                 : (_hasErrorPublishers
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 60,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _errorMessagePublishers,
-                              style: const TextStyle(fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _refreshData,
-                              child: const Text('重试'),
-                            ),
-                          ],
-                        ),
+                    ? DefaultStateView.fromError(
+                        message: _errorMessagePublishers,
+                        onRetry: _refreshData,
                       )
                     : EasyRefresh(
                         controller: _refreshController,
@@ -547,24 +493,8 @@ class _PublishScreenState extends State<PublishScreen> {
                         header: RefreshConfig.buildHeader(),
                         footer: RefreshConfig.buildFooter(),
                         child: _publishers.isEmpty && !_isLoadingPublishers
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/empty_list.png',
-                                      width: 80,
-                                      height: 80,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      '暂无出版者数据',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ? DefaultStateView.empty(
+                                text: '暂无出版者数据',
                               )
                             : _isLoadingPublishers && _publishers.isEmpty
                                 ? _buildPublisherSkeleton()

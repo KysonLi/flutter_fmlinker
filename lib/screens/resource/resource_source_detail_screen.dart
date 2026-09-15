@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 源详情页（占位）
 ///
@@ -81,16 +82,7 @@ class ResourceSourceDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: rows.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 28),
-                    child: Center(
-                      child: Text(
-                        '暂无源信息',
-                        style:
-                            TextStyle(fontSize: 13, color: Color(0xFF8C8C8C)),
-                      ),
-                    ),
-                  )
+                ? DefaultStateView.empty(text: '暂无源信息', compact: true)
                 : Column(
                     children: rows,
                   ),

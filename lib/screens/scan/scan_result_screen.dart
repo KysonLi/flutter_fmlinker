@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:go_router/go_router.dart';
 
 /// 扫码结果页：展示扫描到的 ISLI 码（线码/图标码）解析出的关联资源
@@ -285,23 +286,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.search_off, size: 56, color: Color(0xFFC0C4CC)),
-          const SizedBox(height: 16),
-          const Text(
-            '该码暂未关联资源',
-            style: TextStyle(fontSize: 14, color: Color(0xFF909399)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.isliCode,
-            style: const TextStyle(fontSize: 12, color: Color(0xFFC0C4CC)),
-          ),
-        ],
-      ),
+    return DefaultStateView.empty(
+      text: '该码暂未关联资源',
+      subText: widget.isliCode,
     );
   }
 

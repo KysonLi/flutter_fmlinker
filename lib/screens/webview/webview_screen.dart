@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -18,7 +19,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
   bool _isLoading = true;
   String? _pageTitle;
   bool _loadFailed = false;
-  String? _errorMessage;
   bool _pageLoaded = false;
 
   @override
@@ -54,7 +54,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
             setState(() {
               _isLoading = false;
               _loadFailed = false;
-              _errorMessage = null;
               _pageLoaded = true;
             });
             _controller.getTitle().then((title) {
@@ -71,7 +70,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
               setState(() {
                 _isLoading = false;
                 _loadFailed = true;
-                _errorMessage = error.description;
               });
             }
           },
@@ -140,7 +138,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
       setState(() {
         _isLoading = false;
         _loadFailed = true;
-        _errorMessage = 'URL解析失败: $e';
       });
     }
   }
@@ -149,7 +146,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
     setState(() {
       _isLoading = true;
       _loadFailed = false;
-      _errorMessage = null;
       _pageLoaded = false;
     });
     _loadUrl();
@@ -174,23 +170,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
           if (_isLoading && !_pageLoaded)
             const Center(child: CircularProgressIndicator()),
           if (_loadFailed)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('加载失败'),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(_errorMessage!),
-                    ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text('重新加载'),
-                  ),
-                ],
-              ),
+            DefaultStateView.loadFailed(
+              onRetry: _refresh,
+              retryText: '重新加载',
             ),
         ],
       ),

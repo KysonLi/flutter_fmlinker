@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/models/publisher_model.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 出版物/出版者搜索页
 class PublishSearchScreen extends StatefulWidget {
@@ -521,41 +522,13 @@ class _PublishSearchScreenState extends State<PublishSearchScreen> {
   // ----- 空态 / 错误 -----
 
   Widget _buildEmptyView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 60, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            '未找到与“$_lastKeyword”相关的内容',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+    return DefaultStateView.empty(text: '未找到与“$_lastKeyword”相关的内容');
   }
 
   Widget _buildErrorView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 60, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            _errorMessage ?? '搜索失败，请稍后重试',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => _performSearch(_lastKeyword),
-            child: const Text('重试'),
-          ),
-        ],
-      ),
+    return DefaultStateView.fromError(
+      message: _errorMessage,
+      onRetry: () => _performSearch(_lastKeyword),
     );
   }
 }

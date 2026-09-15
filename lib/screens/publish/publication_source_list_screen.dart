@@ -9,6 +9,7 @@ import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/screens/publish/widgets/book_info_card.dart';
 import 'package:fmlink/screens/publish/widgets/chapter_header.dart';
 import 'package:fmlink/screens/publish/widgets/source_item.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:fmlink/utils/error_handler.dart';
 
 class PublicationSourceListScreen extends StatefulWidget {
@@ -254,10 +255,7 @@ class _PublicationSourceListScreenState
 
   Widget _buildChapterList() {
     if (_chapterGroups.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: Text('暂无链码数据')),
-      );
+      return DefaultStateView.empty(text: '暂无链码数据');
     }
 
     return Column(

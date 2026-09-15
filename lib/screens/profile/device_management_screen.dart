@@ -8,6 +8,7 @@ import 'package:fmlink/utils/device_info_util.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 class DeviceManagementScreen extends StatefulWidget {
   const DeviceManagementScreen({super.key});
@@ -21,6 +22,9 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
   final UserService _userService = UserService();
   List<DeviceModel> _devices = [];
   bool _isEditing = false;
+
+  /// 加载失败原因（为空表示未失败），用于展示统一失败占位
+  String? _error;
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
   );
@@ -38,6 +42,9 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
   }
 
   Future<void> _loadDeviceList() async {
+    if (mounted) {
+      setState(() => _error = null);
+    }
     try {
       await _userService.refreshToken();
 
@@ -65,6 +72,8 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
             devices.add(device);
           }
         }
+      } else {
+        _error = response['msg']?.toString() ?? '';
       }
 
       if (!hasLocal) {
@@ -86,7 +95,11 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
         _devices = devices;
       });
     } catch (e) {
-      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取设备列表失败'));
+      final String msg = ErrorHandler().fromError(e, fallback: '获取设备列表失败');
+      if (mounted) {
+        setState(() => _error = msg);
+      }
+      EasyLoading.showError(msg);
     } finally {
       _refreshController.finishRefresh();
     }
@@ -170,79 +183,95 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
               controller: _refreshController,
               onRefresh: () => _loadDeviceList(),
               header: RefreshConfig.buildHeader(),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _devices.length,
-                itemBuilder: (context, index) {
-                  DeviceModel device = _devices[index];
-                  bool isFirst = index == 0;
-                  bool isLocal = device.isLocal;
+              child: _error != null
+                  ? DefaultStateView.fromError(
+                      message: _error,
+                      onRetry: _loadDeviceList,
+                    )
+                  : _devices.isEmpty
+                      ? DefaultStateView.empty(text: '暂无登录设备')
+                      : ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: _devices.length,
+                          itemBuilder: (context, index) {
+                            DeviceModel device = _devices[index];
+                            bool isFirst = index == 0;
+                            bool isLocal = device.isLocal;
 
-                  return Column(
-                    children: [
-                      if (isFirst && _devices.length > 1)
-                        const SizedBox(height: 16),
-                      Container(
-                        color: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 16),
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: const Color(0xFFEEEEEE)),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    device.name,
-                                    style: const TextStyle(fontSize: 14),
+                            return Column(
+                              children: [
+                                if (isFirst && _devices.length > 1)
+                                  const SizedBox(height: 16),
+                                Container(
+                                  color: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 16),
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: const Color(0xFFEEEEEE)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              device.name,
+                                              style:
+                                                  const TextStyle(fontSize: 14),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              device.time,
+                                              style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (_isEditing && !device.isLocal)
+                                        TextButton(
+                                          onPressed: () =>
+                                              _confirmDelete(device),
+                                          child: const Text(
+                                            '移除',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.red),
+                                          ),
+                                        ),
+                                      const SizedBox(width: 16),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    device.time,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_isEditing && !device.isLocal)
-                              TextButton(
-                                onPressed: () => _confirmDelete(device),
-                                child: const Text(
-                                  '移除',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Colors.red),
                                 ),
-                              ),
-                            const SizedBox(width: 16),
-                          ],
+                                if (isLocal && _devices.length > 1)
+                                  const SizedBox(height: 16),
+                                if (!isFirst && !isLocal)
+                                  const Divider(
+                                      height: 1, color: Color(0xFFEEEEEE)),
+                              ],
+                            );
+                          },
                         ),
-                      ),
-                      if (isLocal && _devices.length > 1)
-                        const SizedBox(height: 16),
-                      if (!isFirst && !isLocal)
-                        const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                    ],
-                  );
-                },
-              ),
             ),
           ),
           Container(

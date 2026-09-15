@@ -6,6 +6,7 @@ import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 购买记录页
 ///
@@ -39,6 +40,9 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
   bool _loadingMore = false;
   bool _isLoggedIn = false;
 
+  /// 加载失败原因（为空表示未失败），用于展示统一失败占位
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -69,7 +73,10 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
       return;
     }
     if (isRefresh) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
     } else {
       setState(() => _loadingMore = true);
     }
@@ -107,11 +114,14 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
           }
           _hasMore = items.length >= _pageSize;
         });
+      } else {
+        _error = response['msg']?.toString() ?? '';
       }
     } catch (e) {
       if (mounted) {
-        EasyLoading.showError(
-            ErrorHandler().fromError(e, fallback: '获取购买记录失败'));
+        final String msg = ErrorHandler().fromError(e, fallback: '获取购买记录失败');
+        _error = msg;
+        EasyLoading.showError(msg);
       }
     } finally {
       if (mounted) {
@@ -484,45 +494,11 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
 
   /// 空列表空态
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.receipt_long_outlined,
-              size: 80, color: Color(0xFFBFBFBF)),
-          const SizedBox(height: 16),
-          const Text(
-            '暂无购买记录',
-            style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF595959),
-                fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '去逛逛，发现精彩内容',
-            style: TextStyle(fontSize: 12, color: Color(0xFFBFBFBF)),
-          ),
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: _goHome,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2F7BFF),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: const Text(
-                '去浏览',
-                style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return DefaultStateView.empty(
+      text: '暂无购买记录',
+      subText: '去逛逛，发现精彩内容',
+      onRetry: _goHome,
+      retryText: '去浏览',
     );
   }
 
@@ -544,21 +520,26 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
             ? _buildLoginEmpty()
             : _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _list.isEmpty
-                    ? _buildEmpty()
-                    : EasyRefresh(
-                        controller: _refreshController,
-                        onRefresh: () => _loadOrders(isRefresh: true),
-                        onLoad: () => _loadOrders(isRefresh: false),
-                        header: RefreshConfig.buildHeader(),
-                        footer: RefreshConfig.buildFooter(),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _list.length,
-                          itemBuilder: (context, index) =>
-                              _buildRecordCard(_list[index]),
-                        ),
-                      ),
+                : _error != null
+                    ? DefaultStateView.fromError(
+                        message: _error,
+                        onRetry: () => _loadOrders(isRefresh: true),
+                      )
+                    : _list.isEmpty
+                        ? _buildEmpty()
+                        : EasyRefresh(
+                            controller: _refreshController,
+                            onRefresh: () => _loadOrders(isRefresh: true),
+                            onLoad: () => _loadOrders(isRefresh: false),
+                            header: RefreshConfig.buildHeader(),
+                            footer: RefreshConfig.buildFooter(),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _list.length,
+                              itemBuilder: (context, index) =>
+                                  _buildRecordCard(_list[index]),
+                            ),
+                          ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 class UpdateHistoryDialog extends StatefulWidget {
   final String goodsId;
@@ -179,9 +180,9 @@ class _UpdateHistoryDialogState extends State<UpdateHistoryDialog> {
                         const SizedBox(height: 16),
                         // 更新记录列表
                         if (_historyList.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Text('暂无更新记录'),
+                          DefaultStateView.empty(
+                            text: '暂无更新记录',
+                            compact: true,
                           )
                         else
                           ..._buildTimeline(),

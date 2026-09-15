@@ -7,6 +7,7 @@ import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/isli_code_util.dart';
 import 'package:fmlink/widgets/delete_action_button.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 class ScanHistoryScreen extends StatefulWidget {
   final String goodsId;
@@ -42,6 +43,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   bool _isLoading = true;
   SortType _sortType = SortType.scanOrder;
 
+  /// 加载失败原因（为空表示未失败），用于展示统一失败占位
+  String? _error;
+
   int _pageIndex = 1;
   final int _pageSize = 20;
   bool _hasMore = true;
@@ -75,6 +79,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     setState(() {
       _isLoading = true;
+      _error = null;
     });
 
     try {
@@ -111,9 +116,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
           _hasMore = linkInfoList.length >= _pageSize;
         });
+      } else {
+        _error = response['msg']?.toString() ?? '';
       }
     } catch (e) {
       debugPrint('加载扫码历史失败: $e');
+      _error = '加载失败，请稍后重试';
       EasyLoading.showToast('加载失败，请稍后重试');
     } finally {
       EasyLoading.dismiss();
@@ -392,11 +400,14 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   Widget _buildList() {
-    if (_scanHistory.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: Text('暂无扫码记录')),
+    if (_error != null) {
+      return DefaultStateView.fromError(
+        message: _error,
+        onRetry: () => _loadScanHistory(isRefresh: true),
       );
+    }
+    if (_scanHistory.isEmpty) {
+      return DefaultStateView.empty(text: '暂无扫码记录');
     }
 
     return Column(

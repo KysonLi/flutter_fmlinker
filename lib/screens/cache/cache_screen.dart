@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fmlink/cache/cache_record.dart';
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/resource/resource_types.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 缓存页
 ///
@@ -110,7 +111,7 @@ class _CacheScreenState extends State<CacheScreen>
   Widget _buildDownloadedTab() {
     final List<CacheRecord> completed = CacheService().completed;
     if (completed.isEmpty) {
-      return _buildEmpty('暂无已缓存资源', Icons.download_done_outlined);
+      return _buildEmpty('暂无已缓存资源');
     }
     // 按出版物聚合
     final Map<String, List<CacheRecord>> groups = <String, List<CacheRecord>>{};
@@ -225,7 +226,7 @@ class _CacheScreenState extends State<CacheScreen>
   Widget _buildCacheListTab() {
     final List<CacheRecord> unfinished = CacheService().unfinished;
     if (unfinished.isEmpty) {
-      return _buildEmpty('暂无缓存任务', Icons.download_outlined);
+      return _buildEmpty('暂无缓存任务');
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -404,20 +405,8 @@ class _CacheScreenState extends State<CacheScreen>
 
   // ==================== 通用 ====================
 
-  Widget _buildEmpty(String text, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 48, color: const Color(0xFFC0C4CC)),
-          const SizedBox(height: 12),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF999999)),
-          ),
-        ],
-      ),
-    );
+  Widget _buildEmpty(String text) {
+    return DefaultStateView.empty(text: text);
   }
 
   static String _formatSize(int bytes) {

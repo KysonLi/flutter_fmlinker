@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:fmlink/models/publisher_model.dart';
@@ -366,37 +367,20 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 60, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isLoading = true;
-                  _errorMessage = null;
-                });
-                _loadPublicationDetail();
-              },
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      return DefaultStateView.fromError(
+        message: _errorMessage,
+        onRetry: () {
+          setState(() {
+            _isLoading = true;
+            _errorMessage = null;
+          });
+          _loadPublicationDetail();
+        },
       );
     }
 
     if (_publicationDetail == null) {
-      return const Center(
-        child: Text('暂无数据', style: TextStyle(fontSize: 14, color: Colors.grey)),
-      );
+      return DefaultStateView.empty();
     }
 
     return SingleChildScrollView(

@@ -3,6 +3,7 @@ import 'package:fmlink/screens/publish/widgets/chapter_header.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 链码列表弹层（全书所有链码）API 契约
 ///
@@ -335,32 +336,14 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
       );
     }
     if (_failed) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(Icons.wifi_off, size: 48, color: Color(0xFFC0C4CC)),
-            const SizedBox(height: 12),
-            Text(
-              _errorMsg,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF909399)),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _load,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      return DefaultStateView.fromError(
+        message: _errorMsg,
+        onRetry: _load,
+        compact: true,
       );
     }
     if (_groups.isEmpty) {
-      return const Center(
-        child: Text(
-          '暂无链码数据',
-          style: TextStyle(fontSize: 14, color: Color(0xFF909399)),
-        ),
-      );
+      return DefaultStateView.empty(text: '暂无链码数据', compact: true);
     }
     return _buildList();
   }
