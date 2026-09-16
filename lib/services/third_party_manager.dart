@@ -4,6 +4,20 @@ import 'package:fluwx/fluwx.dart' as fluwx;
 
 class ThirdPartyManager {
   static const String _wechatAppId = 'wxdcb4f64316ee1d04';
+
+  /// iOS 微信 Universal Link（仅 iOS 生效，Android/OHOS 不校验）。
+  ///
+  /// 生效需三处保持一致，改动时务必同步：
+  /// 1. `ios/Runner/Runner.entitlements` 的 `applinks:apigateway.mpreader.com`
+  ///    （由 Xcode Associated Domains 能力读取）；
+  /// 2. 微信开放平台「移动应用 - iOS」填写的 Universal Link；
+  /// 3. 服务端 `https://apigateway.mpreader.com/.well-known/apple-app-site-association`
+  ///    的 AASA 文件，`paths` 需覆盖 `/wxul/*`（teamId.bundleId 为 K57V7V2MH5.com.fanmei.Linker）。
+  ///
+  /// 微信 SDK 要求：https 协议、以 `/` 结尾。
+  static const String weChatUniversalLink =
+      'https://apigateway.mpreader.com/wxul/';
+
   static final fluwx.Fluwx _fluwx = fluwx.Fluwx();
   static fluwx.FluwxCancelable? _weChatResponseSubscription;
 
@@ -11,10 +25,7 @@ class ThirdPartyManager {
     try {
       await _fluwx.registerApi(
         appId: _wechatAppId,
-        // TODO(ios): universalLink 为占位值。正式接入微信开放平台后需替换为
-        // 与 Apple Associated Domains 一致的 https 链接（并开通 associated domains 能力），
-        // 否则 iOS 微信登录/分享回调不可用（Android/OHOS 不受影响）。
-        universalLink: 'https://your-domain.com/wechat',
+        universalLink: weChatUniversalLink,
       );
     } catch (e) {
       print('微信初始化失败: $e');

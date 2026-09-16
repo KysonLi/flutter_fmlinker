@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 微信 Universal Link 依赖的关联域名能力：
+	     https://apigateway.mpreader.com/wxul/
+	     改动域名时必须与以下三处同步：
+	     1) lib/services/third_party_manager.dart 的 weChatUniversalLink
+	     2) pubspec.yaml 的 fluwx.ios.universal_link
+	     3) 微信开放平台「移动应用 - iOS」填写的 Universal Link -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:apigateway.mpreader.com</string>
+	</array>
+</dict>
+</plist>
