@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>泛媒关联 App 业务运营流程图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #EEF2F7;
+    color: #1F2D3D;
+    -webkit-font-smoothing: antialiased;
+  }
+  .canvas { width: 1560px; padding: 34px 40px 40px; }
+
+  header {
+    background: linear-gradient(120deg, #2376E3 0%, #409EFF 55%, #56B4F0 100%);
+    border-radius: 16px;
+    padding: 22px 28px;
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(35,118,227,.28);
+  }
+  header h1 { font-size: 28px; letter-spacing: 1px; }
+  header .sub { margin-top: 8px; font-size: 14px; opacity: .94; }
+  header .tag {
+    display: inline-block; margin-top: 12px; margin-right: 8px;
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.45);
+    border-radius: 999px; padding: 3px 12px; font-size: 12px;
+  }
+
+  section { margin-top: 22px; }
+  h2 {
+    font-size: 17px; color: #17509E; display: flex; align-items: center; gap: 10px;
+    padding-left: 4px; margin-bottom: 12px;
+  }
+  h2 .n {
+    display: inline-flex; width: 24px; height: 24px; border-radius: 8px;
+    background: #2376E3; color: #fff; font-size: 13px;
+    align-items: center; justify-content: center;
+  }
+  h2 .hint { font-size: 12px; font-weight: 400; color: #7C8798; }
+
+  .card {
+    background: #fff; border-radius: 12px; padding: 12px 14px;
+    box-shadow: 0 2px 10px rgba(31,45,61,.08);
+    border: 1px solid #E4EAF2;
+  }
+  .card .t { font-size: 14px; font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+  .card .t .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .card ul { list-style: none; }
+  .card li {
+    font-size: 12.5px; line-height: 1.65; color: #46536B; padding-left: 11px; position: relative;
+  }
+  .card li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 4px; height: 4px; border-radius: 50%; background: #A9B7CC;
+  }
+  .card li b { color: #1F2D3D; }
+  .code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px; color: #17509E; background: #EEF4FE; border-radius: 4px; padding: 0 4px; }
+
+  .row { display: flex; align-items: stretch; gap: 0; }
+  .arrowH {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; color: #2376E3; font-size: 22px; font-weight: 700; flex: 0 0 44px;
+  }
+  .arrowV { text-align: center; color: #2376E3; font-size: 20px; font-weight: 700; line-height: 1; margin: 6px 0; }
+  .arrowV small { display: block; font-size: 11px; color: #7C8798; font-weight: 400; margin-bottom: 2px; }
+
+  /* 角色卡 */
+  .role { flex: 1; border-top: 4px solid #2376E3; }
+  .role.supply { border-top-color: #7B61FF; }
+  .role.platform { border-top-color: #2376E3; }
+  .role.user { border-top-color: #17A673; }
+  .role .t { font-size: 15px; }
+
+  /* 主链路步骤 */
+  .steps { display: flex; align-items: stretch; gap: 0; }
+  .step {
+    flex: 1;
+    background: #fff; border-radius: 12px; padding: 11px 10px 12px;
+    border: 1px solid #E4EAF2; box-shadow: 0 2px 10px rgba(31,45,61,.08);
+    position: relative;
+  }
+  .step .idx {
+    position: absolute; top: -10px; left: 12px;
+    background: #2376E3; color: #fff; font-size: 11px; font-weight: 700;
+    border-radius: 999px; padding: 2px 9px;
+  }
+  .step .st { font-size: 13.5px; font-weight: 700; margin: 10px 0 6px; color: #17509E; }
+  .step .sd { font-size: 12px; line-height: 1.6; color: #46536B; }
+  .step .sd em { font-style: normal; color: #17509E; }
+  .step.green { border-color: #BFE7D6; }
+  .step.green .st { color: #17A673; }
+  .step.green .idx { background: #17A673; }
+  .step.orange { border-color: #FBD9AE; }
+  .step.orange .st { color: #C97A0B; }
+  .step.orange .idx { background: #E8912B; }
+
+  /* 分支卡 */
+  .branchWrap { display: flex; gap: 14px; }
+  .branch { flex: 1; border-left: 4px solid #E8912B; }
+  .branch.blue { border-left-color: #2376E3; }
+  .branch.green { border-left-color: #17A673; }
+  .branch.purple { border-left-color: #7B61FF; }
+  .branch .t { font-size: 13.5px; }
+  .branch .cond {
+    display: inline-block; font-size: 11.5px; color: #C97A0B; background: #FDF3E4;
+    border-radius: 4px; padding: 1px 6px; margin-bottom: 6px;
+  }
+  .branch.blue .cond { color: #17509E; background: #EEF4FE; }
+  .branch.green .cond { color: #0E7A55; background: #E9F8F1; }
+  .branch.purple .cond { color: #5B45C8; background: #F1EEFE; }
+
+  .twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .threeCol { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .fourCol { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+  /* 入口卡 */
+  .entry { border-top: 4px solid #409EFF; }
+  .entry .route { font-size: 11px; color: #7C8798; margin-top: 6px; font-family: "SF Mono", Menlo, monospace; }
+
+  /* 汇聚条 */
+  .converge {
+    margin-top: 14px; background: #17509E; color: #fff; border-radius: 12px;
+    padding: 13px 20px; display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 6px 16px rgba(23,80,158,.25);
+  }
+  .converge .big { font-size: 14.5px; font-weight: 700; white-space: nowrap; }
+  .converge .txt { font-size: 12.5px; opacity: .92; line-height: 1.6; }
+
+  /* 闭环 */
+  .loop {
+    background: #fff; border: 1px dashed #B9CDE8; border-radius: 12px; padding: 14px 16px;
+  }
+  .loopRow { display: flex; align-items: center; gap: 0; }
+  .loopItem {
+    flex: 1; text-align: center; font-size: 12.5px; color: #1F2D3D;
+    background: #F2F7FE; border-radius: 9px; padding: 9px 6px; border: 1px solid #DCE8F8;
+  }
+  .loopItem b { display: block; font-size: 15px; color: #2376E3; margin-bottom: 2px; }
+  .loopNote { margin-top: 10px; font-size: 12px; color: #7C8798; text-align: center; }
+
+  footer { margin-top: 20px; font-size: 11.5px; color: #96A1B3; text-align: center; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <header>
+    <h1>泛媒关联 App · 业务运营流程全景图</h1>
+    <div class="sub">扫一扫纸书上的 ISLI 链码 → 解析并播放关联的全媒体资源 → 付费解锁优质内容 → 缓存离线复看与用户沉淀</div>
+    <div>
+      <span class="tag">内容运营</span>
+      <span class="tag">扫码关联</span>
+      <span class="tag">付费转化</span>
+      <span class="tag">离线缓存</span>
+      <span class="tag">用户留存</span>
+      <span class="tag">Android / iOS / HarmonyOS</span>
+    </div>
+  </header>
+
+  <!-- 1 业务角色 -->
+  <section>
+    <h2><span class="n">1</span>业务角色与价值链 <span class="hint">谁提供内容、谁提供服务、谁消费内容</span></h2>
+    <div class="row">
+      <div class="card role supply">
+        <div class="t"><span class="dot" style="background:#7B61FF"></span>内容供给侧 · 出版机构 / 出版者</div>
+        <ul>
+          <li>申报 <b>MPR 出版物</b>（Goods）并上传数字资源（Source）</li>
+          <li>为纸书申请 <b>ISLI 链码 / 标志码</b>，随印刷物一并发行</li>
+          <li>配置资源定价策略与促销优惠，投放运营位</li>
+          <li>后续维护：内容更新记录、上架 / 下架 / 删除</li>
+        </ul>
+      </div>
+      <div class="arrowH">→</div>
+      <div class="card role platform">
+        <div class="t"><span class="dot" style="background:#2376E3"></span>平台侧 · 泛媒关联云平台</div>
+        <ul>
+          <li><b>码解析服务</b>：<span class="code">/target-goods/app/v1/source/scan</span> 按码取关联资源</li>
+          <li><b>内容库</b>：出版物库、出版者库、资源文件与分发（图片 byte 流 / 音视频 / HTML / 3D OBJ）</li>
+          <li><b>交易</b>：定价策略、减免优惠、订单与微信支付</li>
+          <li><b>账号</b>：短信 / 密码 / 微信 / 南方云教育平台对接、多设备管理</li>
+          <li><b>运营数据</b>：扫码量、阅读数、点赞数、购买记录</li>
+        </ul>
+      </div>
+      <div class="arrowH">→</div>
+      <div class="card role user">
+        <div class="t"><span class="dot" style="background:#17A673"></span>需求侧 · 阅读用户（App）</div>
+        <ul>
+          <li>扫描纸书链码，直达配套图文 / 音视频 / 3D 内容</li>
+          <li>浏览出版物、发现推荐位找书</li>
+          <li>单本购买 / 整书打包购买解锁优质资源</li>
+          <li>缓存离线复看、点赞、查看历史与购买记录</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 内容上架 -->
+  <section>
+    <h2><span class="n">2</span>内容上架与运营配置链 <span class="hint">平台把「纸书 → 码 → 资源 → 价格 → 流量」串成可售卖的商品</span></h2>
+    <div class="steps">
+      <div class="step">
+        <span class="idx">1</span>
+        <div class="st">出版物入库</div>
+        <div class="sd">书名 / 封面 / 作者 / 出版社 / 简介 / 视频介绍<br>类型：ISBN、CN、ISSN、ISRC</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step">
+        <span class="idx">2</span>
+        <div class="st">关联数字资源</div>
+        <div class="sd">一个出版物挂 1~N 个资源<br>文本 · 图片 · 音频 · 视频 · 网页 · 3D</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step">
+        <span class="idx">3</span>
+        <div class="st">分配 ISLI 链码</div>
+        <div class="sd">服务码 + 前缀码 + 后缀码 + 校验位<br>印在纸书正文行间 / 封底标志码</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step orange">
+        <span class="idx">4</span>
+        <div class="st">配置定价策略</div>
+        <div class="sd"><em>CHAIN_ALL_FREE</em> 全部免费<br><em>CHAIN_UNIFORM_PRICE</em> 整书统一价<br>按源定价 / 按章 / 打包购买 + 减免优惠</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step green">
+        <span class="idx">5</span>
+        <div class="st">流量投放</div>
+        <div class="sd">发现页 Banner / 今日推荐 / 热门关注 / 点赞最多<br>出版页榜单与搜索曝光</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 用户主链路 -->
+  <section>
+    <h2><span class="n">3</span>用户获取内容的 4 大入口 <span class="hint">所有入口最终汇聚到统一资源入口 ResourceEntry.openFromCode()</span></h2>
+    <div class="fourCol">
+      <div class="card entry">
+        <div class="t"><span class="dot" style="background:#409EFF"></span>A · 扫码直达（核心入口）</div>
+        <ul>
+          <li>底部中央凸起按钮 → 全屏扫码页</li>
+          <li>链码（线码）／标志码（图标码）模式切换</li>
+          <li>相册识码、手动输入链码（10~20 位数字）</li>
+          <li>native C++ 解码（BCH 纠错 + 波形采样）</li>
+        </ul>
+        <div class="route">/scan</div>
+      </div>
+      <div class="card entry">
+        <div class="t"><span class="dot" style="background:#409EFF"></span>B · 出版页找书</div>
+        <ul>
+          <li>出版物 / 出版者两个子 Tab，卡片或列表切换</li>
+          <li>关键词搜索（同时搜书与出版者，存历史词）</li>
+          <li>出版物详情：链码行 → 资源清单</li>
+        </ul>
+        <div class="route">/publish → /publication-detail</div>
+      </div>
+      <div class="card entry">
+        <div class="t"><span class="dot" style="background:#409EFF"></span>C · 发现页运营位</div>
+        <ul>
+          <li>轮播 Banner（可跳站内书或外链）</li>
+          <li>今日推荐、热门关注、点赞最多榜单</li>
+          <li>点击直达出版物详情</li>
+        </ul>
+        <div class="route">/discover → /publication-detail</div>
+      </div>
+      <div class="card entry">
+        <div class="t"><span class="dot" style="background:#409EFF"></span>D · 关联历史复访</div>
+        <ul>
+          <li>扫码历史卡片流（带上下架 / 已删除角标）</li>
+          <li>关联出版物管理：批量删除、分页加载</li>
+          <li>未登录时引导登录或去出版页浏览</li>
+        </ul>
+        <div class="route">/history → /link-management</div>
+      </div>
+    </div>
+
+    <div class="converge">
+      <div class="big">统一资源入口<br>ResourceEntry.openFromCode()</div>
+      <div class="txt">
+        ① 先 <b>refreshToken()</b> 回灌登录态 → ② 按链码拉取关联资源 <span class="code">/source/scan</span> → ③ 依据返回结果分流：
+        需要购买进购买页、多资源进资源列表、单资源直进播放页；无关联资源则提示「未获取到关联资源」。
+      </div>
+    </div>
+
+    <div class="arrowV" style="margin-top:12px;">▼<small>按返回结果分流</small></div>
+
+    <div class="branchWrap">
+      <div class="card branch orange">
+        <div class="cond">needPurchase == true</div>
+        <div class="t">需付费解锁</div>
+        <ul>
+          <li>跳转购买页，展示资源信息与价格</li>
+          <li>无资源预览，先买后看</li>
+        </ul>
+      </div>
+      <div class="card branch blue">
+        <div class="cond">资源数 大于 1</div>
+        <div class="t">资源列表页</div>
+        <ul>
+          <li>分页加载，滚到底自动加载更多</li>
+          <li>可切换链码、扫码、查看源详情</li>
+        </ul>
+      </div>
+      <div class="card branch green">
+        <div class="cond">资源数 等于 1</div>
+        <div class="t">直接进入播放页</div>
+        <ul>
+          <li>左右滑动切换同一码下的多个资源</li>
+          <li>顶部点赞、底部更多（购买 / 列表 / 源详情）</li>
+        </ul>
+      </div>
+      <div class="card branch purple">
+        <div class="cond">标志码 / ISBN / ISSN</div>
+        <div class="t">ISLI 版权信息页</div>
+        <ul>
+          <li>展示该码的登记与版权信息</li>
+          <li>链码类走资源解析链路</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 资源消费 -->
+  <section>
+    <h2><span class="n">4</span>资源消费：按类型分发 + 离线优先</h2>
+    <div class="threeCol">
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#2376E3"></span>资源类型分支</div>
+        <ul>
+          <li><b>文本</b>：在线正文 / SelectableText</li>
+          <li><b>图片</b>：网络图（byte 流）或本地文件</li>
+          <li><b>音频 / 视频</b>：统一播放器内核，HLS 分段支持</li>
+          <li><b>网页</b>：内置 WebView 打开 HTML 应用</li>
+          <li><b>3D</b>：OBJ 模型页，可旋转缩放</li>
+          <li>付费未解锁 → 锁定态「购买后即可查看」</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#17A673"></span>离线缓存（运营留存的关键）</div>
+        <ul>
+          <li>播放页一键缓存，串行下载队列 + 进度</li>
+          <li>WiFi 直下；移动网络弹确认（24 小时内免重复询问）</li>
+          <li>文件按资源 ID 全局复用，元数据按账号隔离</li>
+          <li>我的缓存：已缓存 / 任务列表，可删可重试</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#E8912B"></span>离线播放兜底</div>
+        <ul>
+          <li>无网络时自动载入本地已缓存资源并提示</li>
+          <li>无缓存则提示「当前离线且无本地缓存」</li>
+          <li>缓存详情页点条目直接本地播放</li>
+          <li>网页类型资源不提供缓存</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 付费 -->
+  <section>
+    <h2><span class="n">5</span>付费转化链路 <span class="hint">免费内容直通，付费内容按策略售卖</span></h2>
+    <div class="steps">
+      <div class="step orange">
+        <span class="idx">1</span>
+        <div class="st">命中付费资源</div>
+        <div class="sd">解析结果显示需购买<br>或播放页点击「购买后解锁」</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step orange">
+        <span class="idx">2</span>
+        <div class="st">购买页组装订单</div>
+        <div class="sd">资源信息 + 价格；<b>单个源 / 整书</b> 两种规格<br>整书统一价策略下仅支持整书</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step orange">
+        <span class="idx">3</span>
+        <div class="st">优惠与身份校验</div>
+        <div class="sd">拉取整书减免价；非免费策略需登录<br>未登录 → 引导登录后继续</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step green">
+        <span class="idx">4</span>
+        <div class="st">支付</div>
+        <div class="sd"><em>CHAIN_ALL_FREE</em>：0 元直接「获取成功」<br>付费：微信下单支付（接入中）<br>支付成功 = errCode 0</div>
+      </div>
+      <div class="arrowH">▶</div>
+      <div class="step green">
+        <span class="idx">5</span>
+        <div class="st">解锁并回流</div>
+        <div class="sd">返回播放页自动刷新解锁状态<br>订单写入「购买记录」，可再次进入资源</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 留存 -->
+  <section>
+    <h2><span class="n">6</span>用户沉淀与留存运营</h2>
+    <div class="fourCol">
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#7B61FF"></span>账号体系</div>
+        <ul>
+          <li>短信验证码 / 账号密码 / 微信 / 南方云教育</li>
+          <li>未绑定手机号强制补绑</li>
+          <li>账号安全、设备管理、注销账号</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#7B61FF"></span>互动与收藏</div>
+        <ul>
+          <li>播放页点赞 / 取消点赞，驱动「点赞最多」榜单</li>
+          <li>我的点赞：集中回访喜欢的内容</li>
+          <li>出版物详情展示阅读数与关联点赞数</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#7B61FF"></span>资产与复访</div>
+        <ul>
+          <li>购买记录：按整书 / 单源分别回到对应资源</li>
+          <li>我的缓存：离线内容随时复看</li>
+          <li>关联历史：扫码记录一键重温</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="dot" style="background:#7B61FF"></span>服务与反馈</div>
+        <ul>
+          <li>常见问题、扫码帮助、链码科普页</li>
+          <li>意见反馈直达运营团队</li>
+          <li>关于我们 / 协议与隐私政策（WebView）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 闭环 -->
+  <section>
+    <h2><span class="n">7</span>运营数据闭环 <span class="hint">从曝光到复访的完整漏斗</span></h2>
+    <div class="loop">
+      <div class="loopRow">
+        <div class="loopItem"><b>①</b>纸书发行<br>链码印刷</div>
+        <div class="arrowH">▶</div>
+        <div class="loopItem"><b>②</b>扫码 / 浏览<br>曝光与拉新</div>
+        <div class="arrowH">▶</div>
+        <div class="loopItem"><b>③</b>资源播放<br>内容消费</div>
+        <div class="arrowH">▶</div>
+        <div class="loopItem"><b>④</b>点赞 / 缓存<br>行为沉淀</div>
+        <div class="arrowH">▶</div>
+        <div class="loopItem"><b>⑤</b>购买解锁<br>付费转化</div>
+        <div class="arrowH">▶</div>
+        <div class="loopItem"><b>⑥</b>历史 / 购买记录复访<br>复购与留存</div>
+      </div>
+      <div class="loopNote">复访与互动数据回流至平台运营位（发现页榜单、热门关注），形成「内容上架 → 曝光 → 消费 → 转化 → 复访」的正向循环</div>
+    </div>
+  </section>
+
+  <footer>泛媒关联 fmlink · 业务运营流程示意（依据《泛媒关联APP开发需求文档》与现有代码实现整理）</footer>
+</div>
+</body>
+</html>
