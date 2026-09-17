@@ -274,7 +274,12 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   /// 3. 支付结果监听 fluwx.weChatResponseEventHandler，errCode == 0 视为成功，
   ///    成功后再调用 _completePurchase('支付成功') 收尾。
   Future<void> _startWechatPay() async {
-    // TODO(支付接入): 下单接口路径与参数确认后替换占位逻辑
+    // TODO(支付接入): 仍被后端接口阻塞。已核对仓库内全部接口文档
+    // （泛媒关联APP接口文档.md 等），只有旧的 chain-server 充值/购买接口
+    // （/chain-server/api/link_code_system/pay，入参 user_id/goodsId/amount/pay_type），
+    // 没有小程序端 createPayOrder 对应的下单接口（unification_id/goods_id/shop_id/
+    // source_id/goods_identifier）与 prepayId 等微信支付参数，无法安全实现。
+    // 拿到真实下单接口后，按上方 _startWechatPay 注释的三步替换此处占位。
     EasyLoading.showToast('微信支付接入中，暂未开通');
   }
 

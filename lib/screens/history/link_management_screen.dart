@@ -4,6 +4,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:fmlink/common/refresh_config.dart';
 import 'package:fmlink/services/link_service.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/screens/history/scan_history_screen.dart';
 import 'package:fmlink/widgets/delete_action_button.dart';
 import 'package:fmlink/widgets/book_cover_widgets.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
@@ -370,9 +371,22 @@ class _LinkManagementScreenState extends State<LinkManagementScreen> {
                                   if (_isManageMode && itemId != null) {
                                     // 编辑模式下响应选中事件
                                     _toggleItemSelection(itemId);
-                                  } else {
-                                    // 非编辑模式下响应其他事件
-                                    // TODO: 跳转到详情页面或其他操作
+                                  } else if (!_isManageMode) {
+                                    // 非编辑模式：进入该出版物的扫码记录页
+                                    final String goodsId =
+                                        item['goodsId']?.toString() ?? '';
+                                    if (goodsId.isEmpty) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ScanHistoryScreen(
+                                          goodsId: goodsId,
+                                          goodsName:
+                                              item['goodsName']?.toString() ??
+                                                  '',
+                                        ),
+                                      ),
+                                    );
                                   }
                                 },
                                 child: SizedBox(

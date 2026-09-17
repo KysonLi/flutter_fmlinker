@@ -53,8 +53,11 @@ class DeviceInfoUtil {
         String name = iosInfo.name;
         return _hashString('$identifierForVendor-$model-$name');
       } else if (await _isOhos()) {
-        // ohos：通过 device_info_plus_ohos 注册的平台实现获取
-        // TODO(ohos): 确认 device_info_plus_ohos 的字段名后改为强类型访问
+        // ohos：本项目未接入 device_info_plus 的 OHOS 实现（.flutter-plugins-dependencies
+        // 里 device_info_plus 无 ohos 条目，GeneratedPluginRegistrant 也没注册），
+        // 所以 deviceInfo 会抛异常直接落到最外层 catch，实际走的是随机 ID 兜底；
+        // 该随机 ID 由 getDeviceId 持久化到 SharedPreferences，卸载重装前保持稳定。
+        // 将来接入 OHOS 实现时，再按它的字段名改强类型访问。
         final m = (await _deviceInfoPlugin.deviceInfo).data;
         final serial = m['serial'] as String?;
         if (serial != null && serial.isNotEmpty) return serial;
@@ -105,7 +108,8 @@ class DeviceInfoUtil {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         return iosInfo.name;
       } else if (await _isOhos()) {
-        // TODO(ohos): 优先 marketingName，确认字段名后改为强类型访问
+        // OHOS 无 device_info_plus 实现，此处必然抛异常并返回 'Unknown Device'；
+        // 保留取值逻辑以便将来接入 OHOS 实现后按字段名改强类型访问。
         final m = (await _deviceInfoPlugin.deviceInfo).data;
         return (m['marketingName'] as String?) ??
             (m['model'] as String?) ??
@@ -148,7 +152,8 @@ class DeviceInfoUtil {
         final iosInfo = await _deviceInfoPlugin.iosInfo;
         return iosInfo.systemVersion;
       } else if (await _isOhos()) {
-        // TODO(ohos): 确认 osFullName/sdkApiVersion 字段名后改为强类型访问
+        // OHOS 无 device_info_plus 实现，此处必然抛异常并返回 'Unknown Version'；
+        // 保留取值逻辑以便将来接入 OHOS 实现后按字段名改强类型访问。
         final m = (await _deviceInfoPlugin.deviceInfo).data;
         return (m['osFullName'] as String?) ??
             (m['sdkApiVersion']?.toString()) ??

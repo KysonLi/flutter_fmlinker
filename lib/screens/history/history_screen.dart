@@ -120,8 +120,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // 跳转到扫码帮助页面
   void _goToScanHelp() {
-    // TODO: 实现扫码帮助页面
-    debugPrint('跳转到扫码帮助页面');
+    // 复用扫码页的帮助路由（ScanHelpScreen：链码是什么/哪些书有链码/如何使用等）
+    context.push('/scan/help');
   }
 
   // 根据资源类型构建图标

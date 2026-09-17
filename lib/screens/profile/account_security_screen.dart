@@ -269,9 +269,10 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Future<void> _openAppSettings() async {
     try {
       if (Platform.isOhos) {
-        // TODO(ohos): 确认 url_launcher_ohos 是否支持打开应用设置页；
-        // 若不支持，需在 EntryAbility 增加 platform channel 调用系统 AbilityContext.startAbility。
-        final opened = await launchUrl(Uri.parse('app-settings:'));
+        // OHOS：url_launcher_ohos 只识别 tel/http/https/mailto/sms/file/store 等 scheme，
+        // 不支持 app-settings:；改用 permission_handler_ohos 已实现的 openAppSettings()
+        // （ArkTS 侧用 startAbility 拉起系统设置的应用详情页）
+        final bool opened = await openAppSettings();
         if (!opened) {
           EasyLoading.showToast('无法打开设置页面');
         }
@@ -325,8 +326,11 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             title: '裁剪头像',
             minimumAspectRatio: 1.0,
           ),
-          // TODO(ohos): image_cropper v11 ohos Fork 若暴露 OhosUiSettings，在此追加：
-          //   if (Platform.isOhos) OhosUiSettings(title: '裁剪头像'),
+          // OHOS：已核对本地 fork（packages/fluttertpc_image_cropper）——它只提供
+          // AndroidUiSettings/IOSUiSettings，没有 OhosUiSettings；其 OHOS 侧是独立的
+          // imagecropper_ohos（通道 imagecropper，而非 v11 的
+          // plugins.hunghd.vn/image_cropper），只暴露裁剪工具 API 与 Crop 组件，
+          // 需要自行搭建裁剪页，故此处不追加 OHOS 设置项。
         ],
       );
 
