@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/common/isli_constants.dart';
 import 'package:fmlink/services/publish_service.dart';
+import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 
@@ -38,6 +42,9 @@ class PurchaseScreen extends StatefulWidget {
 const String _typeSingle = 'single';
 const String _typeWhole = 'whole';
 
+/// 微信支付等待超时的哨兵值（用户取消/成功都会回调，超时仅作兜底）
+const int _errCodeTimeout = -99;
+
 class _PurchaseScreenState extends State<PurchaseScreen> {
   final PublishService _publishService = PublishService();
   final UserService _userService = UserService();
@@ -49,7 +56,6 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   double _deratePrice = 0;
 
   /// 出版物标识（fetchDeratePrice 返回 identifier）：生成支付订单时传 goods_identifier
-  // ignore: unused_field
   String _goodsIdentifier = '';
 
   /// 是否正在支付
@@ -254,33 +260,177 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       return;
     }
 
-    // 付费内容：拉取微信支付参数并拉起 fluwx 支付
+    // 付费内容：Android 直接走微信 App 支付；iOS/OHOS 走内购（充值虚拟币后购买）
     setState(() => _paying = true);
     try {
-      await _startWechatPay();
+      if (isWechatPay) {
+        await _startWechatPay();
+      } else {
+        await _startIapCoinPay();
+      }
     } finally {
       if (mounted) setState(() => _paying = false);
     }
   }
 
-  /// 发起微信支付（fluwx 真实支付）。
+  /// 支付通道：仅 Android 直连微信支付；iOS/鸿蒙走内购（虚拟币），后续可能再接入支付宝
+  bool get isWechatPay => Platform.isAndroid;
+
+  /// 发起微信支付（Android）。
   ///
-  /// 接入步骤（待后端下单接口确认后补齐）：
-  /// 1. 调用下单接口（对应小程序端 createPayOrder）获取微信支付参数；
-  ///    入参预计含：unification_id、goods_id、shop_id、source_id
-  ///    （整书=WHOLE_PUBLICATION / 单源=sourceIdentifier）、goods_identifier。
-  /// 2. 通过 fluwx.payWithWeChat 拉起支付：
-  ///    fluwx.payWithWeChat(appId/partnerId/prepayId/packageValue/nonceStr/timeStamp/sign)。
-  /// 3. 支付结果监听 fluwx.weChatResponseEventHandler，errCode == 0 视为成功，
-  ///    成功后再调用 _completePurchase('支付成功') 收尾。
+  /// 流程（对应小程序端 createPayOrder）：
+  /// 1. 调 [PublishService.createPayOrder]（POST /pos/v1/app/pay）下单，固定参数
+  ///    pay_type=1 / payService=APP / payCode=weixin.app.chaincode / platform=0；
+  /// 2. 读原始 resultCode：
+  ///    - 00000000 → data 即支付参数，用 fluwx 拉起微信支付；
+  ///    - 88888805 已购买 / 88888812 支付成功 → 服务端已处理完成，直接收尾；
+  ///    - 44444444 → 登录过期，跳登录页；
+  ///    - 其他 → 展示服务端错误文案。
+  /// 3. 支付结果由 fluwx 回调：errCode 0 成功、-2 用户取消。
   Future<void> _startWechatPay() async {
-    // TODO(支付接入): 仍被后端接口阻塞。已核对仓库内全部接口文档
-    // （泛媒关联APP接口文档.md 等），只有旧的 chain-server 充值/购买接口
-    // （/chain-server/api/link_code_system/pay，入参 user_id/goodsId/amount/pay_type），
-    // 没有小程序端 createPayOrder 对应的下单接口（unification_id/goods_id/shop_id/
-    // source_id/goods_identifier）与 prepayId 等微信支付参数，无法安全实现。
-    // 拿到真实下单接口后，按上方 _startWechatPay 注释的三步替换此处占位。
-    EasyLoading.showToast('微信支付接入中，暂未开通');
+    final String goodsId = _str('goodsId');
+    if (goodsId.isEmpty) {
+      EasyLoading.showToast('缺少出版物参数，无法下单');
+      return;
+    }
+
+    final String unificationId = await _userService.getUnificationId();
+    if (unificationId.isEmpty) {
+      EasyLoading.showToast('请先登录');
+      return;
+    }
+
+    final Map<String, dynamic> order = await _publishService.createPayOrder(
+      unificationId: unificationId,
+      goodsId: goodsId,
+      shopId: _str('shopId'),
+      // 整书购买用固定标识，单源购买用当前链码的 sourceIdentifier
+      sourceId: _purchaseType == _typeWhole
+          ? PublishService.wholePublicationSourceId
+          : _str('sourceIdentifier'),
+      goodsIdentifier: _goodsIdentifier,
+    );
+    print('下单结果: $order');
+
+    final String resultCode = (order['resultCode'] ?? '').toString();
+
+    // 服务端已处理完成（已购买 / 支付成功）：无需再拉起微信支付
+    if (resultCode == PublishService.payResultAlreadyOwned ||
+        resultCode == PublishService.payResultPaid) {
+      _completePurchase('支付成功');
+      return;
+    }
+
+    if (resultCode == PublishService.payResultUnauthorized) {
+      EasyLoading.showToast('登录已过期，请重新登录');
+      if (mounted) await context.push('/login');
+      return;
+    }
+
+    if (order['status'] != true) {
+      EasyLoading.showError(order['msg']?.toString() ?? '下单失败，请稍后重试');
+      return;
+    }
+
+    final dynamic data = order['data'];
+    if (data is! Map) {
+      EasyLoading.showToast('下单失败：未返回支付参数');
+      return;
+    }
+
+    // 支付参数兼容多种字段命名（服务端与小程序的 key 名不完全一致）
+    final String appId = _pick(data, const ['appId', 'appid', 'app_id']);
+    final String partnerId = _pick(data,
+        const ['partnerId', 'partnerid', 'partner_id', 'mchId', 'mch_id']);
+    final String prepayId =
+        _pick(data, const ['prepayId', 'prepayid', 'prepay_id']);
+    final String packageValue =
+        _pick(data, const ['packageValue', 'package', 'package_value']);
+    final String nonceStr =
+        _pick(data, const ['nonceStr', 'noncestr', 'nonce_str']);
+    final String sign =
+        _pick(data, const ['sign', 'paySign', 'pay_sign', 'signValue']);
+    final String signType = _pick(data, const ['signType', 'sign_type']);
+    final int timeStamp = int.tryParse(
+            _pick(data, const ['timeStamp', 'timestamp', 'time_stamp'])) ??
+        0;
+
+    if (appId.isEmpty ||
+        partnerId.isEmpty ||
+        prepayId.isEmpty ||
+        packageValue.isEmpty ||
+        nonceStr.isEmpty ||
+        sign.isEmpty ||
+        timeStamp <= 0) {
+      print('支付参数解析失败: $data');
+      EasyLoading.showToast('支付参数异常，请稍后重试');
+      return;
+    }
+
+    // 先订阅结果再拉起支付，避免回调先于订阅到达
+    final Completer<int> resultCompleter = Completer<int>();
+    ThirdPartyManager.listenWeChatPayResult((int errCode) {
+      if (!resultCompleter.isCompleted) resultCompleter.complete(errCode);
+    });
+
+    final bool launched = await ThirdPartyManager.weChatPay(
+      appId: appId,
+      partnerId: partnerId,
+      prepayId: prepayId,
+      packageValue: packageValue,
+      nonceStr: nonceStr,
+      timeStamp: timeStamp,
+      sign: sign,
+      signType: signType.isEmpty ? null : signType,
+    );
+    if (!launched) {
+      ThirdPartyManager.removeWeChatResultListener();
+      EasyLoading.showToast('微信支付调起失败，请确认已安装微信');
+      return;
+    }
+
+    int errCode;
+    try {
+      // 用户取消/成功都会回调；超时兜底避免按钮一直不可点
+      errCode = await resultCompleter.future.timeout(const Duration(minutes: 5),
+          onTimeout: () => _errCodeTimeout);
+    } finally {
+      ThirdPartyManager.removeWeChatResultListener();
+    }
+
+    if (errCode == 0) {
+      _completePurchase('支付成功');
+    } else if (errCode == -2) {
+      EasyLoading.showToast('已取消支付');
+    } else if (errCode == _errCodeTimeout) {
+      // 结果未知：提示用户稍后自行确认
+      EasyLoading.showToast('支付结果确认中，可在购买记录查看');
+    } else {
+      EasyLoading.showError('支付失败，请稍后重试');
+    }
+  }
+
+  /// iOS / 鸿蒙的内购通道（充值虚拟币后再购买），当前仅预留入口。
+  ///
+  /// 后续完善步骤：
+  /// 1. 接入平台内购（iOS：StoreKit / OHOS：IAP Kit）充值虚拟币，
+  ///    充值结果由服务端记账（参见充值 / 余额接口）；
+  /// 2. 余额充足时用虚拟币余额调 /pos/v1/app/pay 完成购买
+  ///    （pay_type、payCode 改用虚拟币对应的取值，无需再拉起微信支付）；
+  /// 3. 余额不足则先跳转充值页。
+  Future<void> _startIapCoinPay() async {
+    EasyLoading.showToast('内购支付开发中，敬请期待');
+  }
+
+  /// 从服务端返回的支付参数里按多种命名取第一个非空值
+  String _pick(Map data, List<String> keys) {
+    for (final String key in keys) {
+      final dynamic v = data[key];
+      if (v != null && v.toString().trim().isNotEmpty) {
+        return v.toString().trim();
+      }
+    }
+    return '';
   }
 
   /// 购买完成后的收尾：提示 → 延时返回上一页（返回 true 便于上游刷新购买状态）
@@ -701,8 +851,13 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
 
   // ---------- 支付方式卡片 ----------
 
+  /// 支付通道名称：Android 走微信支付（fluwx）；iOS/OHOS 走内购（虚拟币）
+  String get _payChannelTitle => isWechatPay ? '微信支付' : '应用内购买（虚拟币）';
+
+  String get _payChannelDesc => isWechatPay ? '推荐使用微信支付' : 'iOS/鸿蒙需先充值虚拟币，再购买';
+
   Widget _buildPayCard() {
-    // 支付通道已确定为 fluwx（微信支付），固定选中微信支付
+    // 当前平台可用的支付通道固定选中（Android：微信支付；iOS/OHOS：内购虚拟币）
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: const EdgeInsets.all(14),
@@ -735,13 +890,15 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF07C160),
+                    color: isWechatPay
+                        ? const Color(0xFF07C160)
+                        : const Color(0xFF2F7BFF),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
-                  child: const Text(
-                    '微',
-                    style: TextStyle(
+                  child: Text(
+                    isWechatPay ? '微' : '币',
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -752,20 +909,22 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        '微信支付',
-                        style: TextStyle(
+                        _payChannelTitle,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF1A1A1A),
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        '推荐使用微信支付',
-                        style:
-                            TextStyle(fontSize: 11, color: Color(0xFF8C8C8C)),
+                        _payChannelDesc,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF8C8C8C),
+                        ),
                       ),
                     ],
                   ),
@@ -936,7 +1095,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 borderRadius: BorderRadius.circular(22),
               ),
               child: Text(
-                _paying ? '订单创建中' : (isFreeStrategy ? '确认获取' : '确认支付'),
+                _paying ? '支付中…' : (isFreeStrategy ? '确认获取' : '确认支付'),
                 style: const TextStyle(
                   fontSize: 16,
                   color: Colors.white,

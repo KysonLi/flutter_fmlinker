@@ -3,6 +3,7 @@ enum AccountLoginType {
   qq,
   wechat,
   weibo,
+  huawei,
   nfy,
   phone,
   apple,
@@ -79,6 +80,8 @@ class UserInfo {
         return AccountLoginType.wechat;
       case 'weibo':
         return AccountLoginType.weibo;
+      case 'huawei':
+        return AccountLoginType.huawei;
       case 'nfy':
         return AccountLoginType.nfy;
       case 'phone':

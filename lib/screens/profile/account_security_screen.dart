@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:fmlink/cache/cache_service.dart';
+import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -42,9 +42,12 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   }
 
   Future<void> _logout() async {
-    await _userService.clearUserInfo();
-    // 缓存元数据按账号隔离：退出后立即切回未登录视角
-    await CacheService().syncAccount();
+    // 先请求服务端注销会话（AuthService.logout 内部会带上当前 token，
+    // 之后才清除本地登录信息并同步缓存账号视角）
+    EasyLoading.show(status: '正在退出...');
+    await AuthService().logout();
+    EasyLoading.dismiss();
+
     _needRefresh = true;
     if (!mounted) return;
     Navigator.pop(context, {'refresh': true});

@@ -211,22 +211,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _sendThirdPartyLogin(
       String code, String? openId, String platform) async {
-    String deviceId = await DeviceInfoUtil.getDeviceId();
-    String deviceName = await DeviceInfoUtil.getDeviceName();
-    dynamic response = await AuthService()
-        .loginWithThirdParty(platform, openId, code, deviceId, deviceName);
+    try {
+      String deviceId = await DeviceInfoUtil.getDeviceId();
+      String deviceName = await DeviceInfoUtil.getDeviceName();
+      dynamic response = await AuthService()
+          .loginWithThirdParty(platform, openId, code, deviceId, deviceName);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (response['status']) {
-      String phoneNumber = response['data']['phone']?.toString() ?? '';
-      if (phoneNumber.isEmpty) {
-        context.go('/profile/bind-phone');
+      if (response['status']) {
+        // 服务端登录成功才算登录成功（拿到第三方 code 只是第一步）
+        EasyLoading.showToast('登录成功');
+        String phoneNumber = response['data']['phone']?.toString() ?? '';
+        if (phoneNumber.isEmpty) {
+          context.go('/profile/bind-phone');
+        } else {
+          Navigator.pop(context, {'refresh': true});
+        }
       } else {
-        Navigator.pop(context, {'refresh': true});
+        EasyLoading.showToast(response['msg']);
       }
-    } else {
-      EasyLoading.showToast(response['msg']);
+    } catch (e) {
+      if (!mounted) return;
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '登录失败'));
+    } finally {
+      // 无论成功/失败都收起 loading（成功时页面已 pop/跳转，此处仅兜底）
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -234,27 +244,43 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _thirdPartyLogin(String platform) async {
     // 这里应该实现第三方登录逻辑
     debugPrint('第三方登录: $platform');
-    if (platform == 'wechat') {
+    // 服务端约定的平台标识为 weixin（不是 wechat），取值见 Constants.thirdParty*
+    if (platform == Constants.thirdPartyWeixin) {
       // 判断微信是否已安装
       final isInstalled = await ThirdPartyManager.isWeChatInstalled();
       if (!isInstalled) {
         EasyLoading.showToast('请先安装微信');
         return;
       }
+
+      // 进入 loading：覆盖「拉起微信 → 用户授权 → 返回 App → 服务端换取登录态」
+      // 整个过程，避免从微信返回后页面无任何反馈
+      setState(() => _isLoading = true);
+
       // 微信登录
       ThirdPartyManager.listenWeChatResult((response) async {
         if (response is WeChatAuthResponse) {
           if (response.errCode == 0) {
             final code = response.code ?? '';
-            // 微信登录成功
-            EasyLoading.showToast('微信登录成功');
-            // 发送登录请求
+            // 拿到 code 仅代表授权成功，需再调服务端换取登录态；
+            // 成功提示由 _sendThirdPartyLogin 在服务端返回成功后统一给出
             await _sendThirdPartyLogin(code, null, platform);
-            debugPrint(response.toString());
+          } else if (response.errCode == -2) {
+            // 用户取消授权：收起 loading
+            if (mounted) setState(() => _isLoading = false);
+          } else {
+            // 授权失败：收起 loading 并提示
+            if (mounted) setState(() => _isLoading = false);
+            EasyLoading.showError('微信授权失败，请重试');
           }
         }
       });
-      ThirdPartyManager.weChatLogin();
+
+      final bool launched = await ThirdPartyManager.weChatLogin();
+      // 拉起微信失败（未安装/调起异常）：收起 loading，避免一直转圈
+      if (!launched && mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -874,7 +900,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             GestureDetector(
-                              onTap: () => _thirdPartyLogin('wechat'),
+                              onTap: () =>
+                                  _thirdPartyLogin(Constants.thirdPartyWeixin),
                               child: Container(
                                 width: 50,
                                 height: 50 * s,
@@ -887,7 +914,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(width: 24),
                             GestureDetector(
-                              onTap: () => _thirdPartyLogin('qq'),
+                              onTap: () =>
+                                  _thirdPartyLogin(Constants.thirdPartyQq),
                               child: Container(
                                 width: 50,
                                 height: 50 * s,

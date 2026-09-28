@@ -8,6 +8,29 @@ class PublishService {
 
   PublishService._internal();
 
+  // ==================== 支付下单参数 ====================
+
+  /// 下单接口固定参数（App 端取值）
+  ///
+  /// 小程序端为 pay_type=4 / payService='pay.jsapi' /
+  /// payCode='weixin.wx.chaincode' / platform=2，App 端按后端要求改为下列取值。
+  static const int payTypeApp = 1;
+  static const String payServiceApp = 'APP';
+  static const String payCodeWechatApp = 'weixin.app.chaincode';
+  static const int platformApp = 0;
+
+  /// 整书购买时 source_id 的固定取值
+  static const String wholePublicationSourceId = 'WHOLE_PUBLICATION';
+
+  /// 下单接口 resultCode
+  ///
+  /// 88888805/88888812 表示服务端已处理完成（已购买 / 支付成功），
+  /// 无需再拉起微信支付。
+  static const String payResultSuccess = '00000000';
+  static const String payResultAlreadyOwned = '88888805';
+  static const String payResultPaid = '88888812';
+  static const String payResultUnauthorized = '44444444';
+
   // 获取出版物列表（searchText 可选，传则搜索）
   Future<Map<String, dynamic>> getPublications(
       {int page = 1, int pageSize = 20, String? searchText}) async {
@@ -129,5 +152,42 @@ class PublishService {
       'page': page,
       'pageCount': pageCount,
     });
+  }
+
+  /// 生成支付订单（对应小程序端 createPayOrder）
+  ///
+  /// POST /pos/v1/app/pay
+  ///
+  /// 固定参数（App）：pay_type=1、payService='APP'、
+  /// payCode='weixin.app.chaincode'、platform=0
+  ///
+  /// 返回归一化结果，其中 `resultCode` 为服务端原始返回码：
+  /// - 00000000：成功，data 为微信支付参数
+  /// - 88888805：已购买 / 88888812：支付成功（服务端已处理完成，无需再拉起微信支付）
+  /// - 44444444：登录过期或未登录
+  Future<Map<String, dynamic>> createPayOrder({
+    required String unificationId,
+    required String goodsId,
+    String? shopId,
+    String? sourceId,
+    String? goodsIdentifier,
+    String payCode = payCodeWechatApp,
+  }) async {
+    // 入参 key 沿用小程序端下单接口约定（snake_case）
+    final Map<String, dynamic> body = <String, dynamic>{
+      'unification_id': unificationId,
+      'goods_id': goodsId,
+      'pay_type': payTypeApp,
+      'payService': payServiceApp,
+      'payCode': payCode,
+      'platform': platformApp,
+    };
+    if (shopId != null && shopId.isNotEmpty) body['shop_id'] = shopId;
+    if (sourceId != null && sourceId.isNotEmpty) body['source_id'] = sourceId;
+    if (goodsIdentifier != null && goodsIdentifier.isNotEmpty) {
+      body['goods_identifier'] = goodsIdentifier;
+    }
+
+    return await _apiService.post('/pos/v1/app/pay', data: body);
   }
 }

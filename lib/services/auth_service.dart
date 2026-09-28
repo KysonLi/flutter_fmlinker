@@ -87,11 +87,19 @@ class AuthService {
   }
 
   // 登出
-  Future<Map<String, dynamic>> logout() async {
+  //
+  // 不关心服务端登出接口的成功/失败：调用后一律执行本地登出。
+  // - 顺序：**先**请求服务端（要带上当前 token），再清本地登录信息；
+  //   反之（先清 token）会让登出请求变成匿名请求，服务端无法注销该会话。
+  // - 容错：ApiService 不抛异常（失败只返回 status=false），故无需 try/catch；
+  //   即便请求超时/断网，本地登录态也照常清除。
+  Future<void> logout() async {
+    // 忽略返回值：服务端注销失败不影响本地登出
+    await _apiService.post('/chain-server/api/link_code_system/logout');
+
     await _userService.clearUserInfo();
     // 缓存元数据按账号隔离：退出后立即切回未登录视角（文件本体保留供后续账号复用）
     await CacheService().syncAccount();
-    return await _apiService.post('/chain-server/api/link_code_system/logout');
   }
 
   // 处理登录结果

@@ -69,3 +69,9 @@ keys/
 key.properties
 google-services.json
 GoogleService-Info.plist
+
+# OHOS 签名材料（含私钥，禁止提交）
+/signature/
+*.p12
+*.p7b
+*.csr

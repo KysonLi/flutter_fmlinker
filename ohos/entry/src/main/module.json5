@@ -9,6 +9,8 @@
     installationFree: false,
     pages: "$profile:main_pages",
     // 微信 OpenSDK：weixin 用于判断微信是否安装，wxopensdk 用于跳转微信
+    // （二者均为官方《鸿蒙应用开发手册》1.4 节要求，勿删；去掉 wxopensdk 会让 SDK 改走
+    //  startAbility 通道，而 fluwx 5.7.x 在 OHOS 未绑定 eventHandler，回包会被静默丢弃）
     querySchemes: ["weixin", "wxopensdk"],
     abilities: [
       {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -71,11 +72,14 @@ class _MyScreenState extends State<MyScreen> {
   }
 
   /// 需要登录的操作：未登录时弹窗引导去登录，登录成功后刷新用户信息
-  Future<void> _requireLogin(VoidCallback action) async {
+  ///
+  /// action 可返回 Future，内部会 await，方便实现「进入子页 → 子页 pop 时回传
+  /// {'refresh': true} → 回来后刷新登录态」的入口。
+  Future<void> _requireLogin(FutureOr<void> Function() action) async {
     final bool loggedIn = await _userService.checkLoginStatus();
     if (!mounted) return;
     if (loggedIn) {
-      action();
+      await action();
       return;
     }
 
@@ -100,6 +104,16 @@ class _MyScreenState extends State<MyScreen> {
     if (goLogin != true || !mounted) return;
 
     final result = await context.push('/login');
+    if (!mounted) return;
+    if (result is Map && result['refresh'] == true) {
+      await _loadUserInfo();
+    }
+  }
+
+  /// 进入账号安全页：该页退出登录后会 pop({'refresh': true})，返回时需同步登录态
+  /// （页面保活不会重建，不刷新会一直显示已登录的账号信息）
+  Future<void> _handleAccountSecurity() async {
+    final result = await context.push('/profile/account-security');
     if (!mounted) return;
     if (result is Map && result['refresh'] == true) {
       await _loadUserInfo();
@@ -384,8 +398,7 @@ class _MyScreenState extends State<MyScreen> {
           _buildHorizontalItem(
             'assets/icons/my_account_safe.png',
             '账号安全',
-            () =>
-                _requireLogin(() => context.push('/profile/account-security')),
+            () => _requireLogin(_handleAccountSecurity),
           ),
           _buildHorizontalItem(
             'assets/icons/my_like.png',

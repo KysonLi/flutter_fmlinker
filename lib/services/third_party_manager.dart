@@ -70,6 +70,51 @@ class ThirdPartyManager {
     _weChatResponseSubscription = _fluwx.addSubscriber(subscriber);
   }
 
+  /// 拉起微信支付（App 支付）
+  ///
+  /// 返回 true 表示已成功调起微信客户端；支付结果通过 [listenWeChatPayResult]
+  /// 回调（errCode 0 成功、-2 用户取消）。
+  static Future<bool> weChatPay({
+    required String appId,
+    required String partnerId,
+    required String prepayId,
+    required String packageValue,
+    required String nonceStr,
+    required int timeStamp,
+    required String sign,
+    String? signType,
+    String? extData,
+  }) async {
+    try {
+      final bool launched = await _fluwx.pay(
+        which: fluwx.Payment(
+          appId: appId,
+          partnerId: partnerId,
+          prepayId: prepayId,
+          packageValue: packageValue,
+          nonceStr: nonceStr,
+          timestamp: timeStamp,
+          sign: sign,
+          signType: signType,
+          extData: extData,
+        ),
+      );
+      return launched;
+    } catch (e) {
+      print('微信支付调起失败: $e');
+      return false;
+    }
+  }
+
+  /// 订阅微信支付结果（只回传 errCode，errCode 0 成功、-2 用户取消、其他为失败）
+  static void listenWeChatPayResult(void Function(int errCode) subscriber) {
+    listenWeChatResult((response) {
+      if (response is fluwx.WeChatPaymentResponse) {
+        subscriber(response.errCode ?? -1);
+      }
+    });
+  }
+
   // 移除监听微信登录结果
   static void removeWeChatResultListener() {
     _weChatResponseSubscription?.cancel();

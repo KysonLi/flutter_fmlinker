@@ -43,4 +43,10 @@ class Constants {
   // 分页默认值
   static const int pageSize = 20;
   static const int pageIndex = 1;
+
+  // 第三方登录平台标识（服务端约定值：weixin/qq/weibo/huawei，注意是 weixin 不是 wechat）
+  static const String thirdPartyWeixin = 'weixin'; // 微信
+  static const String thirdPartyQq = 'qq'; // QQ
+  static const String thirdPartyWeibo = 'weibo'; // 微博
+  static const String thirdPartyHuawei = 'huawei'; // 华为
 }

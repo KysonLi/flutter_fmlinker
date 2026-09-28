@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/lilj/.ohos/config/default_ohos_7UjjnVCpT_HxQI676cn4Lc-6VUws4AE5JspGLBSqHfg=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001B9C87411407990A4DC2F97CFDBB2D56ABB5106F98E234CFF0C9DB152BEE48589461377C2BB4D2F5",
-          "profile": "/Users/lilj/.ohos/config/default_ohos_7UjjnVCpT_HxQI676cn4Lc-6VUws4AE5JspGLBSqHfg=.p7b",
+          "storeFile": "/Users/lilj/Desktop/Flutter/flutter_fmlinker/signature/fmlinker-debug.p12",
+          "storePassword": "00000018908ED5C2F545694D4EA3EF9EA5210BB4602E016FF3C6A5C08CF90808738886EEF7FB9FEA",
+          "keyAlias": "fmlinker",
+          "keyPassword": "0000001897721FD36C017D7A2554FCE5E0A852673A4E20DC9560EA802036FD823ECC0DD1E58B6020",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/lilj/.ohos/config/default_ohos_7UjjnVCpT_HxQI676cn4Lc-6VUws4AE5JspGLBSqHfg=.p12",
-          "storePassword": "0000001BA20190A61EC484CF8D8D98E2C19DF91ABA1FC137AC25C370DA0543BDB4D337F080B76FC9724DBA"
+          "profile": "/Users/lilj/Desktop/Flutter/flutter_fmlinker/signature/fmlinker-debug.p7b",
+          "certpath": "/Users/lilj/Desktop/Flutter/flutter_fmlinker/signature/fmlinker-debug.cer"
         }
       }
     ],

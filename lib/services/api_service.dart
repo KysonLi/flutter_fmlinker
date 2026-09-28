@@ -46,13 +46,21 @@ class ApiService {
   }
 
   // 统一处理API响应
+  //
+  // 归一化 map 额外带上服务端原始 `resultCode`：部分接口（如下单 /pos/v1/app/pay）
+  // 需要区分 88888805 已购买 / 88888812 支付成功 / 44444444 登录过期 等业务码。
   Map<String, dynamic> _handleResponse(dynamic responseData,
       {int? statusCode}) {
     // token 过期（HTTP 401 或响应体为 Unauthorized）：清除登录态并跳转登录页
     if (statusCode == Constants.errorCodeTokenExpired ||
         responseData == 'Unauthorized') {
       _handleTokenExpired();
-      return {'status': false, 'data': null, 'msg': '登录已过期，请重新登录'};
+      return {
+        'status': false,
+        'data': null,
+        'msg': '登录已过期，请重新登录',
+        'resultCode': '',
+      };
     }
 
     if (responseData is Map) {
@@ -64,7 +72,8 @@ class ApiService {
         return {
           'status': true,
           'data': responseData['data'],
-          'msg': responseData['resultMsg'] ?? responseData['message'] ?? '请求成功'
+          'msg': responseData['resultMsg'] ?? responseData['message'] ?? '请求成功',
+          'resultCode': resultCode.toString(),
         };
       } else {
         // 失败：错误码文案（JSON）→ 服务端 message（仅当适合展示）→ 通用提示
@@ -78,6 +87,7 @@ class ApiService {
                     ?.toString(),
             statusCode: statusCode,
           ),
+          'resultCode': resultCode.toString(),
         };
       }
     }
@@ -86,6 +96,7 @@ class ApiService {
       'status': false,
       'data': null,
       'msg': ErrorHandler().messageFor(statusCode: statusCode),
+      'resultCode': '',
     };
   }
 
