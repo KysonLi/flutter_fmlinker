@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/user_service.dart';
@@ -443,8 +442,8 @@ class _MyScreenState extends State<MyScreen> {
   }
 
   Widget _buildListSection() {
-    // 我的账户仅 iOS 平台展示（Android/鸿蒙隐藏）
-    final bool showAccount = Platform.isIOS;
+    // 我的账户在 iOS 与鸿蒙（HarmonyOS NEXT / OHOS）展示，Android 隐藏
+    final bool showAccount = Platform.isIOS || Platform.isOhos;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -457,7 +456,7 @@ class _MyScreenState extends State<MyScreen> {
             _buildListItem(
               'assets/icons/my_account.png',
               '我的账户',
-              () => _requireLogin(() => EasyLoading.showToast('功能开发中')),
+              () => _requireLogin(() => context.push('/profile/my-account')),
             ),
             const Divider(height: 1, indent: 15, color: Color(0xFFEEEEEE)),
           ],

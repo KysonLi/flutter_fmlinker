@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:go_router/go_router.dart';
+import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
@@ -8,6 +10,17 @@ import 'package:fmlink/utils/error_handler.dart';
 
 class BindPhoneScreen extends StatefulWidget {
   const BindPhoneScreen({super.key});
+
+  /// 打开绑定手机号页并等待结果，返回 true 表示绑定成功（调用方据此刷新登录态）
+  ///
+  /// ⚠️ 必须用 `push` 进入，不能用 `go`：`go` 会把整个路由栈替换成本页，
+  /// 绑定成功后本页无处可退，`Navigator.pop` 弹掉的会是最后一个路由——
+  /// go_router 会断言失败抛异常，被 `_bindPhone` 的 catch 捕获成「绑定失败」提示，
+  /// 同时页面已被移除，界面上只剩下空白页。
+  static Future<bool> open(BuildContext context) async {
+    final dynamic result = await context.push('/profile/bind-phone');
+    return result is Map && result['refresh'] == true;
+  }
 
   @override
   State<BindPhoneScreen> createState() => _BindPhoneScreenState();
@@ -129,20 +142,49 @@ class _BindPhoneScreenState extends State<BindPhoneScreen> {
 
       if (result['status']) {
         EasyLoading.showToast('绑定成功');
-        if (result['data'] != null) {
-          await _userService.saveUserInfo(UserInfo.fromJson(result['data']));
-        }
+        await _saveBindResult(result['data']);
         if (!mounted) return;
-        Navigator.pop(context, {'refresh': true});
+        _closeWithRefresh();
       } else {
         EasyLoading.showToast(result['msg'] ?? '绑定失败');
       }
     } catch (e) {
       EasyLoading.showError(ErrorHandler().fromError(e, fallback: '绑定失败'));
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// 持久化绑定接口返回的最新用户信息（含新 token）
+  ///
+  /// 绑定手机号可能把第三方账号并入已存在的手机号账号，服务端会重新下发 token；
+  /// 这里必须同时更新 SharedPreferences 与内存中的 `Constants.token`
+  /// （双写约定见 CLAUDE.md 的「Auth & token storage」），否则后续请求仍带旧 token。
+  Future<void> _saveBindResult(dynamic data) async {
+    if (data is! Map) return;
+    final UserInfo userInfo =
+        UserInfo.fromJson(Map<String, dynamic>.from(data));
+    await _userService.saveUserInfo(userInfo);
+    if (userInfo.token.isNotEmpty) {
+      await _userService.saveToken(userInfo.token);
+    }
+    // 绑定可能更换账号（合并），缓存元数据需按新账号重新加载
+    await CacheService().syncAccount();
+  }
+
+  /// 关闭本页并回传刷新标志
+  ///
+  /// 正常入口都是 `push`，直接 pop 即可；若栈中已无上一页（深链直达等异常情况），
+  /// 回首页兜底，避免 pop 掉最后一个路由导致空白页（同上注释）。
+  void _closeWithRefresh() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context, {'refresh': true});
+    } else {
+      context.go('/');
     }
   }
 

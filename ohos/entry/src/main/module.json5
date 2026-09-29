@@ -8,6 +8,15 @@
     deliveryWithInstall: true,
     installationFree: false,
     pages: "$profile:main_pages",
+    // 华为账号 Kit（一键登录）所需的应用标识：AppGallery Connect → 我的项目 → 应用信息 → Client ID
+    // 需同时满足：AGC 应用已开通「华为账号」服务；包名（com.mpr.chaincode）
+    // 与签名证书指纹已在 AGC 登记，否则登录返回 1001502002（应用未授权）。
+    metadata: [
+      {
+        name: "client_id",
+        value: "6917616558575214481",
+      },
+    ],
     // 微信 OpenSDK：weixin 用于判断微信是否安装，wxopensdk 用于跳转微信
     // （二者均为官方《鸿蒙应用开发手册》1.4 节要求，勿删；去掉 wxopensdk 会让 SDK 改走
     //  startAbility 通道，而 fluwx 5.7.x 在 OHOS 未绑定 eventHandler，回包会被静默丢弃）

@@ -38,6 +38,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     _phone = await _userService.getMaskedPhone();
     _avatarUrl = await _userService.getAvatarUrl();
     _hasSetUserName = await _userService.hasSetUserName();
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -402,6 +403,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: _handleAvatarTap,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -445,6 +447,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  // 用户名未设置时没有文本可点（右侧只有一个小箭头），
+                  // 必须用 opaque 让整行都是点击区，否则点击行内空白处无响应
+                  behavior: HitTestBehavior.opaque,
                   onTap: _handleNicknameTap,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -455,9 +460,15 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                         const Spacer(),
                         Row(
                           children: [
-                            Text(_nickname,
-                                style: const TextStyle(
-                                    fontSize: 13, color: Colors.grey)),
+                            Text(
+                              _nickname.isEmpty ? '未设置' : _nickname,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _nickname.isEmpty
+                                    ? Colors.blue
+                                    : Colors.grey,
+                              ),
+                            ),
                             if (!_hasSetUserName) const SizedBox(width: 4),
                             if (!_hasSetUserName)
                               Image.asset('assets/icons/right_arrow.png',
@@ -473,6 +484,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: _phone.isEmpty ? _handleBindPhone : null,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -506,6 +518,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => context.push('/profile/set-password'),
                   child: _buildArrowRow('登录密码'),
                 ),
@@ -514,6 +527,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => context.push('/profile/device-management'),
                   child: _buildArrowRow('设备管理'),
                 ),
@@ -522,6 +536,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               Container(
                 color: Colors.white,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => context.push('/profile/delete-account'),
                   child: _buildArrowRow('注销账户'),
                 ),

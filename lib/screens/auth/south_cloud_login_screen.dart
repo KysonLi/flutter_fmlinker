@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/common/constants.dart';
+import 'package:fmlink/screens/profile/bind_phone_screen.dart';
 import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:fmlink/utils/error_handler.dart';
@@ -76,14 +77,15 @@ class _SouthCloudLoginScreenState extends State<SouthCloudLoginScreen> {
 
         String phoneNumber = response['data']?['phone']?.toString() ?? '';
         if (phoneNumber.isEmpty) {
-          // 未绑定手机号，跳转绑定手机号页面
-          context.go('/profile/bind-phone');
-        } else {
-          // 关闭南方云登录页和登录页，携带刷新标志
-          final navigator = Navigator.of(context);
-          navigator.pop();
-          navigator.pop({'refresh': true});
+          // 未绑定手机号：先进入绑定手机号页（必须 push，go 会清空路由栈，
+          // 绑定成功后 pop 会弹掉最后一个路由 → 报错 + 空白页）
+          final bool bound = await BindPhoneScreen.open(context);
+          if (!mounted || !bound) return;
         }
+        // 关闭南方云登录页和登录页，携带刷新标志
+        final navigator = Navigator.of(context);
+        navigator.pop();
+        navigator.pop({'refresh': true});
       } else {
         // 登录失败
         EasyLoading.showToast(response['msg'] ?? '登录失败');

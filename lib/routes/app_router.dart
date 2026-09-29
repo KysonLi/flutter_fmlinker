@@ -23,6 +23,8 @@ import 'package:fmlink/screens/profile/profile_screen.dart';
 import 'package:fmlink/screens/profile/about_screen.dart';
 import 'package:fmlink/screens/profile/faq_screen.dart';
 import 'package:fmlink/screens/profile/account_security_screen.dart';
+import 'package:fmlink/screens/profile/my_account_screen.dart';
+import 'package:fmlink/screens/profile/recharge_record_screen.dart';
 import 'package:fmlink/screens/profile/bind_phone_screen.dart';
 import 'package:fmlink/screens/profile/set_password_screen.dart';
 import 'package:fmlink/screens/profile/device_management_screen.dart';
@@ -203,6 +205,14 @@ class AppRouter {
       GoRoute(
         path: '/profile/bind-phone',
         builder: (context, state) => const BindPhoneScreen(),
+      ),
+      GoRoute(
+        path: '/profile/my-account',
+        builder: (context, state) => const MyAccountScreen(),
+      ),
+      GoRoute(
+        path: '/profile/recharge-record',
+        builder: (context, state) => const RechargeRecordScreen(),
       ),
       GoRoute(
         path: '/profile/set-password',
