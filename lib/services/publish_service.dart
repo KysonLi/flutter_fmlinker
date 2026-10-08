@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:fmlink/services/api_service.dart';
 
 class PublishService {
@@ -30,6 +32,20 @@ class PublishService {
   static const String payResultAlreadyOwned = '88888805';
   static const String payResultPaid = '88888812';
   static const String payResultUnauthorized = '44444444';
+
+  // ==================== 泛票（余额）支付下单参数 ====================
+
+  /// 泛票购买接口（iOS / 鸿蒙：先用内购充值泛票，再用余额扣款购买内容）
+  static const String payPathCoin = '/chain-server/api/link_code_system/v2/pay';
+
+  /// 余额支付：pay_type=3
+  static const int payTypeCoin = 3;
+
+  /// 余额支付的 platform：iOS=1、鸿蒙=3（与余额账户的平台口径一致）
+  static int get platformCoin => Platform.isOhos ? 3 : 1;
+
+  /// 泛票余额不足（需先去「我的账户」充值）
+  static const String payResultInsufficientBalance = '88888803';
 
   // 获取出版物列表（searchText 可选，传则搜索）
   Future<Map<String, dynamic>> getPublications(
@@ -189,5 +205,37 @@ class PublishService {
     }
 
     return await _apiService.post('/pos/v1/app/pay', data: body);
+  }
+
+  /// 泛票（余额）支付下单（iOS / 鸿蒙购买内容时用）
+  ///
+  /// POST `/chain-server/api/link_code_system/v2/pay`
+  ///
+  /// 参数与 iOS 端一致（缺省项传空字符串）：`unification_id`、`device_id`、`goods_id`、
+  /// `shop_id`、`source_id`（整书为 [wholePublicationSourceId]）、`goods_identifier`、
+  /// `platform`（iOS=1 / 鸿蒙=3）、`pay_type`（余额支付=3）。
+  ///
+  /// resultCode：`00000000` 成功 / `88888805` 已购买 / `88888812` 支付成功 /
+  /// `88888803` 余额不足（跳充值） / `44444444` 登录过期。
+  Future<Map<String, dynamic>> createCoinPayOrder({
+    required String unificationId,
+    required String deviceId,
+    required String goodsId,
+    String? shopId,
+    String? sourceId,
+    String? goodsIdentifier,
+  }) async {
+    final Map<String, dynamic> body = <String, dynamic>{
+      'unification_id': unificationId,
+      'device_id': deviceId,
+      'goods_id': goodsId,
+      'shop_id': shopId ?? '',
+      'source_id': sourceId ?? '',
+      'goods_identifier': goodsIdentifier ?? '',
+      'platform': platformCoin,
+      'pay_type': payTypeCoin,
+    };
+
+    return await _apiService.post(payPathCoin, data: body);
   }
 }

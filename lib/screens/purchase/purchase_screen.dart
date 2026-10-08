@@ -410,16 +410,98 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     }
   }
 
-  /// iOS / 鸿蒙的内购通道（充值虚拟币后再购买），当前仅预留入口。
+  /// iOS / 鸿蒙：用泛票余额支付（先内购充值，再用余额扣款购买内容）
   ///
-  /// 后续完善步骤：
-  /// 1. 接入平台内购（iOS：StoreKit / OHOS：IAP Kit）充值虚拟币，
-  ///    充值结果由服务端记账（参见充值 / 余额接口）；
-  /// 2. 余额充足时用虚拟币余额调 /pos/v1/app/pay 完成购买
-  ///    （pay_type、payCode 改用虚拟币对应的取值，无需再拉起微信支付）；
-  /// 3. 余额不足则先跳转充值页。
+  /// 流程（对应 iOS 端泛票购买）：
+  /// 1. 调 [PublishService.createCoinPayOrder]（POST `/chain-server/api/link_code_system/v2/pay`，
+  ///    `pay_type=3` 余额支付，`platform`：iOS=1 / 鸿蒙=3）；
+  /// 2. 读原始 resultCode：
+  ///    - `00000000` 购买成功 / `88888805` 已购买 / `88888812` 支付成功 → 收尾；
+  ///    - `88888803` 余额不足 → 询问是否去「我的账户」充值；
+  ///    - `44444444` 登录过期 → 跳登录页；
+  ///    - 其他 → 展示服务端错误文案。
   Future<void> _startIapCoinPay() async {
-    EasyLoading.showToast('内购支付开发中，敬请期待');
+    final String goodsId = _str('goodsId');
+    if (goodsId.isEmpty) {
+      EasyLoading.showToast('缺少出版物参数，无法下单');
+      return;
+    }
+
+    final String unificationId = await _userService.getUnificationId();
+    if (unificationId.isEmpty) {
+      EasyLoading.showToast('请先登录');
+      return;
+    }
+
+    EasyLoading.show(status: '正在支付...');
+    try {
+      final String deviceId = await DeviceInfoUtil.getDeviceId();
+      final Map<String, dynamic> order =
+          await _publishService.createCoinPayOrder(
+        unificationId: unificationId,
+        deviceId: deviceId,
+        goodsId: goodsId,
+        shopId: _str('shopId'),
+        // 整书购买用固定标识，单源购买用当前链码的 sourceIdentifier
+        sourceId: _purchaseType == _typeWhole
+            ? PublishService.wholePublicationSourceId
+            : _str('sourceIdentifier'),
+        goodsIdentifier: _goodsIdentifier,
+      );
+      print('泛票下单结果: $order');
+
+      final String resultCode = (order['resultCode'] ?? '').toString();
+
+      // 服务端已处理完成（购买成功 / 已购买 / 支付成功）
+      if (resultCode == PublishService.payResultSuccess ||
+          resultCode == PublishService.payResultAlreadyOwned ||
+          resultCode == PublishService.payResultPaid) {
+        EasyLoading.dismiss();
+        _completePurchase('购买成功');
+        return;
+      }
+
+      EasyLoading.dismiss();
+
+      if (resultCode == PublishService.payResultInsufficientBalance) {
+        await _showRechargeDialog();
+        return;
+      }
+
+      if (resultCode == PublishService.payResultUnauthorized) {
+        EasyLoading.showToast('登录已过期，请重新登录');
+        if (mounted) await context.push('/login');
+        return;
+      }
+
+      EasyLoading.showError(order['msg']?.toString() ?? '购买失败，请稍后重试');
+    } finally {
+      EasyLoading.dismiss();
+    }
+  }
+
+  /// 泛票余额不足：询问是否去「我的账户」充值（充值成功返回后可再次点击购买）
+  Future<void> _showRechargeDialog() async {
+    if (!mounted) return;
+    final bool? go = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        content: const Text('泛票余额不足，是否前往充值？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('去充值'),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+    await context.push('/profile/my-account');
+    if (mounted) EasyLoading.showToast('充值成功后可再次点击购买');
   }
 
   /// 从服务端返回的支付参数里按多种命名取第一个非空值

@@ -4,6 +4,7 @@ import { GeneratedPluginRegistrant } from '../plugins/GeneratedPluginRegistrant'
 import { WechatPlugin } from '../wechat/WechatPlugin';
 import { NetworkInfoPlugin } from '../network/NetworkInfoPlugin';
 import { HuaweiAccountPlugin } from '../huawei/HuaweiAccountPlugin';
+import { IapPlugin } from '../iap/IapPlugin';
 import Want from '@ohos.app.ability.Want';
 import window from '@ohos.window';
 import { AbilityConstant } from '@kit.AbilityKit';
@@ -12,6 +13,7 @@ export default class EntryAbility extends FlutterAbility {
   private wechatPlugin: WechatPlugin | null = null;
   private networkInfoPlugin: NetworkInfoPlugin | null = null;
   private huaweiAccountPlugin: HuaweiAccountPlugin | null = null;
+  private iapPlugin: IapPlugin | null = null;
 
   configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
@@ -22,12 +24,15 @@ export default class EntryAbility extends FlutterAbility {
     this.networkInfoPlugin = new NetworkInfoPlugin(flutterEngine)
     // 华为账号一键登录：注册 fmlink/huawei_account 通道（@kit.AccountKit）
     this.huaweiAccountPlugin = new HuaweiAccountPlugin(flutterEngine, this.context)
+    // 泛票内购商品查询：注册 fmlink/iap 通道（@kit.IAPKit）
+    this.iapPlugin = new IapPlugin(flutterEngine, this.context)
   }
 
   onWindowStageCreate(windowStage: window.WindowStage) {
     super.onWindowStageCreate(windowStage)
-    // 华为账号 Kit 的登录请求需运行在 ArkUI 页面上下文中，此处把窗口交给插件
+    // 华为账号 Kit / IAP Kit 都需运行在 ArkUI 页面上下文中，此处把窗口交给插件
     this.huaweiAccountPlugin?.setWindowStage(windowStage)
+    this.iapPlugin?.setWindowStage(windowStage)
   }
 
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam) {

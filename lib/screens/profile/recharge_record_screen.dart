@@ -3,18 +3,18 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/common/refresh_config.dart';
-import 'package:fmlink/services/api_service.dart';
+import 'package:fmlink/services/prepay_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/error_handler.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
 
 /// 充值记录页
 ///
-/// 数据接口：GET /chain-server/api/link_code_system/prepay/prepay_record
-/// 参数：user_id（登录后的 unificationId）、page、page_size
+/// 数据接口：GET `/pos/v1/prepay/prepay_record?unification_id=xxx&platform=N`
+/// （platform：iOS=1，鸿蒙=3；按平台独立账户，仅返回已入账记录，倒序）
 ///
-/// ⚠️ 该接口的返回字段名客户端尚未确认（文档只写了「充值ID、金额、时间、状态」），
-/// 取值一律做多命名兼容；联调时看 `print('充值记录: ...')` 的原始返回，确认后收敛。
+/// ⚠️ 该接口未定义分页参数，一次返回全部记录，页面不做上拉加载；
+/// 返回字段名做多命名兼容；联调时看 `print('充值记录: ...')` 的原始返回，确认后收敛。
 class RechargeRecordScreen extends StatefulWidget {
   const RechargeRecordScreen({super.key});
 
@@ -23,20 +23,14 @@ class RechargeRecordScreen extends StatefulWidget {
 }
 
 class _RechargeRecordScreenState extends State<RechargeRecordScreen> {
-  final ApiService _apiService = ApiService();
+  final PrepayService _prepayService = PrepayService();
   final UserService _userService = UserService();
   final EasyRefreshController _refreshController = EasyRefreshController(
     controlFinishRefresh: true,
-    controlFinishLoad: true,
   );
 
-  static const int _pageSize = 20;
-
   List<dynamic> _list = <dynamic>[];
-  int _pageIndex = 1;
-  bool _hasMore = true;
   bool _isLoading = true;
-  bool _loadingMore = false;
   bool _isLoggedIn = false;
 
   /// 加载失败原因（为空表示未失败），用于展示统一失败占位
@@ -66,56 +60,32 @@ class _RechargeRecordScreenState extends State<RechargeRecordScreen> {
     }
   }
 
+  /// 拉取充值记录（接口不分页，一次返回全部已入账记录）
   Future<void> _loadRecords({bool isRefresh = false}) async {
-    if (!isRefresh && (!_hasMore || _loadingMore)) {
-      _refreshController.finishLoad(IndicatorResult.noMore);
-      return;
-    }
-    if (isRefresh) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-    } else {
-      setState(() => _loadingMore = true);
-    }
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       await _userService.refreshToken();
-      final String userId = await _userService.getUnificationId();
-      if (userId.isEmpty) {
+      final String unificationId = await _userService.getUnificationId();
+      if (unificationId.isEmpty) {
         if (!mounted) return;
         setState(() {
           _isLoggedIn = false;
           _isLoading = false;
-          _loadingMore = false;
         });
         return;
       }
 
-      final Map<String, dynamic> response = await _apiService.get(
-        '/chain-server/api/link_code_system/prepay/prepay_record',
-        queryParameters: <String, dynamic>{
-          'user_id': userId,
-          'page': isRefresh ? 1 : _pageIndex,
-          'page_size': _pageSize,
-        },
-      );
+      final Map<String, dynamic> response =
+          await _prepayService.getPrepayRecords(unificationId: unificationId);
       print('充值记录: $response');
 
       if (!mounted) return;
       if (response['status'] == true && response['data'] != null) {
-        final List<dynamic> items = _extractList(response['data']);
-        setState(() {
-          if (isRefresh) {
-            _list = items;
-            _pageIndex = 2;
-          } else {
-            _list.addAll(items);
-            _pageIndex++;
-          }
-          _hasMore = items.length >= _pageSize;
-        });
+        setState(() => _list = _extractList(response['data']));
       } else {
         _error = response['msg']?.toString() ?? '';
       }
@@ -127,18 +97,8 @@ class _RechargeRecordScreenState extends State<RechargeRecordScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _loadingMore = false;
-        });
-        if (isRefresh) {
-          _refreshController.finishRefresh();
-          _refreshController.resetFooter();
-        } else {
-          _refreshController.finishLoad(
-            _hasMore ? IndicatorResult.success : IndicatorResult.noMore,
-          );
-        }
+        setState(() => _isLoading = false);
+        _refreshController.finishRefresh();
       }
     }
   }
@@ -450,9 +410,7 @@ class _RechargeRecordScreenState extends State<RechargeRecordScreen> {
                         : EasyRefresh(
                             controller: _refreshController,
                             onRefresh: () => _loadRecords(isRefresh: true),
-                            onLoad: () => _loadRecords(isRefresh: false),
                             header: RefreshConfig.buildHeader(),
-                            footer: RefreshConfig.buildFooter(),
                             child: ListView.builder(
                               padding: const EdgeInsets.all(12),
                               itemCount: _list.length,

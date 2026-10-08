@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/routes/app_router.dart';
+import 'package:fmlink/services/prepay_service.dart';
 import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/themes/app_feedback.dart';
 import 'package:fmlink/themes/app_theme.dart';
@@ -34,6 +35,9 @@ void main() async {
 
   // 初始化缓存服务：加载缓存记录、注册生命周期观察者、询问未完成任务
   CacheService().init();
+
+  // 补发上次未确认到账的华为充值凭据（防丢单；未登录 / 无待补发记录时直接跳过）
+  PrepayService().recoverHuaweiPurchases();
 }
 
 class MyApp extends StatelessWidget {
