@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,8 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -34,36 +34,62 @@
 				<string>wxdcb4f64316ee1d04</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>tencent</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tencent1106531844</string>
+			</array>
+		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>weixin</string>
 		<string>weixinULAPI</string>
+		<string>mqq</string>
+		<string>mqqapi</string>
+		<string>mqqwpa</string>
+		<string>mqqOpensdkSSoLogin</string>
+		<string>mqqopensdkapiV2</string>
+		<string>mqqopensdkapiV3</string>
+		<string>mqqopensdkavatar</string>
+		<string>mqqopensdkfriend</string>
+		<string>mqqopensdklaunchminiapp</string>
+		<string>mqqopensdkminiapp</string>
+		<string>mqqopensdknopasteboard</string>
+		<string>mqqopensdknopasteboardios16</string>
+		<string>mqqgamebindinggroup</string>
+		<string>mqqthirdappgroup</string>
+		<string>mqzone</string>
+		<string>tim</string>
+		<string>wtloginmqq2</string>
+		<string>tencentapi.qq.reqContent</string>
+		<string>tencentapi.qzone.reqContent</string>
+		<string>weixinURLParamsAPI</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- 扫码（mobile_scanner）核心功能：缺失会直接 crash -->
-	<key>NSCameraUsageDescription</key>
-	<string>扫描识别图书线码/图标码需要使用相机</string>
-	<!-- 相册选图（头像/识码）：Permission.photos 的 iOS 分支 -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>选择头像图片及识别图片资源时需要访问相册</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>需要使用麦克风录制视频</string>
-	<!-- ATS：API 为明文 http，服务器转 https 后应整体移除 -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>扫描识别图书线码/图标码需要使用相机</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>需要使用麦克风录制视频</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>选择头像图片及识别图片资源时需要访问相册</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<!-- DEBUG: 让 Documents/debug_frames 能在 iPhone「文件」App 里访问，便于导出调试 PNG -->
 	<key>UIFileSharingEnabled</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

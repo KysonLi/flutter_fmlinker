@@ -34,6 +34,21 @@ fluwx:
     # 本项目已手动配置 ATS/URL Scheme，无需脚本再改（避免覆盖 Info.plist 注释）
     ignore_security: true
 
+# QQ 互联配置（tencent_kit 专用顶层字段，pub 会忽略）
+# ⚠️ 必填：Android 构建脚本与 iOS podspec 都会读取 app_id，缺失会直接构建失败；
+# 该值同时要出现在《QQ 互联》后台、鸿蒙 module.json5 的回调 scheme host、
+# 以及 lib/common/constants.dart 的 qqAppId，四处保持一致。
+# universal_link 可选（仅 iOS，用于没有 URL Scheme 回调时的兜底），不填则走
+# tencent{app_id}:// 的 URL Scheme 回调，Android/OHOS 不校验该项。
+# 这里填的是 QQ 互联后台登记的值：https://apigateway.mpreader.com/qq_conn/1106531844
+# 依赖三处同步：
+# 1) ios/Runner/Runner.entitlements 的 applinks:apigateway.mpreader.com（按域名生效，已覆盖 /qq_conn）
+# 2) 服务端 https://apigateway.mpreader.com/apple-app-site-association 的 paths 含 /qq_conn/1106531844/*
+# 3) QQ 互联后台「iOS - Universal Link」
+tencent_kit:
+  app_id: '1106531844'
+  universal_link: https://apigateway.mpreader.com/qq_conn/1106531844
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -56,6 +71,9 @@ dependencies:
 
   # 微信登录（5.x 起官方支持 ohos，自带 ArkTS 实现）
   fluwx: ^5.7.5
+
+  # QQ 登录（6.x 起官方支持 ohos，自带鸿蒙 QQOpenSdk.har；app_id 见文件顶部 tencent_kit 段）
+  tencent_kit: ^6.2.0
   
   # 路由管理（纯 Dart，无 OHOS 适配需求，直接用 pub.dev）
   go_router: ^10.1.2

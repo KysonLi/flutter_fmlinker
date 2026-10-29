@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:fluwx/fluwx.dart';
 import 'package:fmlink/services/huawei_account_service.dart';
 import 'package:fmlink/services/third_party_manager.dart';
+import 'package:fmlink/services/qq_login_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/common/constants.dart';
@@ -367,6 +368,47 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!launched && mounted) {
         setState(() => _isLoading = false);
       }
+      return;
+    }
+
+    // QQ 登录（Android / iOS / 鸿蒙）
+    //
+    // 三端差异见 QqLoginService：Android/iOS 走客户端授权（openid + access_token），
+    // 鸿蒙 SDK 只支持服务端授权（openid + authorization code），
+    // 服务端最终用 `code` 换 token 的方式由 [QqLoginService.authMode] 决定。
+    if (platform == Constants.thirdPartyQq) {
+      // 防重复点击：登录中忽略再次点击（同华为账号入口）
+      if (_isLoading) return;
+
+      // 进入 loading：覆盖「拉起 QQ → 用户授权 → 返回 App → 服务端换取登录态」全过程
+      setState(() => _isLoading = true);
+
+      final result = await QqLoginService.login();
+      if (!mounted) return;
+
+      if (result['status'] == true) {
+        final Map<String, dynamic> data = result['data'] is Map
+            ? Map<String, dynamic>.from(result['data'] as Map)
+            : <String, dynamic>{};
+        final String code = data['code']?.toString() ?? '';
+        final String openId = data['openId']?.toString() ?? '';
+
+        if (code.isEmpty) {
+          setState(() => _isLoading = false);
+          EasyLoading.showToast('未获取到 QQ 授权凭证，请重试');
+          return;
+        }
+
+        // 成功提示由 _sendThirdPartyLogin 在服务端返回成功后统一给出
+        await _sendThirdPartyLogin(code, openId, platform);
+      } else {
+        // 收起 loading；用户主动取消授权时不提示错误
+        setState(() => _isLoading = false);
+        if (result['canceled'] != true) {
+          EasyLoading.showToast(result['msg']?.toString() ?? 'QQ 登录失败');
+        }
+      }
+      return;
     }
   }
 

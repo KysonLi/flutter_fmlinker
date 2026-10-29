@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "K57V7V2MH5.com.fanmei.Linker",
+        "paths": ["/wxul/*"]
+      },
+      {
+        "appID": "K57V7V2MH5.com.fanmei.Linker",
+        "paths": ["/qq_conn/1106531844/*"]
+      }
+    ]
+  }
+}

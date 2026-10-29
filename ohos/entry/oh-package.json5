@@ -18,6 +18,7 @@
     "mobile_scanner": "file:../har/mobile_scanner.har",
     "@tencent/wechat_open_sdk": "1.0.21",
     "@ohos/flutter_ohos": "har/flutter.har",
-    "fluwx": "file:../har/fluwx.har"
+    "fluwx": "file:../har/fluwx.har",
+    "tencent_kit": "file:../har/tencent_kit.har"
   }
 }

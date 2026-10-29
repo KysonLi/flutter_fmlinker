@@ -20,7 +20,9 @@
     // 微信 OpenSDK：weixin 用于判断微信是否安装，wxopensdk 用于跳转微信
     // （二者均为官方《鸿蒙应用开发手册》1.4 节要求，勿删；去掉 wxopensdk 会让 SDK 改走
     //  startAbility 通道，而 fluwx 5.7.x 在 OHOS 未绑定 eventHandler，回包会被静默丢弃）
-    querySchemes: ["weixin", "wxopensdk"],
+    // qqopenapi / https：QQ 鸿蒙版 SDK（tencent_kit）要求，用于判断 QQ/浏览器是否可用
+    // 及接收 QQ 授权回调（见下方 skills 中的 qqopenapi 配置）
+    querySchemes: ["weixin", "wxopensdk", "qqopenapi", "https"],
     abilities: [
       {
         name: "EntryAbility",
@@ -40,6 +42,24 @@
             // 微信授权回调：微信通过该 action 拉起本应用并回传登录结果
             entities: ["entity.system.browsable"],
             actions: ["wxentity.action.open"],
+          },
+          {
+            // QQ 授权回调（tencent_kit 官方鸿蒙接入要求）：
+            // scheme 固定 qqopenapi，host 必须是 QQ 互联 AppID，
+            // pathRegex 覆盖授权(auth)与分享(share)两种回调，
+            // linkFeature=Login 表示接收登录回传。
+            // ⚠️ host 要与 pubspec.yaml 的 tencent_kit.app_id、
+            //    lib/common/constants.dart 的 qqAppId 保持一致。
+            entities: ["entity.system.browsable"],
+            actions: ["ohos.want.action.viewData"],
+            uris: [
+              {
+                scheme: "qqopenapi",
+                host: "1106531844",
+                pathRegex: "\\b(auth|share)\\b",
+                linkFeature: "Login",
+              },
+            ],
           },
         ],
       },

@@ -49,4 +49,14 @@ class Constants {
   static const String thirdPartyQq = 'qq'; // QQ
   static const String thirdPartyWeibo = 'weibo'; // 微博
   static const String thirdPartyHuawei = 'huawei'; // 华为
+
+  // ==================== QQ 互联（tencent_kit） ====================
+
+  /// QQ 互联 AppID（纯数字）
+  ///
+  /// 必须与下面三处保持一致，改动时同步修改：
+  /// 1. `pubspec.yaml` 顶部 `tencent_kit.app_id`（Android/iOS 构建脚本读取，缺失构建失败）；
+  /// 2. `ohos/entry/src/main/module.json5` 中 QQ 登录回调的 `skills.uris[].host`；
+  /// 3. QQ 互联后台登记的应用 AppID。
+  static const String qqAppId = '1106531844';
 }

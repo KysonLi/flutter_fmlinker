@@ -25,6 +25,7 @@
     "@ohos/flutter_ohos": "file:./har/flutter.har",
     "imagecropper_ohos": "file:./har/imagecropper_ohos.har",
     "mobile_scanner": "file:./har/mobile_scanner.har",
-    "fluwx": "file:./har/fluwx.har"
+    "fluwx": "file:./har/fluwx.har",
+    "tencent_kit": "file:./har/tencent_kit.har"
   }
 }
