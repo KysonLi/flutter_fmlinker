@@ -18,7 +18,7 @@ class PrepayProduct {
   /// 商品名（商店商品标题）
   final String name;
 
-  /// 泛票数量
+  /// 泛票数量（**仅作兜底**：商店不返回泛票数，商品名缺失时才用它拼文案，商店价格缺失时用它兜底价格）
   final num tickets;
 
   /// 售价数值（元，商店返回）
@@ -27,8 +27,11 @@ class PrepayProduct {
   /// 商店本地化展示价（如「¥6.00」，优先展示）
   final String displayPrice;
 
-  /// 档位主文案：优先显示泛票数，取不到时退回商品名
-  String get ticketsLabel => tickets > 0 ? '${formatNum(tickets)}泛票' : name;
+  /// 档位主文案：优先用商店商品名，商店没返回商品名时才退回本地配置的泛票数
+  String get titleLabel {
+    if (name.isNotEmpty) return name;
+    return tickets > 0 ? '${formatNum(tickets)}泛票' : '';
+  }
 
   /// 售价文案：优先用商店本地化价格（App Store / AGC 价格可能与后台金额不一致）
   String get priceLabel {

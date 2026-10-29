@@ -46,7 +46,8 @@ interface IapPurchaseInfo {
  * 错误码（对应 iap.queryProducts 文档）：
  * - 401        参数错误
  * - 1001860002 应用未授权（AGC 未开通/配置有误）
- * - 1001860003 商品信息无效（商品不存在或未上架）
+ * - 1001860003 商品信息无效（商品不存在/未上架；或当前华为账号非沙盒测试账号，
+ *              看不到「未上架」的商品——未上架应用/商品必须用沙盒账号登录 AppGallery 才能查到）
  * - 1001860004 调用过于频繁
  * - 1001860005 网络连接错误
  * - 1001860007 商品所属应用未在指定地区发布
@@ -116,6 +117,8 @@ export class IapPlugin implements MethodCallHandler {
       productIds: productIds,
     };
 
+    console.info(`${TAG} queryProducts request, productIds=${JSON.stringify(productIds)}`);
+
     iap.queryProducts(this.resolveContext(), parameter)
       .then((products: iap.Product[]) => {
         const list: IapProductInfo[] = [];
@@ -128,7 +131,10 @@ export class IapPlugin implements MethodCallHandler {
             currency: product.currency,
           });
         });
-        console.info(`${TAG} queryProducts success, count=${list.length}`);
+        // 打印返回的 ID，便于和请求 ID 对比排查「哪个商品在 AGC 查不到」
+        console.info(
+          `${TAG} queryProducts success, count=${list.length}, ids=${list.map((p: IapProductInfo) => p.productId).join(',')}`,
+        );
         // 统一包一层 data，与 Dart 侧 IapService 的读取结构对齐
         result.success({ 'data': list });
       })
@@ -255,6 +261,8 @@ export class IapPlugin implements MethodCallHandler {
     } else if (code === 1001860002) {
       return { code: 'APP_NOT_AUTHORIZED', message: '充值服务暂不可用，请稍后重试', details: code };
     } else if (code === 1001860003) {
+      // 商品不存在/未上架；联调期最常见的原因是当前账号不是 AGC 配置的沙盒测试账号，
+      // 看不到未上架的商品（真实账号能看到的只有已上架商品）
       return { code: 'INVALID_PRODUCT', message: '充值商品暂不可用，请稍后重试', details: code };
     } else if (code === 1001860007) {
       return { code: 'APP_NOT_PUBLISHED', message: '当前地区暂不支持充值，请稍后重试', details: code };

@@ -376,7 +376,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              product.ticketsLabel,
+              product.titleLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

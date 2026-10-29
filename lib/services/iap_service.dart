@@ -6,16 +6,24 @@ import 'package:fmlink/models/prepay_product.dart';
 
 /// 泛票档位配置：productId 由代码写死（与 AGC / App Store Connect 配置的商品一致）
 ///
-/// 1元 = 1泛票，故售价与泛票数同值；商品名/价格一律以商店返回为准。
+/// 泛票数只是**本地兜底值**：商店不返回泛票数，档位文案优先用商店返回的商品名，
+/// 商店没返回商品名时才用它拼「N泛票」；实际入账泛票数由服务端校验凭证后决定。
+///
+/// ⚠️ 两平台的商品档位**不完全对应**：同一档位的泛票数可能不同
+/// （如 iOS `com.fanmeilinker.fanpiao6` = 198，鸿蒙 `fanpiao_188_188` = 188），故按平台分别配置。
 class IapProductConfig {
   const IapProductConfig({
-    required this.tickets,
+    required this.iosTickets,
+    required this.ohosTickets,
     required this.iosProductId,
     required this.ohosProductId,
   });
 
-  /// 泛票数量
-  final int tickets;
+  /// iOS 商品对应的泛票数量（兜底展示/兜底价格用，App Store Connect 上的档位）
+  final double iosTickets;
+
+  /// 鸿蒙商品对应的泛票数量（兜底展示/兜底价格用，AGC 上的档位）
+  final double ohosTickets;
 
   /// iOS（App Store Connect）商品 ID
   final String iosProductId;
@@ -25,6 +33,9 @@ class IapProductConfig {
 
   /// 当前平台的商品 ID
   String get productId => Platform.isOhos ? ohosProductId : iosProductId;
+
+  /// 当前平台的泛票数量
+  double get tickets => Platform.isOhos ? ohosTickets : iosTickets;
 }
 
 /// 泛票内购服务（iOS / 鸿蒙）
@@ -51,40 +62,51 @@ class IapService {
   /// 应先走充值补发而不是提示用户重复购买。
   static const String codeAlreadyOwned = 'ALREADY_OWNED';
 
+  /// 商品信息无效（华为 1001860003：商品不存在或未上架）
+  static const String _codeInvalidProduct = 'INVALID_PRODUCT';
+
   /// 当前平台是否支持泛票内购（Android 走微信支付，不用本通道）
   static bool get isSupported => Platform.isIOS || Platform.isOhos;
 
   /// 泛票档位（productId 与商店后台配置一一对应，顺序即页面展示顺序）
   ///
   /// ⚠️ 改动档位需同时改 App Store Connect / AGC 的商品配置，否则商店查不到该商品（会被跳过）。
+  /// ⚠️ 两个平台的泛票数并非一一对应，改价/改档位时务必分别核对两侧商店的配置。
   static const List<IapProductConfig> products = <IapProductConfig>[
     IapProductConfig(
-      tickets: 6,
+      iosTickets: 6,
+      ohosTickets: 6,
       iosProductId: 'com.fanmeilinker.fanpiao.1',
       ohosProductId: 'fanpiao_6_6',
     ),
     IapProductConfig(
-      tickets: 18,
+      iosTickets: 18,
+      ohosTickets: 18,
       iosProductId: 'com.fanmeilinker.fanpiao.2',
       ohosProductId: 'fanpiao_18_18',
     ),
     IapProductConfig(
-      tickets: 30,
+      iosTickets: 30,
+      ohosTickets: 30,
       iosProductId: 'com.fanmeilinker.fanpiao3',
       ohosProductId: 'fanpiao_30_30',
     ),
     IapProductConfig(
-      tickets: 50,
+      iosTickets: 50,
+      ohosTickets: 50,
       iosProductId: 'com.fanmeilinker.fanpiao4',
       ohosProductId: 'fanpiao_50_50',
     ),
     IapProductConfig(
-      tickets: 98,
+      iosTickets: 98,
+      ohosTickets: 98,
       iosProductId: 'com.fanmeilinker.fanpiao5',
       ohosProductId: 'fanpiao_98_98',
     ),
+    // iOS 该档位为 198 泛票，鸿蒙为 188 泛票
     IapProductConfig(
-      tickets: 188,
+      iosTickets: 198,
+      ohosTickets: 188,
       iosProductId: 'com.fanmeilinker.fanpiao6',
       ohosProductId: 'fanpiao_188_188',
     ),
@@ -95,6 +117,12 @@ class IapService {
   /// 返回统一结构：`{'status': bool, 'data': List<PrepayProduct>, 'msg': String}`
   /// - 只返回商店确实配置了（能查到）的商品；未配置的档位直接跳过，避免用户点到无法下单的档位
   /// - `price` 用商店返回的数值，`displayPrice` 用商店本地化价格文案
+  ///
+  /// ⚠️ 鸿蒙 `iap.queryProducts` 的批量查询对无效商品不宽容：productIds 里只要有一个在 AGC
+  /// 不存在或未上架，整次调用就可能整批失败（`INVALID_PRODUCT` / 1001860003），一个商品都拿不到。
+  /// 另外该错误码也可能是**账号**问题：非沙盒测试账号看不到「未上架」的商品（实测：应用/商品
+  /// 未上架时必须用 AGC 配置的沙盒测试账号登录 AppGallery）。
+  /// 因此批量查询失败时降级为逐个查询，跳过无效商品、保留有效档位。
   static Future<Map<String, dynamic>> queryProducts() async {
     if (!isSupported) {
       return _failure('当前平台暂不支持泛票充值');
@@ -102,6 +130,7 @@ class IapService {
 
     final List<String> productIds =
         products.map((IapProductConfig p) => p.productId).toList();
+    print('查询泛票商品 productIds=$productIds');
 
     try {
       final dynamic result = await _channel.invokeMethod<dynamic>(
@@ -125,11 +154,61 @@ class IapService {
       return _failure('当前版本暂不支持充值，请升级后重试');
     } on PlatformException catch (e) {
       print('查询充值商品失败 code=${e.code} msg=${e.message} details=${e.details}');
-      return _failure(e.message ?? '获取充值商品失败，请稍后重试');
+      // 商品信息无效（某档位在 AGC 不存在/未上架）时逐个重试，避免一个坏档位拖垮整页
+      if (Platform.isOhos && e.code == _codeInvalidProduct) {
+        final List<PrepayProduct> list =
+            await _queryProductsOneByOne(productIds);
+        if (list.isNotEmpty) {
+          print('逐个查询后返回泛票商品 ${list.length} 个');
+          return <String, dynamic>{
+            'status': true,
+            'data': list,
+            'msg': 'ok',
+          };
+        }
+        // 全部查不到时，联调期最常见的原因是账号：未上架的商品只有沙盒测试账号可见
+        print('提示：鸿蒙 1001860003 也可能是账号问题——未上架的商品只有 AGC 沙盒测试账号可见，'
+            '请确认手机上的华为账号已加入 AGC 沙盒测试名单');
+      }
+      return _failure(e.message ?? '获取充值商品失败，请稍后重试', code: e.code);
     } catch (e) {
       print('查询充值商品异常: $e');
       return _failure('获取充值商品失败，请稍后重试');
     }
+  }
+
+  /// 逐个查询商品（批量查询失败时的降级方案）
+  ///
+  /// 只用于鸿蒙：某个 productId 在 AGC 无效会拖垮整批查询，逐个查可以拿到其余有效档位；
+  /// 无效的 productId 会打印出来，方便和 AGC 后台核对。
+  static Future<List<PrepayProduct>> _queryProductsOneByOne(
+    List<String> productIds,
+  ) async {
+    final List<PrepayProduct> list = <PrepayProduct>[];
+    final List<String> invalid = <String>[];
+    for (final String productId in productIds) {
+      try {
+        final dynamic result = await _channel.invokeMethod<dynamic>(
+          'queryProducts',
+          <String, dynamic>{
+            'productIds': <String>[productId],
+          },
+        );
+        final List<PrepayProduct> parsed = _parseStoreProducts(result);
+        if (parsed.isEmpty) {
+          invalid.add(productId);
+        } else {
+          list.addAll(parsed);
+        }
+      } on PlatformException catch (e) {
+        print('商品 $productId 查询失败 code=${e.code} msg=${e.message}');
+        invalid.add(productId);
+      }
+    }
+    if (invalid.isNotEmpty) {
+      print('商店查不到的商品（请检查 AGC 商品 ID 与上架状态）: $invalid');
+    }
+    return list;
   }
 
   /// 拉起平台内购（购买单个泛票商品）
