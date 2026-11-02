@@ -18,7 +18,12 @@
     "mobile_scanner": "file:../har/mobile_scanner.har",
     "@tencent/wechat_open_sdk": "1.0.21",
     "@ohos/flutter_ohos": "har/flutter.har",
+    "@umeng/common": "^1.1.12",
+    "@umeng/analytics": "^1.2.12",
+    "@umeng/apm": "^1.6.1",
     "fluwx": "file:../har/fluwx.har",
-    "tencent_kit": "file:../har/tencent_kit.har"
+    "tencent_kit": "file:../har/tencent_kit.har",
+    "umeng_common_sdk": "file:../har/umeng_common_sdk.har",
+    "umeng_apm_sdk": "file:../har/umeng_apm_sdk.har"
   }
 }

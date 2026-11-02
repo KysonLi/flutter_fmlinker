@@ -41,6 +41,18 @@ PODS:
   - tencent_kit/vendor (6.2.0):
     - Flutter
   - TOCropViewController (2.6.1)
+  - UMAPM (2.1.7):
+    - UMCommon
+  - UMCommon (7.7.0):
+    - UMDevice
+  - UMDevice (3.6.0)
+  - umeng_apm_sdk (0.0.1):
+    - Flutter
+    - UMAPM
+  - umeng_common_sdk (0.0.1):
+    - Flutter
+    - UMCommon
+    - UMDevice
   - url_launcher_ios (0.0.1):
     - Flutter
   - video_player_avfoundation (0.0.1):
@@ -64,6 +76,8 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
   - tencent_kit (from `.symlinks/plugins/tencent_kit/ios`)
+  - umeng_apm_sdk (from `.symlinks/plugins/umeng_apm_sdk/ios`)
+  - umeng_common_sdk (from `.symlinks/plugins/umeng_common_sdk/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/ios`)
@@ -72,6 +86,9 @@ SPEC REPOS:
   trunk:
     - FMDB
     - TOCropViewController
+    - UMAPM
+    - UMCommon
+    - UMDevice
     - WechatOpenSDK-XCFramework
 
 EXTERNAL SOURCES:
@@ -101,6 +118,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite/ios"
   tencent_kit:
     :path: ".symlinks/plugins/tencent_kit/ios"
+  umeng_apm_sdk:
+    :path: ".symlinks/plugins/umeng_apm_sdk/ios"
+  umeng_common_sdk:
+    :path: ".symlinks/plugins/umeng_common_sdk/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player_avfoundation:
@@ -124,6 +145,11 @@ SPEC CHECKSUMS:
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   tencent_kit: c8bd3bfee65fb61ea26d5e1570b843773bd62352
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
+  UMAPM: 24c100a2ec8ffd710f4f25575d92b46b9e4e63dd
+  UMCommon: 7740aabc9bdf25ee76d05c06ce09f980f4422cb2
+  UMDevice: 20b7b3c37a36b2c5c7ca8b5a54386ff9ed2b3b19
+  umeng_apm_sdk: f726cb78a2bd2afa0e17ec6b65fe3c9b96921f1d
+  umeng_common_sdk: a1738d0ea0a8e584abe2afaa1b237150fb8fa2bd
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
   webview_flutter_wkwebview: be0f0d33777f1bfd0c9fdcb594786704dbf65f36

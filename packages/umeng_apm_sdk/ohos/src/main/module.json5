@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "umeng_apm_sdk",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}

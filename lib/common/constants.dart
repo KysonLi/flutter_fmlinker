@@ -15,6 +15,18 @@ class Constants {
   // 用户尚未同意隐私政策前禁止触发埋点上报
   static bool hasPrivacyConsent = false;
 
+  // 友盟 SDK 配置：
+  // - android / ios 的 AppKey 由 Dart 传入（UmengCommonSdk.initCommonNew）
+  // - ohos 的 AppKey 只能配置在原生 ohos/AppScope/resources/rawfile/umconfig.json，
+  //   这里的 umengOhosAppKey 仅用于与后台核对，运行时不会传给 SDK
+  static const String umengAndroidAppKey = '5b3f2c928f4a9d675a00002c';
+  static const String umengIosAppKey = '5ad01d67b27b0a17d9000087';
+  static const String umengOhosAppKey = '6ae80442863270068cb2697c';
+  static const String umengChannel = 'Umeng';
+
+  // 与 pubspec.yaml 的 version 保持一致，供 U-APM 上报应用版本
+  static const String appVersion = '1.0.0+1';
+
   // 存储键名
   static const String kToken = 'token';
   static const String kUserId = 'user_id';

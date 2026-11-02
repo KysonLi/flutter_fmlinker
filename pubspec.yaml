@@ -109,6 +109,20 @@ dependencies:
   # 权限管理
   permission_handler: ^11.3.1
 
+  # 友盟统计 U-App（android/ios/ohos 三端，官方插件）
+  # 仅在用户同意隐私政策后初始化，见 lib/services/umeng_service.dart
+  # 本地 vendored 副本（1.3.1）：官方包 ios/Classes 下同时存在 .h/.m 与同名 .swift 类，
+  # 会导致 iOS 报 "Duplicate interface definition for class 'UmengCommonSdkPlugin'"，
+  # 这里删除空壳 .swift/.kt 实现，行为与官方一致。
+  umeng_common_sdk:
+    path: packages/umeng_common_sdk
+
+  # 友盟崩溃分析 U-APM（android/ios/ohos 三端，官方插件）
+  # 本地 vendored 副本（2.3.7）：官方包 ohos 模块未声明 @ohos/flutter_ohos 依赖，
+  # 导致鸿蒙构建报 "Cannot find module '@ohos/flutter_ohos'"，此处补齐声明。
+  umeng_apm_sdk:
+    path: packages/umeng_apm_sdk
+
   # 工具库
   intl: ^0.17.0
   path_provider: any

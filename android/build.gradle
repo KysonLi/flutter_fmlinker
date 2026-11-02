@@ -27,6 +27,16 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://jitpack.io' }
     }
+
+    // 友盟插件（umeng_common_sdk）以动态版本 "+" 声明 common/asms，
+    // 上游发版会导致构建结果漂移，这里固定为当前验证通过的版本。
+    configurations.all {
+        resolutionStrategy {
+            force 'com.umeng.umsdk:common:10.0.1'
+            force 'com.umeng.umsdk:asms:1.8.7.2'
+            force 'com.umeng.umsdk:apm:2.0.1'
+        }
+    }
 }
 
 rootProject.buildDir = '../build'

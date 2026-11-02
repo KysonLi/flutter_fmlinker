@@ -4,6 +4,9 @@
     type: "entry",
     description: "$string:module_desc",
     mainElement: "EntryAbility",
+    // 友盟 SDK 要求 AbilityStage 在应用启动时做 preInit（不采集数据）。
+    // 该 Stage 只调用 preInit，真正的 init 由 Dart 侧同意隐私政策后触发。
+    srcEntry: "./ets/abilityStage/MyAbilityStage.ets",
     deviceTypes: ["phone"],
     deliveryWithInstall: true,
     installationFree: false,

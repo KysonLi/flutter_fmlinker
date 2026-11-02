@@ -1,0 +1,12 @@
+{
+  "name": "umeng_apm_sdk",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@umeng/apm": "^1.3.0",
+    "@ohos/flutter_ohos": "file:./har/flutter.har"
+  }
+}
