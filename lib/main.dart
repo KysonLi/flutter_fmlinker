@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:fmlink/cache/cache_service.dart';
+import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/routes/app_router.dart';
+import 'package:fmlink/screens/privacy/privacy_consent_screen.dart';
 import 'package:fmlink/services/prepay_service.dart';
+import 'package:fmlink/services/privacy_consent_service.dart';
 import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/themes/app_feedback.dart';
 import 'package:fmlink/themes/app_theme.dart';
@@ -23,9 +27,6 @@ void main() async {
   // 配置 EasyLoading 全局样式（深色胶囊 + 状态图标，统一轻提示/错误提示观感）
   AppFeedbackTheme.init();
 
-  // 初始化微信
-  ThirdPartyManager.initWeChat();
-
   runApp(
     ChangeNotifierProvider(
       create: (context) => TabProvider(),
@@ -33,18 +34,82 @@ void main() async {
     ),
   );
 
-  // 初始化缓存服务：加载缓存记录、注册生命周期观察者、询问未完成任务
-  CacheService().init();
-
-  // 补发上次未确认到账的华为充值凭据（防丢单；未登录 / 无待补发记录时直接跳过）
-  PrepayService().recoverHuaweiPurchases();
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final Future<bool> _consentFuture = _loadConsent();
+  bool _hasConsent = false;
+  bool _initializedAfterConsent = false;
+
+  Future<bool> _loadConsent() async {
+    final bool hasConsent = await PrivacyConsentService().loadConsent();
+    if (hasConsent) {
+      Constants.hasPrivacyConsent = true;
+      _initializeAfterConsent();
+    }
+    return hasConsent;
+  }
+
+  Future<void> _onAccepted() async {
+    if (!mounted) return;
+    Constants.hasPrivacyConsent = true;
+    setState(() => _hasConsent = true);
+    _initializeAfterConsent();
+  }
+
+  void _initializeAfterConsent() {
+    if (_initializedAfterConsent) return;
+    _initializedAfterConsent = true;
+
+    unawaited(
+      ThirdPartyManager.initWeChat().catchError((Object error) {
+        print('同意隐私政策后初始化微信失败: $error');
+      }),
+    );
+
+    // 隐私同意后才初始化本地缓存及生命周期监听。
+    CacheService().init();
+
+    // 隐私同意后才恢复可能触发设备/账号信息读取与网络请求的支付订单。
+    unawaited(
+      PrepayService().recoverHuaweiPurchases().then<void>(
+        (_) {},
+        onError: (Object error) {
+          print('同意隐私政策后恢复华为支付订单失败: $error');
+        },
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _consentFuture,
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        final bool consentGranted =
+            snapshot.connectionState == ConnectionState.done &&
+                snapshot.data == true;
+        if (consentGranted || _hasConsent) {
+          Constants.hasPrivacyConsent = true;
+          return _buildRouterApp();
+        }
+        return MaterialApp(
+          title: '泛媒关联',
+          theme: AppTheme.lightTheme,
+          home: PrivacyConsentScreen(onAccepted: _onAccepted),
+        );
+      },
+    );
+  }
+
+  Widget _buildRouterApp() {
     return MaterialApp.router(
       title: '泛媒关联',
       theme: AppTheme.lightTheme,

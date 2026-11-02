@@ -8,6 +8,7 @@ import 'package:fmlink/services/qq_login_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/common/constants.dart';
+import 'package:fmlink/common/policy_navigator.dart';
 import 'package:fmlink/screens/profile/bind_phone_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -198,16 +199,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 打开用户协议
   void _openUserAgreement() {
-    context
-        .push('/webview?url=${Uri.encodeComponent(Constants.userAgreementUrl)}'
-            '&title=${Uri.encodeComponent('用户协议')}');
+    PolicyNavigator.openUserAgreement(context);
   }
 
   // 打开隐私政策
   void _openPrivacyPolicy() {
-    context
-        .push('/webview?url=${Uri.encodeComponent(Constants.privacyPolicyUrl)}'
-            '&title=${Uri.encodeComponent('隐私政策')}');
+    PolicyNavigator.openPrivacyPolicy(context);
   }
 
   /// 《华为账号用户认证协议》地址（由华为提供，亮色/暗色两套链接）

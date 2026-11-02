@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
@@ -10,8 +11,7 @@ class EventReportService {
   EventReportService._internal();
 
   static const String _eventPath = '/data-collection/v1/handle';
-  static const String _resourceReadPath =
-      '/target-goods/app/v1/resource/read';
+  static const String _resourceReadPath = '/target-goods/app/v1/resource/read';
 
   final ApiService _apiService = ApiService();
   final UserService _userService = UserService();
@@ -93,6 +93,7 @@ class EventReportService {
     required String goodsId,
     required String resourceId,
   }) {
+    if (!Constants.hasPrivacyConsent) return;
     if (goodsId.isEmpty || resourceId.isEmpty) {
       print('资源阅读上报缺少 goodsId 或 resourceId');
       return;
@@ -101,6 +102,7 @@ class EventReportService {
   }
 
   void _reportEvent(Map<String, dynamic> event) {
+    if (!Constants.hasPrivacyConsent) return;
     unawaited(_sendEvent(event));
   }
 
@@ -147,8 +149,7 @@ class EventReportService {
     }
   }
 
-  void _addIfNotEmpty(
-      Map<String, dynamic> payload, String key, String value) {
+  void _addIfNotEmpty(Map<String, dynamic> payload, String key, String value) {
     if (value.isNotEmpty) payload[key] = value;
   }
 }

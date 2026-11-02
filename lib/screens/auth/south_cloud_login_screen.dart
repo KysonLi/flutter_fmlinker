@@ -2,11 +2,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/common/constants.dart';
+import 'package:fmlink/common/policy_navigator.dart';
 import 'package:fmlink/screens/profile/bind_phone_screen.dart';
 import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:fmlink/utils/error_handler.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 南方云教育平台登录页
@@ -103,9 +103,7 @@ class _SouthCloudLoginScreenState extends State<SouthCloudLoginScreen> {
 
   // 打开用户协议（与登录页用户协议一致）
   void _openUserAgreement() {
-    context
-        .push('/webview?url=${Uri.encodeComponent(Constants.userAgreementUrl)}'
-            '&title=${Uri.encodeComponent('泛媒用户协议')}');
+    PolicyNavigator.openUserAgreement(context);
   }
 
   @override

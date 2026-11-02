@@ -7,10 +7,13 @@ class Constants {
   static const String userAgreementUrl =
       'https://apigateway.mpreader.com/agreement.html'; // 用户协议
   static const String privacyPolicyUrl =
-      'https://apigateway.mpreader.com/privacy.html'; // 隐私政策
+      'http://www.fanmeinet.com/privacy_policy.html'; // 隐私政策
 
   // 静态token，实际项目中应该从本地存储中读取
   static String? token;
+
+  // 用户尚未同意隐私政策前禁止触发埋点上报
+  static bool hasPrivacyConsent = false;
 
   // 存储键名
   static const String kToken = 'token';

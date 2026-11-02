@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fmlink/common/policy_navigator.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -25,7 +26,7 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 10),
             _buildMiddleSection(),
             const SizedBox(height: 10),
-            _buildBottomSection(),
+            _buildBottomSection(context),
             const SizedBox(height: 30),
           ],
         ),
@@ -132,7 +133,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomSection() {
+  Widget _buildBottomSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
@@ -141,7 +142,7 @@ class AboutScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () => PolicyNavigator.openUserAgreement(context),
                 child: const Text(
                   '《泛媒关联用户协议》',
                   style: TextStyle(
@@ -152,7 +153,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () {},
+                onTap: () => PolicyNavigator.openPrivacyPolicy(context),
                 child: const Text(
                   '《隐私政策》',
                   style: TextStyle(
