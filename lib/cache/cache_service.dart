@@ -15,6 +15,7 @@ import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/resource/resource_types.dart';
 import 'package:fmlink/resource/source_detail.dart';
+import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/network_info_util.dart';
 
@@ -532,6 +533,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       );
       await _db.update(record);
       notifyListeners();
+      _reportDownloadCompleted(record);
       return true;
     } catch (e) {
       return _handleDownloadError(record, cancelToken, e);
@@ -602,6 +604,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       print('HLS缓存完成: ${record.resourceName} '
           '分片${result.segmentCount} 续传${result.resumedCount} '
           '大小${result.totalBytes}');
+      _reportDownloadCompleted(record);
       return true;
     } catch (e) {
       return _handleDownloadError(record, cancelToken, e);
@@ -631,6 +634,16 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
     _blobs[key] = blob;
     await _db.upsertBlob(blob);
     return blob;
+  }
+
+  void _reportDownloadCompleted(CacheRecord record) {
+    EventReportService().reportDownload(
+      goodsId: record.goodsId,
+      targetId: record.resourceOldId.isNotEmpty
+          ? record.resourceOldId
+          : record.resourceId,
+      targetType: record.resourceType.toString(),
+    );
   }
 
   /// 记录文件大小到共享层（缓存列表据此展示；下载中也可展示已知大小）

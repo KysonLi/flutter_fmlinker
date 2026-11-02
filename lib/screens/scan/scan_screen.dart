@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fmlink/resource/resource_entry.dart';
+import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/utils/chain_code_parser.dart';
 
 /// 扫码页
@@ -215,6 +216,7 @@ class _ScanScreenState extends State<ScanScreen>
 
     // 图标码（2D 标志码）→ 直接进标志码详情
     if (format == BarcodeFormat.isli) {
+      EventReportService().reportScanCode(prefixCode: code);
       _stopCameraAndNavigate(() {
         ResourceEntry.openIsliCopyright(context, code);
       });
@@ -225,6 +227,7 @@ class _ScanScreenState extends State<ScanScreen>
     final ChainCodeInfo info = parseChainCode(code);
     if (info.isMarkStyle) {
       // ISBN / ISSN → 标志码版权详情页
+      EventReportService().reportScanCode(prefixCode: info.markCode);
       _stopCameraAndNavigate(() {
         ResourceEntry.openIsliCopyright(context, info.markCode);
       });

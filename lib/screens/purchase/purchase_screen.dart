@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fmlink/common/isli_constants.dart';
+import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/services/user_service.dart';
@@ -17,9 +18,10 @@ import 'package:fmlink/utils/device_info_util.dart';
 /// + 支付方式卡片 + 购买说明 + 底部合计与确认按钮。
 ///
 /// 传入参数（`PurchaseScreen.params`）与小程序购买页 onLoad options 保持一致：
-/// goodsId / shopId / serviceCode / prefixCode / pricingStrategy / versionCode /
-/// sourceIdentifier / article / chapter / groupName / chapterName / price /
-/// goodsName / cover(goodsImage) / sourceId / sourceName / totalPrice /
+/// goodsId / shopId / serviceCode / prefixCode / suffixCode / pricingStrategy /
+/// versionCode / sourceIdentifier / targetIdentifier / targetFormat / article /
+/// chapter / groupName / chapterName / price / goodsName / cover(goodsImage) /
+/// sourceId / sourceName / totalPrice /
 /// benefitPrice / isBenefit / sourcePrice / sourceFree / sourcePay。
 ///
 /// 进入页面后调用 fetchDeratePrice 拉取「已购源减免金额」与「出版物标识」，
@@ -315,9 +317,12 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     final String resultCode = (order['resultCode'] ?? '').toString();
 
     // 服务端已处理完成（已购买 / 支付成功）：无需再拉起微信支付
-    if (resultCode == PublishService.payResultAlreadyOwned ||
-        resultCode == PublishService.payResultPaid) {
+    if (resultCode == PublishService.payResultAlreadyOwned) {
       _completePurchase('支付成功');
+      return;
+    }
+    if (resultCode == PublishService.payResultPaid) {
+      _completePurchase('支付成功', reportPayment: true);
       return;
     }
 
@@ -399,7 +404,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     }
 
     if (errCode == 0) {
-      _completePurchase('支付成功');
+      _completePurchase('支付成功', reportPayment: true);
     } else if (errCode == -2) {
       EasyLoading.showToast('已取消支付');
     } else if (errCode == _errCodeTimeout) {
@@ -454,8 +459,12 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
 
       // 服务端已处理完成（购买成功 / 已购买 / 支付成功）
       if (resultCode == PublishService.payResultSuccess ||
-          resultCode == PublishService.payResultAlreadyOwned ||
           resultCode == PublishService.payResultPaid) {
+        EasyLoading.dismiss();
+        _completePurchase('购买成功', reportPayment: true);
+        return;
+      }
+      if (resultCode == PublishService.payResultAlreadyOwned) {
         EasyLoading.dismiss();
         _completePurchase('购买成功');
         return;
@@ -516,7 +525,18 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   }
 
   /// 购买完成后的收尾：提示 → 延时返回上一页（返回 true 便于上游刷新购买状态）
-  void _completePurchase(String toastTitle) {
+  void _completePurchase(String toastTitle, {bool reportPayment = false}) {
+    if (reportPayment) {
+      EventReportService().reportApplePay(
+        goodsId: _str('goodsId'),
+        shopId: _str('shopId'),
+        targetId: _str('targetIdentifier'),
+        targetType: _str('targetFormat'),
+        prefixCode: _str('prefixCode'),
+        suffixCode: _str('suffixCode'),
+        price: _fixed(_purchaseType == _typeWhole ? wholePrice : singlePrice),
+      );
+    }
     EasyLoading.showToast(toastTitle,
         duration: const Duration(milliseconds: 2000));
     Future<void>.delayed(const Duration(milliseconds: 1600), () {

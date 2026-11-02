@@ -16,6 +16,7 @@ import 'package:fmlink/resource/resource_entry.dart';
 import 'package:fmlink/resource/resource_service.dart';
 import 'package:fmlink/resource/resource_types.dart';
 import 'package:fmlink/resource/source_detail.dart';
+import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/network_info_util.dart';
 import 'package:fmlink/screens/resource/widgets/audio_player_view.dart';
@@ -90,6 +91,9 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
   VideoPlayerController? _vc;
   bool _vcInitialized = false;
   bool _vcFailed = false;
+  DateTime? _currentResourceViewedAt;
+  bool _currentResourceReadReported = false;
+  bool _hasReportedScan = false;
 
   /// 资源分页控制器：以 startIndex 作为初始页，进入时定位到指定资源
   PageController? _pageController;
@@ -122,6 +126,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
 
   @override
   void dispose() {
+    _finishCurrentResourceView();
     CacheService().removeListener(_onCacheChanged);
     _hideTimer?.cancel();
     _restoreSystemUi(); // 兜底恢复系统状态栏/导航栏，避免全屏退出时残留沉浸式
@@ -214,6 +219,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         _loadMoreFailed = false;
         _loading = false;
       });
+      _startCurrentResourceView();
       _scheduleHide();
       _ensureMedia();
     } catch (e) {
@@ -259,6 +265,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       _loading = false;
       _error = null;
     });
+    _startCurrentResourceView();
     _scheduleHide();
     _ensureMedia();
     EasyLoading.showToast('离线模式：已加载 ${all.length} 个已缓存资源');
@@ -381,6 +388,13 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         if (!mounted || _vc != vc) return;
         setState(() => _vcInitialized = true);
         await vc.play();
+        if (mounted && _vc == vc) {
+          final SourceScanData? data = _data;
+          final ScanResource? current = _current;
+          if (data != null && current != null) {
+            _reportCurrentResourceRead(data, current);
+          }
+        }
         return;
       } catch (e) {
         if (!mounted) return;
@@ -459,12 +473,71 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       return;
     }
     if (index == _index) return;
+    _finishCurrentResourceView();
     setState(() {
       _index = index;
       _overlayVisible = true;
     });
+    _startCurrentResourceView();
     _scheduleHide();
     _ensureMedia();
+  }
+
+  void _startCurrentResourceView() {
+    final ScanResource? resource = _current;
+    final SourceScanData? data = _data;
+    if (resource == null || data == null) return;
+
+    _currentResourceViewedAt = DateTime.now();
+    _currentResourceReadReported = false;
+    if (_fromScan && !_hasReportedScan) {
+      EventReportService().reportScanCode(
+        prefixCode: data.prefixCode ?? data.source?.prefixCode,
+        suffixCode: data.source?.raw['suffixCode']?.toString(),
+        goodsId: data.goodsId,
+        shopId: data.shopId,
+      );
+      _hasReportedScan = true;
+    }
+
+    if (!_currentIsMedia) _reportCurrentResourceRead(data, resource);
+  }
+
+  void _reportCurrentResourceRead(SourceScanData data, ScanResource resource) {
+    if (_currentResourceReadReported) return;
+    _currentResourceReadReported = true;
+    EventReportService().reportResourceRead(
+      goodsId: data.goodsId,
+      resourceId: resource.id?.toString() ?? resource.resourceId ?? '',
+    );
+  }
+
+  void _finishCurrentResourceView() {
+    final ScanResource? resource = _current;
+    final DateTime? viewedAt = _currentResourceViewedAt;
+    _currentResourceViewedAt = null;
+    if (resource == null || viewedAt == null) return;
+
+    final int elapsedMilliseconds;
+    if (_currentIsMedia) {
+      elapsedMilliseconds = _vcInitialized && _vc != null
+          ? _vc!.value.position.inMilliseconds
+          : 0;
+    } else {
+      elapsedMilliseconds = DateTime.now().difference(viewedAt).inMilliseconds;
+    }
+    if (elapsedMilliseconds <= 0) return;
+
+    final int durationMilliseconds =
+        ((elapsedMilliseconds / 1000).ceil()) * 1000;
+    final SourceScanData? data = _data;
+    EventReportService().reportMediaRead(
+      goodsId: data?.goodsId,
+      shopId: data?.shopId,
+      targetId: resource.resourceId ?? resource.id?.toString(),
+      targetType: resource.type.value.toString(),
+      durationMilliseconds: durationMilliseconds,
+    );
   }
 
   // ==================== 全屏系统栏控制 ====================

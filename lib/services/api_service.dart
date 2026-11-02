@@ -164,7 +164,15 @@ class ApiService {
       {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
       print('POST请求: $path');
-      print('请求参数: $data');
+      final dynamic loggedData =
+          path == '/data-collection/v1/handle' && data is Map
+              ? <dynamic, dynamic>{
+                  ...data,
+                  if (data.containsKey('consumer_phone'))
+                    'consumer_phone': '[REDACTED]',
+                }
+              : data;
+      print('请求参数: $loggedData');
       print('Query参数: $queryParameters');
       Response response =
           await _dio.post(path, data: data, queryParameters: queryParameters);

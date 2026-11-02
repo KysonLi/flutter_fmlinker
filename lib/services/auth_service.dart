@@ -1,6 +1,7 @@
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/services/api_service.dart';
+import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/services/user_service.dart';
 
 class AuthService {
@@ -119,6 +120,7 @@ class AuthService {
         // 缓存元数据按账号隔离：登录后立即加载该账号的缓存状态
         await CacheService().syncAccount();
       }
+      EventReportService().reportUserRegister();
     }
   }
 }
