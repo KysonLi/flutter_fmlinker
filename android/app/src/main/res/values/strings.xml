@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 非中文系统统一显示英文名（与 iOS / 鸿蒙一致） -->
+<resources>
+    <string name="app_name">ISLI SCANr</string>
+</resources>

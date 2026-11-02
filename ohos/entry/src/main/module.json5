@@ -33,7 +33,9 @@
         description: "$string:EntryAbility_desc",
         icon: "$media:icon",
         label: "$string:EntryAbility_label",
-        startWindowIcon: "$media:icon",
+        // 系统启动窗口只保留纯白背景：图标由 Index 页原生叠层统一绘制（圆角图标 + 应用名称），
+        // 若这里继续用方角应用图标，会先闪一个方角小图标再切换，出现视觉跳变。
+        startWindowIcon: "$media:splash_blank",
         startWindowBackground: "$color:start_window_background",
         exported: true,
         skills: [

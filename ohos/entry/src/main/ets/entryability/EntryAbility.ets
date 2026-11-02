@@ -5,6 +5,7 @@ import { WechatPlugin } from '../wechat/WechatPlugin';
 import { NetworkInfoPlugin } from '../network/NetworkInfoPlugin';
 import { HuaweiAccountPlugin } from '../huawei/HuaweiAccountPlugin';
 import { IapPlugin } from '../iap/IapPlugin';
+import { SplashPlugin } from '../splash/SplashPlugin';
 import Want from '@ohos.app.ability.Want';
 import window from '@ohos.window';
 import { AbilityConstant, bundleManager } from '@kit.AbilityKit';
@@ -16,6 +17,7 @@ export default class EntryAbility extends FlutterAbility {
   private networkInfoPlugin: NetworkInfoPlugin | null = null;
   private huaweiAccountPlugin: HuaweiAccountPlugin | null = null;
   private iapPlugin: IapPlugin | null = null;
+  private splashPlugin: SplashPlugin | null = null;
 
   configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
@@ -28,6 +30,8 @@ export default class EntryAbility extends FlutterAbility {
     this.huaweiAccountPlugin = new HuaweiAccountPlugin(flutterEngine, this.context)
     // 泛票内购商品查询：注册 fmlink/iap 通道（@kit.IAPKit）
     this.iapPlugin = new IapPlugin(flutterEngine, this.context)
+    // 启动页：Flutter 首帧后通知原生叠层淡出（fmlink/splash）
+    this.splashPlugin = new SplashPlugin(flutterEngine, this.context)
   }
 
   onWindowStageCreate(windowStage: window.WindowStage) {

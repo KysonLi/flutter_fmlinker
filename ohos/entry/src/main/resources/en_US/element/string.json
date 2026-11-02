@@ -1,20 +1,8 @@
 {
   "string": [
     {
-      "name": "module_desc",
-      "value": "module description"
-    },
-    {
-      "name": "EntryAbility_desc",
-      "value": "description"
-    },
-    {
       "name": "EntryAbility_label",
-      "value": "fmlink"
-    },
-    {
-      "name": "network_info_reason",
-      "value": "Get network status to determine cache download environment"
+      "value": "ISLI SCANr"
     }
   ]
 }

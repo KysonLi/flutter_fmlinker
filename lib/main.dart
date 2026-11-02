@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fmlink/cache/cache_service.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/routes/app_router.dart';
@@ -84,6 +86,20 @@ class _MyAppState extends State<MyApp> {
     if (_hasConsent) {
       _initializeAfterConsent();
     }
+    _hideNativeSplash();
+  }
+
+  /// 鸿蒙的原生启动层（图标 + 应用名称）在首帧后淡出；其它平台由系统启动页自动消失。
+  void _hideNativeSplash() {
+    if (kIsWeb || !Platform.isOhos) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MethodChannel('fmlink/splash').invokeMethod<void>('hide').then(
+        (_) {},
+        onError: (Object error) {
+          print('隐藏原生启动页失败: $error');
+        },
+      );
+    });
   }
 
   Future<void> _onAccepted() async {
