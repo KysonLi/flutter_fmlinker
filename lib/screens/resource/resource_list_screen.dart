@@ -258,6 +258,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     if (data == null) return;
     context.push(kResourceSourceDetailRoute, extra: <String, dynamic>{
       'data': data.raw,
+      'isliCode': data.source?.sourceIdentifier ?? '',
       'goodsName': data.goodsName ?? '',
     });
   }

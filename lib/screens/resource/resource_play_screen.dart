@@ -760,8 +760,8 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     }
   }
 
-  /// 进入源详情（当前播放资源）
-  void _openSourceDetail() {
+  /// 进入资源详情（当前播放资源）
+  void _openResourceDetail() {
     final SourceScanData? data = _data;
     if (data == null) return;
     final ScanResource? current = _current;
@@ -769,7 +769,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       'data': data.raw,
       'isliCode': _isliCode,
       'goodsName': data.goodsName ?? '',
-      // 播放页进入才展示点赞用户与资源信息，参数取当前播放资源
+      // 播放页进入 = 资源详情（展示点赞行与关联资源信息），参数取当前播放资源
       'fromPlay': true,
       'resourceIndex': _index,
       'likeQuery': <String, dynamic>{
@@ -1517,7 +1517,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          _opItem(Icons.info_outline, '详情', _openSourceDetail),
+          _opItem(Icons.info_outline, '详情', _openResourceDetail),
           _opItem(
             liked ? Icons.favorite : Icons.favorite_border,
             likeCount > 0 ? '$likeCount' : '点赞',

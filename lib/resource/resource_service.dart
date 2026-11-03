@@ -63,6 +63,55 @@ class ResourceService {
     );
   }
 
+  /// 源详情：/target-goods/app/v1/source/detail/:sourceIdentifier
+  ///
+  /// 参数：[sourceIdentifier] 链码（可带连字符，内部归一为纯数字）；
+  /// [unificationId] 登录后才传（游客不传）。
+  Future<Map<String, dynamic>> fetchSourceDetail({
+    required String sourceIdentifier,
+    String? unificationId,
+  }) async {
+    final String code = isliDigits(sourceIdentifier);
+    final Map<String, dynamic> query = <String, dynamic>{};
+    if (unificationId != null && unificationId.isNotEmpty) {
+      query['unificationId'] = unificationId;
+    }
+    return _apiService.get(
+      '/target-goods/app/v1/source/detail/$code',
+      queryParameters: query.isEmpty ? null : query,
+    );
+  }
+
+  /// 资源详情：/target-goods/app/v1/resource/detail/:sourceIdentifier
+  ///
+  /// 参数：
+  /// - [sourceIdentifier] 链码（可带连字符，内部归一为纯数字）
+  /// - [resourceId] 资源 ID（对应 target._id，缺省时后端按 resourceOldId 匹配）
+  /// - [resourceOldId] 资源旧 ID（对应 target.resourceId）
+  /// - [unificationId] 登录后才传（游客不传）
+  Future<Map<String, dynamic>> fetchResourceDetail({
+    required String sourceIdentifier,
+    String? resourceId,
+    String? resourceOldId,
+    String? unificationId,
+  }) async {
+    final String code = isliDigits(sourceIdentifier);
+    final Map<String, dynamic> query = <String, dynamic>{};
+    if (resourceId != null && resourceId.isNotEmpty) {
+      query['resourceId'] = resourceId;
+    }
+    if (resourceOldId != null && resourceOldId.isNotEmpty) {
+      query['resourceOldId'] = resourceOldId;
+    }
+    if (unificationId != null && unificationId.isNotEmpty) {
+      query['unificationId'] = unificationId;
+    }
+    return _apiService.get(
+      '/target-goods/app/v1/resource/detail/$code',
+      queryParameters: query.isEmpty ? null : query,
+    );
+  }
+
   /// 整书购买优惠/已购减免：/target-goods/app/v1/derate-goods/:unificationId/:goodsId
   ///
   /// data.deratePrice：已购源减免金额（整书价中扣除）
