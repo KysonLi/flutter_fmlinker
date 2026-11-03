@@ -18,12 +18,20 @@ import 'package:fmlink/utils/error_handler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:provider/provider.dart';
 import 'provider/tab_provider.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 void main() {
   runZonedGuarded(() async {
     // 先初始化 Flutter binding，否则 initWeChat()（内部调用 MethodChannel）
     // 会因 ServicesBinding 未构造而崩溃（flutter#BindingBase.checkInstance）。
     WidgetsFlutterBinding.ensureInitialized();
+
+    // 三端统一竖屏（与 Android screenOrientation / iOS UISupportedInterfaceOrientations /
+    // 鸿蒙 module.json5 orientation 保持一致）
+    await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]);
 
     // 加载服务端错误码配置（assets/json/FMErrorStrings.json）
     await ErrorHandler().init();
@@ -39,8 +47,8 @@ void main() {
     if (hasConsent && UmengService.isSupportedPlatform) {
       // 同意后的每次冷启动：先初始化统计，再由 U-APM 在捕获 Zone 内启动应用。
       UmengService().initAnalytics();
-      final bool apmStarted =
-          UmengService().initDartCrashCapture((NavigatorObserver observer) async {
+      final bool apmStarted = UmengService()
+          .initDartCrashCapture((NavigatorObserver observer) async {
         // 仅使用 U-APM 的异常采集，不启用页面性能追踪，故忽略 observer。
         return _buildApp(hasConsent: true);
       });
@@ -54,7 +62,7 @@ void main() {
     runApp(_buildApp(hasConsent: hasConsent));
   }, (Object error, StackTrace stack) {
     // 未同意隐私政策期间发生的异常只打印，不上报（合规要求）。
-    print('未捕获异常: $error\n$stack');
+    AppLog.d('未捕获异常: $error\n$stack');
   });
 }
 
@@ -64,7 +72,6 @@ Widget _buildApp({required bool hasConsent}) {
     child: MyApp(initialConsent: hasConsent),
   );
 }
-
 
 class MyApp extends StatefulWidget {
   /// 启动时已读取到的隐私政策同意状态（main() 中同步确定，避免首帧闪烁）。
@@ -91,12 +98,12 @@ class _MyAppState extends State<MyApp> {
 
   /// 鸿蒙的原生启动层（图标 + 应用名称）在首帧后淡出；其它平台由系统启动页自动消失。
   void _hideNativeSplash() {
-    if (kIsWeb || !Platform.isOhos) return;
+    if (kIsWeb || !PlatformCompat.isOhos) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MethodChannel('fmlink/splash').invokeMethod<void>('hide').then(
         (_) {},
         onError: (Object error) {
-          print('隐藏原生启动页失败: $error');
+          AppLog.d('隐藏原生启动页失败: $error');
         },
       );
     });
@@ -119,7 +126,7 @@ class _MyAppState extends State<MyApp> {
 
     unawaited(
       ThirdPartyManager.initWeChat().catchError((Object error) {
-        print('同意隐私政策后初始化微信失败: $error');
+        AppLog.d('同意隐私政策后初始化微信失败: $error');
       }),
     );
 
@@ -131,7 +138,7 @@ class _MyAppState extends State<MyApp> {
       PrepayService().recoverHuaweiPurchases().then<void>(
         (_) {},
         onError: (Object error) {
-          print('同意隐私政策后恢复华为支付订单失败: $error');
+          AppLog.d('同意隐私政策后恢复华为支付订单失败: $error');
         },
       ),
     );

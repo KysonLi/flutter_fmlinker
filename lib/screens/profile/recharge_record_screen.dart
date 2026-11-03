@@ -7,6 +7,7 @@ import 'package:fmlink/services/prepay_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/error_handler.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 充值记录页
 ///
@@ -14,7 +15,7 @@ import 'package:fmlink/widgets/default_state_view.dart';
 /// （platform：iOS=1，鸿蒙=3；按平台独立账户，仅返回已入账记录，倒序）
 ///
 /// ⚠️ 该接口未定义分页参数，一次返回全部记录，页面不做上拉加载；
-/// 返回字段名做多命名兼容；联调时看 `print('充值记录: ...')` 的原始返回，确认后收敛。
+/// 返回字段名做多命名兼容；联调时看 `AppLog.d('充值记录: ...')` 的原始返回，确认后收敛。
 class RechargeRecordScreen extends StatefulWidget {
   const RechargeRecordScreen({super.key});
 
@@ -81,7 +82,7 @@ class _RechargeRecordScreenState extends State<RechargeRecordScreen> {
 
       final Map<String, dynamic> response =
           await _prepayService.getPrepayRecords(unificationId: unificationId);
-      print('充值记录: $response');
+      AppLog.d('充值记录: $response');
 
       if (!mounted) return;
       if (response['status'] == true && response['data'] != null) {

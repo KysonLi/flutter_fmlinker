@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 网络类型
 enum NetworkType {
@@ -34,7 +35,7 @@ class NetworkInfoUtil {
           return NetworkType.unknown;
       }
     } catch (e) {
-      print('获取网络类型失败: $e');
+      AppLog.d('获取网络类型失败: $e');
       return NetworkType.unknown;
     }
   }

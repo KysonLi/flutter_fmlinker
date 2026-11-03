@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 class MyScreen extends StatefulWidget {
   const MyScreen({super.key, this.isActive = true});
@@ -443,7 +444,7 @@ class _MyScreenState extends State<MyScreen> {
 
   Widget _buildListSection() {
     // 我的账户在 iOS 与鸿蒙（HarmonyOS NEXT / OHOS）展示，Android 隐藏
-    final bool showAccount = Platform.isIOS || Platform.isOhos;
+    final bool showAccount = Platform.isIOS || PlatformCompat.isOhos;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(

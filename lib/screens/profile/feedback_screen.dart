@@ -6,6 +6,7 @@ import 'package:fmlink/services/feedback_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 意见反馈页（与小程序实现一致）
 ///
@@ -230,7 +231,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      print('反馈提交失败: $e');
+      AppLog.d('反馈提交失败: $e');
       EasyLoading.dismiss();
       EasyLoading.showToast('提交失败，请稍后再试');
     } finally {

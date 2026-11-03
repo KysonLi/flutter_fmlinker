@@ -1,9 +1,9 @@
-import 'dart:io' show Platform;
-
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/iap_service.dart';
 import 'package:fmlink/services/prepay_pending_store.dart';
 import 'package:fmlink/services/user_service.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// 泛票充值（预付费）服务
 ///
@@ -79,7 +79,7 @@ class PrepayService {
   }
 
   /// 当前设备的平台标识：1 = iOS，3 = 华为（鸿蒙）；余额与充值记录都按它区分账户
-  static int get platform => Platform.isOhos ? 3 : 1;
+  static int get platform => PlatformCompat.isOhos ? 3 : 1;
 
   /// iOS 充值验证 + 入账
   static const String _iosVerifyPath = '$_base/prepay_ios_v2';
@@ -214,7 +214,7 @@ class PrepayService {
       // 参数错误 / 商品不存在 / 订单状态非法：重试也没用，清掉本地凭据
       await PrepayPendingStore.remove(purchaseOrderId);
     } else {
-      print('华为充值未入账 resultCode=$code，凭据已暂存待补发 orderId=$purchaseOrderId');
+      AppLog.d('华为充值未入账 resultCode=$code，凭据已暂存待补发 orderId=$purchaseOrderId');
     }
 
     return <String, dynamic>{
@@ -235,7 +235,7 @@ class PrepayService {
   /// 服务端按 `purchase_order_id` 幂等，重复提交只会入账一次，补发是安全的。
   Future<int> recoverHuaweiPurchases({bool deep = false}) async {
     // 华为内购专属；iOS 由 StoreKit 队列自行重放未完成交易
-    if (!Platform.isOhos) return 0;
+    if (!PlatformCompat.isOhos) return 0;
 
     // 冷启动后 Constants.token 可能为空，先水合；未登录无法入账
     final String token = await UserService().getToken() ?? '';
@@ -258,7 +258,7 @@ class PrepayService {
       final Map<String, dynamic> queried =
           await IapService.queryPendingPurchases(queryType: queryType);
       if (queried['status'] != true) {
-        print('查询华为订单失败(queryType=$queryType): ${queried['msg']}');
+        AppLog.d('查询华为订单失败(queryType=$queryType): ${queried['msg']}');
         continue;
       }
 
@@ -281,7 +281,7 @@ class PrepayService {
     }
 
     if (merged.isEmpty) return 0;
-    print('开始补发华为充值凭据 ${merged.length} 条');
+    AppLog.d('开始补发华为充值凭据 ${merged.length} 条');
 
     int recovered = 0;
     for (final Map<String, dynamic> item in merged.values) {
@@ -296,7 +296,7 @@ class PrepayService {
         purchaseToken: purchaseToken,
         purchaseOrderId: purchaseOrderId,
       );
-      print('补发华为充值凭据 orderId=$purchaseOrderId '
+      AppLog.d('补发华为充值凭据 orderId=$purchaseOrderId '
           'resultCode=${response['resultCode']}');
       if (isVerifySuccess(response['resultCode'])) recovered++;
     }
@@ -314,7 +314,7 @@ class PrepayService {
     String purchaseToken = '',
     String purchaseOrderId = '',
   }) async {
-    if (Platform.isOhos) {
+    if (PlatformCompat.isOhos) {
       if (purchaseToken.isEmpty || purchaseOrderId.isEmpty) {
         return <String, dynamic>{
           'status': false,

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 class DeviceInfoUtil {
   static final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
@@ -187,5 +187,5 @@ class DeviceInfoUtil {
   }
 
   /// 检查是否为OHOS（鸿蒙）平台
-  static Future<bool> _isOhos() async => Platform.isOhos;
+  static Future<bool> _isOhos() async => PlatformCompat.isOhos;
 }

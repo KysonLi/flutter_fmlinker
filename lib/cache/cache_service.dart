@@ -18,6 +18,7 @@ import 'package:fmlink/resource/source_detail.dart';
 import 'package:fmlink/services/event_report_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/network_info_util.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 添加缓存的结果
 enum CacheAddResult {
@@ -130,7 +131,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       final String userId = info?.userId ?? '';
       if (userId.isNotEmpty) return userId;
     } catch (e) {
-      print('获取账号标识失败: $e');
+      AppLog.d('获取账号标识失败: $e');
     }
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -149,7 +150,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       try {
         await _db.claimLegacyRecords(_accountId);
       } catch (e) {
-        print('迁移历史缓存归属失败: $e');
+        AppLog.d('迁移历史缓存归属失败: $e');
       }
     }
     _records = await _db.recordsOf(_accountId);
@@ -176,7 +177,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       try {
         await _db.upsertBlob(blob);
       } catch (e) {
-        print('缓存路径迁移失败: $e');
+        AppLog.d('缓存路径迁移失败: $e');
       }
     }
   }
@@ -242,7 +243,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
     record.lastAccessAt = now;
     if (!needPersist) return;
     _db.update(record).catchError((Object e) {
-      print('更新访问记录失败: $e');
+      AppLog.d('更新访问记录失败: $e');
     });
   }
 
@@ -320,7 +321,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       record.id = await _db.insert(record);
       _records.insert(0, record);
       notifyListeners();
-      print('复用本地缓存文件: ${shared.key} (${record.resourceName})');
+      AppLog.d('复用本地缓存文件: ${shared.key} (${record.resourceName})');
       return CacheAddResult.reused;
     }
 
@@ -432,7 +433,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       await _db.update(record);
       notifyListeners();
     } else {
-      print('HLS缓存开始: ${record.resourceName} ${record.url}');
+      AppLog.d('HLS缓存开始: ${record.resourceName} ${record.url}');
     }
     return hls ? _downloadHls(record) : _downloadFile(record);
   }
@@ -450,7 +451,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
     if (!media || _hasKnownExtension(record.url)) return false;
 
     final bool hls = await HlsDownloader.probe(_dio, record.url);
-    if (hls) print('探测到HLS流: ${record.url}');
+    if (hls) AppLog.d('探测到HLS流: ${record.url}');
     return hls;
   }
 
@@ -601,7 +602,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       record.fileSize = blob.fileSize;
       await _db.update(record);
       notifyListeners();
-      print('HLS缓存完成: ${record.resourceName} '
+      AppLog.d('HLS缓存完成: ${record.resourceName} '
           '分片${result.segmentCount} 续传${result.resumedCount} '
           '大小${result.totalBytes}');
       _reportDownloadCompleted(record);
@@ -660,7 +661,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
         versionCode: record.versionCode,
       );
     } catch (e) {
-      print('记录缓存大小失败: $e');
+      AppLog.d('记录缓存大小失败: $e');
     }
   }
 
@@ -685,7 +686,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
     record.updatedAt = DateTime.now().millisecondsSinceEpoch;
     await _db.update(record);
     notifyListeners();
-    print('缓存失败: ${record.url} $e');
+    AppLog.d('缓存失败: ${record.url} $e');
     return true;
   }
 
@@ -763,7 +764,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
         if (await file.exists()) await file.delete();
       }
     } catch (e) {
-      print('删除缓存文件失败: $e');
+      AppLog.d('删除缓存文件失败: $e');
     }
   }
 
@@ -808,7 +809,7 @@ class CacheService extends ChangeNotifier with WidgetsBindingObserver {
       await prefs.setInt(
           _kCellularConfirmKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      print('记录移动网络确认时间失败: $e');
+      AppLog.d('记录移动网络确认时间失败: $e');
     }
   }
 

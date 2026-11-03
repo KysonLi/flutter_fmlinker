@@ -10,6 +10,7 @@ import 'package:fmlink/services/publish_service.dart';
 import 'package:fmlink/services/third_party_manager.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 购买页
 ///
@@ -228,7 +229,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         }
       }
     } catch (e) {
-      print('获取减免金额失败: $e');
+      AppLog.d('获取减免金额失败: $e');
     }
   }
 
@@ -312,7 +313,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           : _str('sourceIdentifier'),
       goodsIdentifier: _goodsIdentifier,
     );
-    print('下单结果: $order');
+    AppLog.d('下单结果: $order');
 
     final String resultCode = (order['resultCode'] ?? '').toString();
 
@@ -367,7 +368,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         nonceStr.isEmpty ||
         sign.isEmpty ||
         timeStamp <= 0) {
-      print('支付参数解析失败: $data');
+      AppLog.d('支付参数解析失败: $data');
       EasyLoading.showToast('支付参数异常，请稍后重试');
       return;
     }
@@ -453,7 +454,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             : _str('sourceIdentifier'),
         goodsIdentifier: _goodsIdentifier,
       );
-      print('泛票下单结果: $order');
+      AppLog.d('泛票下单结果: $order');
 
       final String resultCode = (order['resultCode'] ?? '').toString();
 

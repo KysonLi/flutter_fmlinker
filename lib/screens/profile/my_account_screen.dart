@@ -8,6 +8,8 @@ import 'package:fmlink/services/iap_service.dart';
 import 'package:fmlink/services/prepay_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// 我的账户（充值泛票）
 ///
@@ -69,7 +71,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       EasyLoading.showToast('已补发 $recovered 笔充值到账');
       await _loadBalance();
     } catch (e) {
-      print('补发华为充值凭据失败: $e');
+      AppLog.d('补发华为充值凭据失败: $e');
     }
   }
 
@@ -88,7 +90,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       // 余额接口按 unification_id + platform 查询（platform：iOS=1，鸿蒙=3）
       final Map<String, dynamic> response =
           await _prepayService.getTotalBalance(unificationId);
-      print('余额查询结果: $response');
+      AppLog.d('余额查询结果: $response');
 
       if (!mounted) return;
       setState(() {
@@ -98,7 +100,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         }
       });
     } catch (e) {
-      print('余额查询失败: $e');
+      AppLog.d('余额查询失败: $e');
       if (mounted) setState(() => _loadingBalance = false);
     }
   }
@@ -138,7 +140,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     });
 
     final Map<String, dynamic> response = await IapService.queryProducts();
-    print('充值档位(商店): $response');
+    AppLog.d('充值档位(商店): $response');
 
     if (!mounted) return;
     if (response['status'] == true && response['data'] is List<PrepayProduct>) {
@@ -196,7 +198,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       // 2. 拉起平台内购（用户在系统面板取消时不会抛异常，只返回失败 + canceled）
       final Map<String, dynamic> purchase =
           await IapService.purchase(product.productId);
-      print('内购结果: $purchase');
+      AppLog.d('内购结果: $purchase');
       if (purchase['status'] != true) {
         EasyLoading.dismiss();
         if (purchase['canceled'] == true) {
@@ -239,7 +241,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         purchaseToken: purchaseToken,
         purchaseOrderId: purchaseOrderId,
       );
-      print('充值验证结果: $verify');
+      AppLog.d('充值验证结果: $verify');
 
       // 00000000 = 成功；88888822 = 华为幂等命中（重复提交），同样算成功
       if (PrepayService.isVerifySuccess(verify['resultCode'])) {
@@ -266,7 +268,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
   /// 底部规则文案：iOS 与鸿蒙的充值渠道不同，需分别适配
   List<String> get _tipLines {
-    if (Platform.isOhos) {
+    if (PlatformCompat.isOhos) {
       return const <String>[
         '1.泛票充值规则：1元=1泛票；',
         '2.鸿蒙设备上充值的泛票不能在其他平台的设备上进行使用；',

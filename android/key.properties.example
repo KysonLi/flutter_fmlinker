@@ -1,0 +1,11 @@
+# 复制为 android/key.properties 后填写（该文件已被 .gitignore 忽略，禁止提交）
+#
+# 生成正式 keystore（有效期 100 年，别名 fmlink）：
+#   cd android/app && keytool -genkey -v -keystore fmlink-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 36500 -alias fmlink
+#
+# storeFile 相对 android/app 目录（也可写绝对路径）
+storeFile=fmlink-release.jks
+storePassword=在此填写store密码
+keyAlias=fmlink
+keyPassword=在此填写key密码

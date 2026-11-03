@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fluwx/fluwx.dart' as fluwx;
+import 'package:fmlink/utils/app_log.dart';
 
 class ThirdPartyManager {
   static const String _wechatAppId = 'wxdcb4f64316ee1d04';
@@ -28,7 +29,7 @@ class ThirdPartyManager {
         universalLink: weChatUniversalLink,
       );
     } catch (e) {
-      print('微信初始化失败: $e');
+      AppLog.d('微信初始化失败: $e');
       rethrow;
     }
   }
@@ -37,7 +38,7 @@ class ThirdPartyManager {
     try {
       return await _fluwx.isWeChatInstalled;
     } catch (e) {
-      print('检查微信安装状态失败: $e');
+      AppLog.d('检查微信安装状态失败: $e');
       return false;
     }
   }
@@ -58,7 +59,7 @@ class ThirdPartyManager {
 
       return result;
     } catch (e) {
-      print('微信登录失败: $e');
+      AppLog.d('微信登录失败: $e');
       return false;
     }
   }
@@ -101,7 +102,7 @@ class ThirdPartyManager {
       );
       return launched;
     } catch (e) {
-      print('微信支付调起失败: $e');
+      AppLog.d('微信支付调起失败: $e');
       return false;
     }
   }

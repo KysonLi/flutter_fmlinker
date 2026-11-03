@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 意见反馈服务（与小程序专用接口一致）
 ///
@@ -41,7 +42,7 @@ class FeedbackService {
           ? data['msg'].toString()
           : '图片上传失败');
     } catch (e) {
-      print('反馈图片上传失败: $e');
+      AppLog.d('反馈图片上传失败: $e');
       rethrow;
     }
   }
@@ -61,7 +62,7 @@ class FeedbackService {
       throw Exception(
           data is Map && data['msg'] != null ? data['msg'].toString() : '提交失败');
     } catch (e) {
-      print('反馈提交失败: $e');
+      AppLog.d('反馈提交失败: $e');
       rethrow;
     }
   }

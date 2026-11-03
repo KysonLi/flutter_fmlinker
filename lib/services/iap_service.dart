@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:fmlink/models/prepay_product.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// 泛票档位配置：productId 由代码写死（与 AGC / App Store Connect 配置的商品一致）
 ///
@@ -32,10 +34,10 @@ class IapProductConfig {
   final String ohosProductId;
 
   /// 当前平台的商品 ID
-  String get productId => Platform.isOhos ? ohosProductId : iosProductId;
+  String get productId => PlatformCompat.isOhos ? ohosProductId : iosProductId;
 
   /// 当前平台的泛票数量
-  double get tickets => Platform.isOhos ? ohosTickets : iosTickets;
+  double get tickets => PlatformCompat.isOhos ? ohosTickets : iosTickets;
 }
 
 /// 泛票内购服务（iOS / 鸿蒙）
@@ -66,7 +68,7 @@ class IapService {
   static const String _codeInvalidProduct = 'INVALID_PRODUCT';
 
   /// 当前平台是否支持泛票内购（Android 走微信支付，不用本通道）
-  static bool get isSupported => Platform.isIOS || Platform.isOhos;
+  static bool get isSupported => Platform.isIOS || PlatformCompat.isOhos;
 
   /// 泛票档位（productId 与商店后台配置一一对应，顺序即页面展示顺序）
   ///
@@ -130,7 +132,7 @@ class IapService {
 
     final List<String> productIds =
         products.map((IapProductConfig p) => p.productId).toList();
-    print('查询泛票商品 productIds=$productIds');
+    AppLog.d('查询泛票商品 productIds=$productIds');
 
     try {
       final dynamic result = await _channel.invokeMethod<dynamic>(
@@ -140,10 +142,10 @@ class IapService {
 
       final List<PrepayProduct> list = _parseStoreProducts(result);
       if (list.isEmpty) {
-        print('商店未返回任何泛票商品: $result');
+        AppLog.d('商店未返回任何泛票商品: $result');
         return _failure('未获取到充值商品，请稍后重试');
       }
-      print('商店返回泛票商品 ${list.length} 个');
+      AppLog.d('商店返回泛票商品 ${list.length} 个');
       return <String, dynamic>{
         'status': true,
         'data': list,
@@ -153,13 +155,13 @@ class IapService {
       // 未注册原生通道（如尚未集成内购的构建版本）
       return _failure('当前版本暂不支持充值，请升级后重试');
     } on PlatformException catch (e) {
-      print('查询充值商品失败 code=${e.code} msg=${e.message} details=${e.details}');
+      AppLog.d('查询充值商品失败 code=${e.code} msg=${e.message} details=${e.details}');
       // 商品信息无效（某档位在 AGC 不存在/未上架）时逐个重试，避免一个坏档位拖垮整页
-      if (Platform.isOhos && e.code == _codeInvalidProduct) {
+      if (PlatformCompat.isOhos && e.code == _codeInvalidProduct) {
         final List<PrepayProduct> list =
             await _queryProductsOneByOne(productIds);
         if (list.isNotEmpty) {
-          print('逐个查询后返回泛票商品 ${list.length} 个');
+          AppLog.d('逐个查询后返回泛票商品 ${list.length} 个');
           return <String, dynamic>{
             'status': true,
             'data': list,
@@ -167,12 +169,12 @@ class IapService {
           };
         }
         // 全部查不到时，联调期最常见的原因是账号：未上架的商品只有沙盒测试账号可见
-        print('提示：鸿蒙 1001860003 也可能是账号问题——未上架的商品只有 AGC 沙盒测试账号可见，'
+        AppLog.d('提示：鸿蒙 1001860003 也可能是账号问题——未上架的商品只有 AGC 沙盒测试账号可见，'
             '请确认手机上的华为账号已加入 AGC 沙盒测试名单');
       }
       return _failure(e.message ?? '获取充值商品失败，请稍后重试', code: e.code);
     } catch (e) {
-      print('查询充值商品异常: $e');
+      AppLog.d('查询充值商品异常: $e');
       return _failure('获取充值商品失败，请稍后重试');
     }
   }
@@ -201,12 +203,12 @@ class IapService {
           list.addAll(parsed);
         }
       } on PlatformException catch (e) {
-        print('商品 $productId 查询失败 code=${e.code} msg=${e.message}');
+        AppLog.d('商品 $productId 查询失败 code=${e.code} msg=${e.message}');
         invalid.add(productId);
       }
     }
     if (invalid.isNotEmpty) {
-      print('商店查不到的商品（请检查 AGC 商品 ID 与上架状态）: $invalid');
+      AppLog.d('商店查不到的商品（请检查 AGC 商品 ID 与上架状态）: $invalid');
     }
     return list;
   }
@@ -227,10 +229,10 @@ class IapService {
         'buyProduct',
         <String, dynamic>{'productId': productId},
       );
-      print('内购支付原始返回: $result');
+      AppLog.d('内购支付原始返回: $result');
 
       final Map<String, dynamic> data = _parsePurchaseResult(productId, result);
-      print('内购支付结果: $data');
+      AppLog.d('内购支付结果: $data');
 
       // 凭证校验：鸿蒙必须有 purchaseToken（服务端验证华为订单用），iOS 至少有交易号
       if ((data['purchaseToken']?.toString() ?? '').isEmpty &&
@@ -247,7 +249,7 @@ class IapService {
       // 未注册原生通道（如尚未集成内购的构建版本）
       return _failure('当前版本暂不支持充值，请升级后重试');
     } on PlatformException catch (e) {
-      print('内购支付失败 code=${e.code} msg=${e.message} details=${e.details}');
+      AppLog.d('内购支付失败 code=${e.code} msg=${e.message} details=${e.details}');
       if (e.code == _codeUserCanceled) {
         return <String, dynamic>{
           'status': false,
@@ -259,7 +261,7 @@ class IapService {
       // 带上错误码：ALREADY_OWNED 需要走充值补发而不是提示重复购买
       return _failure(e.message ?? '充值失败，请稍后重试', code: e.code);
     } catch (e) {
-      print('内购支付异常: $e');
+      AppLog.d('内购支付异常: $e');
       return _failure('充值失败，请稍后重试');
     }
   }
@@ -273,7 +275,7 @@ class IapService {
     required String purchaseToken,
     required String purchaseOrderId,
   }) async {
-    if (!Platform.isOhos) {
+    if (!PlatformCompat.isOhos) {
       return <String, dynamic>{'status': true, 'data': null, 'msg': 'ok'};
     }
     if (purchaseToken.isEmpty || purchaseOrderId.isEmpty) {
@@ -289,10 +291,10 @@ class IapService {
     } on MissingPluginException {
       return _failure('当前版本暂不支持充值，请升级后重试');
     } on PlatformException catch (e) {
-      print('结束交易失败 code=${e.code} msg=${e.message} details=${e.details}');
+      AppLog.d('结束交易失败 code=${e.code} msg=${e.message} details=${e.details}');
       return _failure(e.message ?? '充值确认失败，请稍后在充值记录中查看');
     } catch (e) {
-      print('结束交易异常: $e');
+      AppLog.d('结束交易异常: $e');
       return _failure('充值确认失败，请稍后在充值记录中查看');
     }
   }
@@ -309,7 +311,7 @@ class IapService {
   /// iOS 无对应机制（StoreKit 队列由原生处理），直接返回空列表。
   static Future<Map<String, dynamic>> queryPendingPurchases(
       {int queryType = 1}) async {
-    if (!Platform.isOhos) {
+    if (!PlatformCompat.isOhos) {
       return <String, dynamic>{
         'status': true,
         'data': <Map<String, dynamic>>[],
@@ -322,10 +324,10 @@ class IapService {
         'queryPendingPurchases',
         <String, dynamic>{'queryType': queryType},
       );
-      print('华为已购订单原始返回(queryType=$queryType): $result');
+      AppLog.d('华为已购订单原始返回(queryType=$queryType): $result');
       final List<Map<String, dynamic>> list =
           _parsePendingPurchases(result, queryType: queryType);
-      print('华为未完成订单 ${list.length} 条(queryType=$queryType)');
+      AppLog.d('华为未完成订单 ${list.length} 条(queryType=$queryType)');
       return <String, dynamic>{
         'status': true,
         'data': list,
@@ -334,10 +336,11 @@ class IapService {
     } on MissingPluginException {
       return _failure('当前版本暂不支持充值，请升级后重试');
     } on PlatformException catch (e) {
-      print('查询未完成订单失败 code=${e.code} msg=${e.message} details=${e.details}');
+      AppLog.d(
+          '查询未完成订单失败 code=${e.code} msg=${e.message} details=${e.details}');
       return _failure(e.message ?? '查询未完成订单失败，请稍后重试');
     } catch (e) {
-      print('查询未完成订单异常: $e');
+      AppLog.d('查询未完成订单异常: $e');
       return _failure('查询未完成订单失败，请稍后重试');
     }
   }
@@ -363,7 +366,7 @@ class IapService {
           _pickValue(data, const <String>['purchaseToken', 'purchase_token']);
       if (purchaseToken.isEmpty) {
         // 排查用：字段名与预期不一致时能看到原始订单
-        print('订单缺少 purchaseToken，已跳过(queryType=$queryType): $data');
+        AppLog.d('订单缺少 purchaseToken，已跳过(queryType=$queryType): $data');
         continue;
       }
       list.add(<String, dynamic>{
@@ -399,7 +402,7 @@ class IapService {
         // 不是 JSON，可能本身就是一段 JWS 字符串
         final String payload = _decodeJwsPayload(value.toString());
         if (payload.isEmpty) {
-          print('解析未完成订单失败: $e');
+          AppLog.d('解析未完成订单失败: $e');
           return <String, dynamic>{};
         }
         value = payload;
@@ -415,7 +418,7 @@ class IapService {
       if (decoded is Map) {
         return <String, dynamic>{...map, ...Map<String, dynamic>.from(decoded)};
       }
-      print('解析 jwsPurchaseOrder 失败，原始长度=${jws.length}');
+      AppLog.d('解析 jwsPurchaseOrder 失败，原始长度=${jws.length}');
     }
 
     // 2) purchaseData 包装
@@ -430,7 +433,7 @@ class IapService {
           };
         }
       } catch (e) {
-        print('解析订单 purchaseData 失败: $e');
+        AppLog.d('解析订单 purchaseData 失败: $e');
       }
     }
     return map;
@@ -450,7 +453,7 @@ class IapService {
     try {
       return jsonDecode(utf8.decode(base64Decode(payload)));
     } catch (e) {
-      print('解析 JWS payload 失败: $e');
+      AppLog.d('解析 JWS payload 失败: $e');
       return null;
     }
   }
@@ -491,7 +494,7 @@ class IapService {
         // 不是明文 JSON，解开 payload 再取字段
         decoded = _decodeJwsPayload(purchaseData);
         if (decoded is! Map) {
-          print('解析 purchaseData 失败(非 JSON 非 JWS): $e');
+          AppLog.d('解析 purchaseData 失败(非 JSON 非 JWS): $e');
         }
       }
       if (decoded is Map) {
@@ -540,7 +543,7 @@ class IapService {
     for (final IapProductConfig config in products) {
       final Map<String, dynamic>? store = storeById[config.productId];
       if (store == null) {
-        print('商店未配置商品 ${config.productId}（${config.tickets}泛票），已跳过');
+        AppLog.d('商店未配置商品 ${config.productId}（${config.tickets}泛票），已跳过');
         continue;
       }
       final num price = _toNum(store['price']);

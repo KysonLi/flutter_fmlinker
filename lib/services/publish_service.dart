@@ -1,6 +1,5 @@
-import 'dart:io' show Platform;
-
 import 'package:fmlink/services/api_service.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 class PublishService {
   static final PublishService _instance = PublishService._internal();
@@ -42,7 +41,7 @@ class PublishService {
   static const int payTypeCoin = 3;
 
   /// 余额支付的 platform：iOS=1、鸿蒙=3（与余额账户的平台口径一致）
-  static int get platformCoin => Platform.isOhos ? 3 : 1;
+  static int get platformCoin => PlatformCompat.isOhos ? 3 : 1;
 
   /// 泛票余额不足（需先去「我的账户」充值）
   static const String payResultInsufficientBalance = '88888803';

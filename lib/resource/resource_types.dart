@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fmlink/utils/url_util.dart';
 
 /// 资源播放模块基础工具
 ///
@@ -78,9 +79,6 @@ class ResourceTypeUi {
 }
 
 /// URL 清洗：后端返回的图片/资源地址常被反引号包裹（如 `http://...`），
-/// 统一去除首尾反引号与空白后使用。
-String cleanUrl(dynamic url) {
-  if (url == null) return '';
-  final String s = url.toString().trim();
-  return s.replaceAll('`', '');
-}
+/// 统一去除首尾反引号与空白后使用；同时把 http 升级为 https
+/// （服务端已支持 HTTPS，但接口仍下发 http 地址）。
+String cleanUrl(dynamic url) => toHttpsUrl(url);

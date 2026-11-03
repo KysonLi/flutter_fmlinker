@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 // 登录方式枚举
 enum LoginType {
@@ -282,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // 华为账号登录（仅鸿蒙 OHOS，自定义按钮）：调系统华为账号 Kit 拿到
     // authorizationCode / openID，再交由服务端换取登录态
     if (platform == Constants.thirdPartyHuawei) {
-      if (!Platform.isOhos) {
+      if (!PlatformCompat.isOhos) {
         EasyLoading.showToast('当前平台暂不支持华为账号登录');
         return;
       }
@@ -980,7 +981,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ..onTap = _openPrivacyPolicy,
                                 ),
                                 // 华为账号登录规范：登录页必须展示《华为账号用户认证协议》且可查看详情
-                                if (Platform.isOhos)
+                                if (PlatformCompat.isOhos)
                                   TextSpan(
                                     text: '《华为账号用户认证协议》',
                                     style: const TextStyle(
@@ -1055,7 +1056,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // 华为账号登录：仅鸿蒙（OHOS）显示，置于所有第三方入口最上方（最左）
-                            if (Platform.isOhos) ...[
+                            if (PlatformCompat.isOhos) ...[
                               _buildHuaweiIconButton(s),
                               const SizedBox(width: 24),
                             ],

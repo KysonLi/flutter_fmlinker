@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fmlink/common/policy_navigator.dart';
 import 'package:fmlink/services/privacy_consent_service.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 class PrivacyConsentScreen extends StatefulWidget {
   final Future<void> Function() onAccepted;
@@ -51,7 +52,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
       Navigator.of(context, rootNavigator: true).pop();
       await widget.onAccepted();
     } catch (error) {
-      print('保存隐私政策同意状态失败: $error');
+      AppLog.d('保存隐私政策同意状态失败: $error');
       if (mounted) {
         setState(() {
           _saving = false;

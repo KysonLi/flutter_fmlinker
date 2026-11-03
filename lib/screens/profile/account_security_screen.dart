@@ -10,6 +10,7 @@ import 'package:fmlink/screens/profile/avatar_crop_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -204,7 +205,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
     // 鸿蒙相册走系统 PhotoViewPicker（系统级选择器），本身不需要存储权限；
     // 之前这里申请 storage 会被判定为拒绝并静默返回，表现为「点击相册无反应」。
-    if (source == ImageSource.gallery && Platform.isOhos) {
+    if (source == ImageSource.gallery && PlatformCompat.isOhos) {
       await _pickImage(source);
       return;
     }
@@ -280,7 +281,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Future<void> _openAppSettings() async {
     try {
-      if (Platform.isOhos) {
+      if (PlatformCompat.isOhos) {
         // OHOS：url_launcher_ohos 只识别 tel/http/https/mailto/sms/file/store 等 scheme，
         // 不支持 app-settings:；改用 permission_handler_ohos 已实现的 openAppSettings()
         // （ArkTS 侧用 startAbility 拉起系统设置的应用详情页）
@@ -313,8 +314,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         imageQuality: 80,
         preferredCameraDevice: CameraDevice.front,
         // 鸿蒙不做二次裁剪（见 _cropImage），这里直接按头像尺寸压缩，避免上传原图过大
-        maxWidth: Platform.isOhos ? 1080 : null,
-        maxHeight: Platform.isOhos ? 1080 : null,
+        maxWidth: PlatformCompat.isOhos ? 1080 : null,
+        maxHeight: PlatformCompat.isOhos ? 1080 : null,
       );
       if (pickedFile != null) {
         await _cropImage(pickedFile.path);
@@ -328,7 +329,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Future<void> _cropImage(String imagePath) async {
     // 鸿蒙：image_cropper 的 Dart 通道（plugins.hunghd.vn/image_cropper）没有实现，
     // 改用 imagecropper_ohos 自建的 1:1 裁剪页（AvatarCropScreen）。
-    if (Platform.isOhos) {
+    if (PlatformCompat.isOhos) {
       if (!mounted) return;
       final String? croppedPath = await Navigator.push<String>(
         context,

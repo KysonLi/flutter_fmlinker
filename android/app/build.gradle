@@ -21,6 +21,13 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// 正式签名配置：android/key.properties（已被 .gitignore 忽略，模板见 key.properties.example）
+def keystorePropertiesFile = rootProject.file('key.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
@@ -56,11 +63,22 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        // 正式签名（android/key.properties 存在时才生效）
+        if (keystorePropertiesFile.exists()) {
+            release {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            // 有正式签名用正式签名；缺失时回退 debug 并打印警告，避免误把 debug 签名包当发布包
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
@@ -71,4 +89,12 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
+
+// release 构建缺少正式签名时给出明确告警（不阻断本地调试）
+gradle.taskGraph.whenReady { taskGraph ->
+    def buildingRelease = taskGraph.allTasks.any { it.name.toLowerCase().contains('release') }
+    if (buildingRelease && !keystorePropertiesFile.exists()) {
+        logger.warn('⚠️  未找到 android/key.properties：release 包将使用 debug 签名，不可用于上架。')
+    }
 }

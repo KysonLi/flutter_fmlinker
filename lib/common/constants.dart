@@ -1,7 +1,12 @@
 class Constants {
-  // API基础URL
-  static const String baseUrl =
-      'http://apigateway.mpreader.com:11999'; // 正式服务器地址
+  // API 基础地址
+  //
+  // 必须是 HTTPS：Android 9+ 默认禁止明文、App Store 不允许随意放开 ATS。
+  // 联调时可用 `--dart-define=API_BASE_URL=http://xxx:11999` 临时覆盖。
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://apigateway.mpreader.com',
+  );
 
   // 协议地址
   static const String userAgreementUrl =

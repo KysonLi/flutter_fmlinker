@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:tencent_kit/tencent_kit.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// QQ 登录授权模式
 enum QqAuthMode {
@@ -45,7 +47,7 @@ class QqLoginService {
 
   /// 当前平台是否支持 QQ 登录（Android / iOS / 鸿蒙）
   static bool get isSupported =>
-      Platform.isAndroid || Platform.isIOS || Platform.isOhos;
+      Platform.isAndroid || Platform.isIOS || PlatformCompat.isOhos;
 
   /// 是否已向 SDK 注册（registerApp 只需一次）
   static bool _registered = false;
@@ -67,7 +69,7 @@ class QqLoginService {
 
     // 鸿蒙 SDK 只实现了服务端授权，其余平台按 [authMode] 走
     final bool serverSide =
-        Platform.isOhos || authMode == QqAuthMode.serverSide;
+        PlatformCompat.isOhos || authMode == QqAuthMode.serverSide;
 
     final Completer<TencentLoginResp> completer = Completer<TencentLoginResp>();
     StreamSubscription<TencentResp>? subscription;
@@ -108,7 +110,7 @@ class QqLoginService {
       }
       if (!resp.isSuccessful) {
         final String msg = resp.msg?.trim() ?? '';
-        print('QQ 授权失败 ret=${resp.ret} msg=$msg');
+        AppLog.d('QQ 授权失败 ret=${resp.ret} msg=$msg');
         return _failure(msg.isEmpty ? 'QQ 授权失败，请重试' : msg);
       }
 
@@ -116,10 +118,10 @@ class QqLoginService {
       // serverSide 模式下这里是 authorization code（SDK 复用 accessToken 字段）
       final String code = resp.accessToken ?? '';
       if (code.isEmpty) {
-        print('QQ 授权未返回凭证 openId=$openId serverSide=$serverSide');
+        AppLog.d('QQ 授权未返回凭证 openId=$openId serverSide=$serverSide');
         return _failure('未获取到 QQ 授权凭证，请重试');
       }
-      print('QQ 登录成功 openId=$openId serverSide=$serverSide');
+      AppLog.d('QQ 登录成功 openId=$openId serverSide=$serverSide');
 
       return <String, dynamic>{
         'status': true,
@@ -134,13 +136,13 @@ class QqLoginService {
     } on TimeoutException {
       return _failure('QQ 授权超时，请重试');
     } on PlatformException catch (e) {
-      print('QQ 登录失败 code=${e.code} msg=${e.message}');
+      AppLog.d('QQ 登录失败 code=${e.code} msg=${e.message}');
       return _failure(e.message ?? 'QQ 登录失败，请重试');
     } on MissingPluginException {
       // 未注册插件（如尚未集成 tencent_kit 的构建版本）
       return _failure('当前版本暂不支持 QQ 登录，请升级后重试');
     } catch (e) {
-      print('QQ 登录异常: $e');
+      AppLog.d('QQ 登录异常: $e');
       return _failure('QQ 登录失败，请重试');
     } finally {
       await subscription?.cancel();
@@ -159,7 +161,7 @@ class QqLoginService {
       _registered = true;
       return true;
     } catch (e) {
-      print('QQ SDK 注册失败: $e');
+      AppLog.d('QQ SDK 注册失败: $e');
       return false;
     }
   }

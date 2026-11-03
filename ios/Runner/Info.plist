@@ -78,8 +78,18 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<!-- 不再全局放开明文：接口已切 HTTPS -->
 		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<!-- H5/网页资源内仍可能引用 http（仅对 WKWebView 内容放行） -->
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
+		<!-- 本地缓存媒体服务走 http://127.0.0.1:<port>，需允许本地网络 -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<!-- 说明：接口返回的图片/音视频地址已由客户端统一升级为 https
+		     （见 lib/utils/url_util.dart），因此不再需要媒体域名例外；
+		     隐私政策页仍为 http，由 NSAllowsArbitraryLoadsInWebContent 覆盖。 -->
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>扫描识别图书线码/图标码需要使用相机</string>
@@ -98,15 +108,10 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>

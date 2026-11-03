@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 网络安全策略：默认禁止明文，所有接口与媒体资源均走 HTTPS。
+     接口返回的图片/音视频地址由客户端统一升级为 https（见 lib/utils/url_util.dart）。
+     仅以下两类保持明文：
+     1) 本地缓存媒体服务 http://127.0.0.1:<port>（HLS 播放）
+     2) 隐私政策页 http://www.fanmeinet.com/...（该站点暂不支持 HTTPS）
+     待后两者具备 HTTPS 后，可整体删除本文件中的 domain-config。 -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- 本地缓存媒体服务（127.0.0.1）需要明文 HTTP -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+
+    <!-- 隐私政策页（站点暂无 HTTPS） -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">fanmeinet.com</domain>
+    </domain-config>
+
+    <!-- 仅 debug 构建生效：允许信任用户证书，便于抓包排查 -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

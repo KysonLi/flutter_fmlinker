@@ -5,6 +5,7 @@ import 'package:fmlink/models/user_info.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
@@ -21,7 +22,7 @@ class UserService {
       String? token = prefs.getString(Constants.kToken);
       return token != null && token.isNotEmpty;
     } catch (e) {
-      print('检查登录状态失败: $e');
+      AppLog.d('检查登录状态失败: $e');
       return false;
     }
   }
@@ -45,7 +46,7 @@ class UserService {
       _cachedUserInfo = userInfo;
       return userInfo;
     } catch (e) {
-      print('获取用户信息失败: $e');
+      AppLog.d('获取用户信息失败: $e');
       return null;
     }
   }
@@ -56,7 +57,7 @@ class UserService {
       UserInfo? userInfo = await getUserInfo();
       return userInfo?.unificationId ?? '';
     } catch (e) {
-      print('获取UnificationId失败: $e');
+      AppLog.d('获取UnificationId失败: $e');
       return '';
     }
   }
@@ -67,7 +68,7 @@ class UserService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       return prefs.getString(Constants.kToken);
     } catch (e) {
-      print('获取Token失败: $e');
+      AppLog.d('获取Token失败: $e');
       return null;
     }
   }
@@ -79,10 +80,10 @@ class UserService {
       String? token = prefs.getString(Constants.kToken);
       if (token != null && token.isNotEmpty) {
         Constants.token = token;
-        print('刷新Token成功: ${token.substring(0, 10)}...');
+        AppLog.d('刷新Token成功');
       }
     } catch (e) {
-      print('刷新Token失败: $e');
+      AppLog.d('刷新Token失败: $e');
     }
   }
 
@@ -95,7 +96,7 @@ class UserService {
       _cachedUserInfo = userInfo;
       return true;
     } catch (e) {
-      print('保存用户信息失败: $e');
+      AppLog.d('保存用户信息失败: $e');
       return false;
     }
   }
@@ -108,7 +109,7 @@ class UserService {
       Constants.token = token;
       return true;
     } catch (e) {
-      print('保存Token失败: $e');
+      AppLog.d('保存Token失败: $e');
       return false;
     }
   }
@@ -124,7 +125,7 @@ class UserService {
       _cachedUserInfo = null;
       return true;
     } catch (e) {
-      print('清除用户信息失败: $e');
+      AppLog.d('清除用户信息失败: $e');
       return false;
     }
   }
@@ -139,7 +140,7 @@ class UserService {
       }
       return phone;
     } catch (e) {
-      print('获取脱敏手机号失败: $e');
+      AppLog.d('获取脱敏手机号失败: $e');
       return '';
     }
   }
@@ -150,7 +151,7 @@ class UserService {
       UserInfo? userInfo = await getUserInfo();
       return userInfo?.nickName ?? '用户';
     } catch (e) {
-      print('获取用户昵称失败: $e');
+      AppLog.d('获取用户昵称失败: $e');
       return '用户';
     }
   }
@@ -161,7 +162,7 @@ class UserService {
       UserInfo? userInfo = await getUserInfo();
       return userInfo?.hasSetUserName ?? false;
     } catch (e) {
-      print('获取hasSetUserName失败: $e');
+      AppLog.d('获取hasSetUserName失败: $e');
       return false;
     }
   }
@@ -171,7 +172,7 @@ class UserService {
     try {
       UserInfo? userInfo = await getUserInfo();
       if (userInfo == null || userInfo.userId.isEmpty) {
-        print('用户未登录');
+        AppLog.d('用户未登录');
         return false;
       }
 
@@ -195,11 +196,11 @@ class UserService {
         return true;
       } else {
         String error = result['message'] ?? '设置失败';
-        print('设置用户名失败: $error');
+        AppLog.d('设置用户名失败: $error');
         return false;
       }
     } catch (e) {
-      print('设置用户名失败: $e');
+      AppLog.d('设置用户名失败: $e');
       return false;
     }
   }
@@ -210,7 +211,7 @@ class UserService {
       UserInfo? userInfo = await getUserInfo();
       return userInfo?.avatarUrl ?? '';
     } catch (e) {
-      print('获取头像URL失败: $e');
+      AppLog.d('获取头像URL失败: $e');
       return '';
     }
   }
@@ -220,7 +221,7 @@ class UserService {
     try {
       UserInfo? userInfo = await getUserInfo();
       if (userInfo == null || userInfo.unificationId.isEmpty) {
-        print('用户未登录或unificationId为空');
+        AppLog.d('用户未登录或unificationId为空');
         return false;
       }
 
@@ -254,11 +255,11 @@ class UserService {
         return true;
       } else {
         String error = result['message'] ?? '上传失败';
-        print('上传头像失败: $error');
+        AppLog.d('上传头像失败: $error');
         return false;
       }
     } catch (e) {
-      print('上传头像失败: $e');
+      AppLog.d('上传头像失败: $e');
       return false;
     }
   }
@@ -275,7 +276,7 @@ class UserService {
       );
       return result;
     } catch (e) {
-      print('发送验证码失败: $e');
+      AppLog.d('发送验证码失败: $e');
       return {'status': false, 'msg': '发送失败'};
     }
   }
@@ -304,7 +305,7 @@ class UserService {
       );
       return result;
     } catch (e) {
-      print('注销账户失败: $e');
+      AppLog.d('注销账户失败: $e');
       return {'status': false, 'msg': '注销失败'};
     }
   }

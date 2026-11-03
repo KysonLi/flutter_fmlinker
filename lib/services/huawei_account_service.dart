@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// 华为账号登录服务（鸿蒙 OHOS 专用）
 ///
@@ -19,7 +19,7 @@ class HuaweiAccountService {
   static const MethodChannel _channel = MethodChannel('fmlink/huawei_account');
 
   /// 当前平台是否支持华为账号登录（仅鸿蒙）
-  static bool get isSupported => Platform.isOhos;
+  static bool get isSupported => PlatformCompat.isOhos;
 
   /// 拉起华为账号一键登录
   ///
@@ -54,11 +54,11 @@ class HuaweiAccountService {
       // 没有 authorizationCode 就无法换登录态，直接按失败处理（避免上层拿到空值）
       final String code = data['authorizationCode']?.toString() ?? '';
       if (code.isEmpty) {
-        print('华为账号登录未返回 authorizationCode: $map');
+        AppLog.d('华为账号登录未返回 authorizationCode: $map');
         return _failure('未获取到华为账号授权信息，请重试');
       }
 
-      print('华为账号登录成功 openID=${data['openID']}');
+      AppLog.d('华为账号登录成功 openID=${data['openID']}');
 
       return <String, dynamic>{
         'status': true,
@@ -69,7 +69,7 @@ class HuaweiAccountService {
     } on PlatformException catch (e) {
       // USER_CANCELED 由原生侧在用户取消授权时抛出，业务侧不再提示错误
       final bool canceled = e.code == 'USER_CANCELED';
-      print('华为账号登录失败 code=${e.code} msg=${e.message} details=${e.details}');
+      AppLog.d('华为账号登录失败 code=${e.code} msg=${e.message} details=${e.details}');
       return <String, dynamic>{
         'status': false,
         'msg': canceled ? '已取消华为账号登录' : (e.message ?? '华为账号登录失败'),
@@ -79,7 +79,7 @@ class HuaweiAccountService {
       // 非鸿蒙构建或未注册插件（如 Android/iOS/HarmonyOS 老版本）
       return _failure('当前设备不支持华为账号登录');
     } catch (e) {
-      print('华为账号登录异常: $e');
+      AppLog.d('华为账号登录异常: $e');
       return _failure('华为账号登录失败，请重试');
     }
   }

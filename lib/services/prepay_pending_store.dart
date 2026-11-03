@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 华为充值凭据本地暂存（防丢单）
 ///
@@ -24,7 +25,7 @@ class PrepayPendingStore {
         purchaseToken.isEmpty ||
         purchaseOrderId.isEmpty) {
       // 缺字段的凭据补发不了，不写入，避免脏数据
-      print('华为充值凭据不完整，未暂存: orderId=$purchaseOrderId');
+      AppLog.d('华为充值凭据不完整，未暂存: orderId=$purchaseOrderId');
       return;
     }
     try {
@@ -39,7 +40,7 @@ class PrepayPendingStore {
       });
       await _save(items);
     } catch (e) {
-      print('暂存华为充值凭据失败: $e');
+      AppLog.d('暂存华为充值凭据失败: $e');
     }
   }
 
@@ -56,7 +57,7 @@ class PrepayPendingStore {
           .map((Map e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (e) {
-      print('读取待补发充值凭据失败: $e');
+      AppLog.d('读取待补发充值凭据失败: $e');
       return <Map<String, dynamic>>[];
     }
   }
@@ -70,7 +71,7 @@ class PrepayPendingStore {
           e['purchase_order_id'] == purchaseOrderId);
       await _save(items);
     } catch (e) {
-      print('清除待补发充值凭据失败: $e');
+      AppLog.d('清除待补发充值凭据失败: $e');
     }
   }
 

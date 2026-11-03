@@ -4,6 +4,7 @@ import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/services/api_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 class EventReportService {
   static final EventReportService _instance = EventReportService._internal();
@@ -95,7 +96,7 @@ class EventReportService {
   }) {
     if (!Constants.hasPrivacyConsent) return;
     if (goodsId.isEmpty || resourceId.isEmpty) {
-      print('资源阅读上报缺少 goodsId 或 resourceId');
+      AppLog.d('资源阅读上报缺少 goodsId 或 resourceId');
       return;
     }
     unawaited(_sendResourceRead(goodsId, resourceId));
@@ -126,7 +127,7 @@ class EventReportService {
     final Map<String, dynamic> result =
         await _apiService.post(_eventPath, data: payload);
     if (result['status'] != true) {
-      print('事件上报失败: ${result['msg']}');
+      AppLog.d('事件上报失败: ${result['msg']}');
     }
   }
 
@@ -145,7 +146,7 @@ class EventReportService {
       queryParameters: payload,
     );
     if (result['status'] != true) {
-      print('资源阅读上报失败: ${result['msg']}');
+      AppLog.d('资源阅读上报失败: ${result['msg']}');
     }
   }
 

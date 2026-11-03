@@ -26,6 +26,7 @@ import 'package:fmlink/screens/resource/widgets/cover_image.dart';
 import 'package:fmlink/screens/resource/widgets/image_view.dart';
 import 'package:fmlink/screens/resource/widgets/text_view.dart';
 import 'package:fmlink/screens/resource/widgets/video_player_view.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 资源播放页
 ///
@@ -398,7 +399,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
         return;
       } catch (e) {
         if (!mounted) return;
-        print('媒体初始化失败: ${vc.dataSource} $e');
+        AppLog.d('媒体初始化失败: ${vc.dataSource} $e');
         vc.removeListener(_onMediaTick);
         await vc.dispose();
         if (_vc == vc) _vc = null;
@@ -428,7 +429,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       final String? localUrl =
           await LocalMediaServer.instance.urlForLocalPath(localPath);
       if (localUrl != null && localUrl.isNotEmpty) {
-        print('HLS本地播放: $localUrl');
+        AppLog.d('HLS本地播放: $localUrl');
         return VideoPlayerController.networkUrl(Uri.parse(localUrl));
       }
     }

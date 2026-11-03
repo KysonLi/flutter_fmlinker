@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:umeng_apm_sdk/umeng_apm_sdk.dart';
 import 'package:umeng_common_sdk/umeng_common_sdk.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/platform_compat.dart';
 
 /// 友盟统计（U-App）与崩溃分析（U-APM）的统一入口。
 ///
@@ -49,12 +51,12 @@ class UmengService {
         _pageChannel.invokeMethod<bool>('enable').then(
           (_) {},
           onError: (Object error) {
-            print('开启友盟页面统计失败: $error');
+            AppLog.d('开启友盟页面统计失败: $error');
           },
         );
       }
     } catch (error) {
-      print('友盟统计初始化失败: $error');
+      AppLog.d('友盟统计初始化失败: $error');
     }
   }
 
@@ -80,12 +82,13 @@ class UmengService {
       ).init(appRunner: appRunner);
       return true;
     } catch (error) {
-      print('友盟 Dart 异常采集初始化失败: $error');
+      AppLog.d('友盟 Dart 异常采集初始化失败: $error');
       return false;
     }
   }
 
   /// 是否运行在友盟原生 SDK 已接入的平台（web 等平台直接跳过）。
   static bool get isSupportedPlatform =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isOhos);
+      !kIsWeb &&
+      (Platform.isAndroid || Platform.isIOS || PlatformCompat.isOhos);
 }

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:fmlink/utils/app_log.dart';
 
 /// 统一错误信息处理（全项目错误文案的唯一出口）
 ///
@@ -86,10 +87,10 @@ class ErrorHandler {
         _errorMap = parsed;
       }
       _loaded = true;
-      print('错误码配置加载完成: ${_errorMap.length} 条');
+      AppLog.d('错误码配置加载完成: ${_errorMap.length} 条');
     } catch (e) {
       // 资源缺失/解析失败时不影响功能，后续走通用兜底
-      print('错误码配置加载失败($assetPath): $e');
+      AppLog.d('错误码配置加载失败($assetPath): $e');
     }
   }
 

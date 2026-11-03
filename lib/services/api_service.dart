@@ -5,6 +5,8 @@ import 'package:fmlink/common/app_navigator.dart';
 import 'package:fmlink/common/constants.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/error_handler.dart';
+import 'package:fmlink/utils/app_log.dart';
+import 'package:fmlink/utils/url_util.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -71,7 +73,8 @@ class ApiService {
         // 成功
         return {
           'status': true,
-          'data': responseData['data'],
+          // 接口仍下发 http 资源地址，此处统一升级为 https（本地地址保持原样）
+          'data': upgradeUrlsToHttps(responseData['data']),
           'msg': responseData['resultMsg'] ?? responseData['message'] ?? '请求成功',
           'resultCode': resultCode.toString(),
         };
@@ -142,14 +145,14 @@ class ApiService {
   Future<Map<String, dynamic>> get(String path,
       {Map<String, dynamic>? queryParameters}) async {
     try {
-      print('GET请求: $path');
-      print('请求参数: $queryParameters');
-      Response response =
+      AppLog.d('GET $path');
+      final Response response =
           await _dio.get(path, queryParameters: queryParameters);
-      print('响应数据: ${response.data}');
+      // 不打印请求参数/响应体：可能含手机号、订单、用户资料等敏感信息
+      AppLog.d('GET $path -> ${response.statusCode}');
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
-      print('GET请求失败: $e');
+      AppLog.d('GET请求失败: $e');
       // 连接层错误 → 统一中文文案（不透出 Dio/系统英文原文）
       return {
         'status': false,
@@ -163,23 +166,14 @@ class ApiService {
   Future<Map<String, dynamic>> post(String path,
       {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
-      print('POST请求: $path');
-      final dynamic loggedData =
-          path == '/data-collection/v1/handle' && data is Map
-              ? <dynamic, dynamic>{
-                  ...data,
-                  if (data.containsKey('consumer_phone'))
-                    'consumer_phone': '[REDACTED]',
-                }
-              : data;
-      print('请求参数: $loggedData');
-      print('Query参数: $queryParameters');
-      Response response =
+      AppLog.d('POST $path');
+      final Response response =
           await _dio.post(path, data: data, queryParameters: queryParameters);
-      print('响应数据: ${response.data}');
+      // 不打印请求体/响应体：登录、下单等接口含密码、手机号、支付信息
+      AppLog.d('POST $path -> ${response.statusCode}');
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
-      print('POST请求失败: $e');
+      AppLog.d('POST请求失败: $e');
       // 连接层错误 → 统一中文文案
       return {
         'status': false,
@@ -192,12 +186,12 @@ class ApiService {
   // 上传文件
   Future<Map<String, dynamic>> upload(String path, FormData formData) async {
     try {
-      print('上传文件: $path');
-      Response response = await _dio.post(path, data: formData);
-      print('响应数据: ${response.data}');
+      AppLog.d('UPLOAD $path');
+      final Response response = await _dio.post(path, data: formData);
+      AppLog.d('UPLOAD $path -> ${response.statusCode}');
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
-      print('文件上传失败: $e');
+      AppLog.d('文件上传失败: $e');
       // 连接层错误 → 统一中文文案
       return {
         'status': false,
@@ -224,14 +218,13 @@ class ApiService {
   Future<Map<String, dynamic>> delete(String path,
       {Map<String, dynamic>? queryParameters}) async {
     try {
-      print('DELETE请求: $path');
-      print('请求参数: $queryParameters');
-      Response response =
+      AppLog.d('DELETE $path');
+      final Response response =
           await _dio.delete(path, queryParameters: queryParameters);
-      print('响应数据: ${response.data}');
+      AppLog.d('DELETE $path -> ${response.statusCode}');
       return _handleResponse(response.data, statusCode: response.statusCode);
     } catch (e) {
-      print('DELETE请求失败: $e');
+      AppLog.d('DELETE请求失败: $e');
       // 连接层错误 → 统一中文文案
       return {
         'status': false,

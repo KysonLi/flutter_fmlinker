@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:fmlink/cache/cache_paths.dart';
+import 'package:fmlink/utils/app_log.dart';
 
 /// 本地媒体服务：把缓存目录通过 `127.0.0.1` 回环 HTTP 暴露出去
 ///
@@ -91,12 +92,12 @@ class LocalMediaServer {
       // 端口交由系统分配，避免与其它服务冲突
       final HttpServer server =
           await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      server.listen(_handle, onError: (Object e) => print('本地媒体服务异常: $e'));
+      server.listen(_handle, onError: (Object e) => AppLog.d('本地媒体服务异常: $e'));
       _server = server;
-      print('本地媒体服务已启动: ${_baseUrl(server)}');
+      AppLog.d('本地媒体服务已启动: ${_baseUrl(server)}');
       return _baseUrl(server);
     } catch (e) {
-      print('本地媒体服务启动失败: $e');
+      AppLog.d('本地媒体服务启动失败: $e');
       return null;
     } finally {
       _starting = null;
@@ -151,7 +152,7 @@ class LocalMediaServer {
       }
       await _serve(request, file);
     } catch (e) {
-      print('本地媒体请求处理失败: $e');
+      AppLog.d('本地媒体请求处理失败: $e');
       try {
         await _fail(request, HttpStatus.internalServerError);
       } catch (_) {}
