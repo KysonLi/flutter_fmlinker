@@ -504,7 +504,7 @@ packages:
     source: hosted
     version: "0.2.2"
   imagecropper_ohos:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       path: "packages/fluttertpc_image_cropper/image_cropper/ohos"
       relative: true

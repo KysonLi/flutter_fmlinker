@@ -143,9 +143,14 @@ dependencies:
       path: packages/url_launcher/url_launcher
       ref: br_url_launcher-v6.3.0_ohos
 
-  # 图片裁剪
+  # 图片裁剪（Android/iOS）
   image_cropper:
     path: packages/fluttertpc_image_cropper/image_cropper
+
+  # 图片裁剪（鸿蒙）：image_cropper 的 Dart 通道在鸿蒙侧未实现，
+  # 鸿蒙改用该插件的裁剪算法 + Crop 组件，界面见 AvatarCropScreen。
+  imagecropper_ohos:
+    path: packages/fluttertpc_image_cropper/image_cropper/ohos
 
   # 扫码（本地 vendored：ISLI 线码/图标码 native 解码 + 普通条码，含 OHOS 适配）
   mobile_scanner:
@@ -222,9 +227,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: '>=1.0.0'
-
-  imagecropper_ohos:
-    path: packages/fluttertpc_image_cropper/image_cropper/ohos
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

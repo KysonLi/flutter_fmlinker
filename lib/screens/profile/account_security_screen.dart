@@ -6,6 +6,7 @@ import 'package:fmlink/services/auth_service.dart';
 import 'package:fmlink/services/user_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:fmlink/screens/profile/avatar_crop_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -201,18 +202,20 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Future<void> _handleImageSource(ImageSource source) async {
     Navigator.pop(context);
 
-    Permission permission;
+    // 鸿蒙相册走系统 PhotoViewPicker（系统级选择器），本身不需要存储权限；
+    // 之前这里申请 storage 会被判定为拒绝并静默返回，表现为「点击相册无反应」。
+    if (source == ImageSource.gallery && Platform.isOhos) {
+      await _pickImage(source);
+      return;
+    }
+
+    final Permission permission;
     if (source == ImageSource.camera) {
       permission = Permission.camera;
+    } else if (Platform.isAndroid) {
+      permission = Permission.storage;
     } else {
-      if (Platform.isAndroid) {
-        permission = Permission.storage;
-      } else if (Platform.isOhos) {
-        // ohos：相册访问走 storage（permission_handler_ohos 映射）
-        permission = Permission.storage;
-      } else {
-        permission = Permission.photos;
-      }
+      permission = Permission.photos;
     }
 
     bool hasPermission = await _checkAndRequestPermission(permission, source);
@@ -231,6 +234,11 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
     if (status.isDenied) {
       PermissionStatus result = await permission.request();
+      // 用户拒绝授权时给一次轻提示，避免"点了没反应"
+      if (!result.isGranted) {
+        EasyLoading.showToast(
+            '未获得${source == ImageSource.camera ? '相机' : '相册'}权限');
+      }
       return result.isGranted;
     }
 
@@ -304,16 +312,41 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         source: source,
         imageQuality: 80,
         preferredCameraDevice: CameraDevice.front,
+        // 鸿蒙不做二次裁剪（见 _cropImage），这里直接按头像尺寸压缩，避免上传原图过大
+        maxWidth: Platform.isOhos ? 1080 : null,
+        maxHeight: Platform.isOhos ? 1080 : null,
       );
       if (pickedFile != null) {
         await _cropImage(pickedFile.path);
       }
     } catch (e) {
+      debugPrint('图片选择失败: $e');
       EasyLoading.showToast('图片选择失败');
     }
   }
 
   Future<void> _cropImage(String imagePath) async {
+    // 鸿蒙：image_cropper 的 Dart 通道（plugins.hunghd.vn/image_cropper）没有实现，
+    // 改用 imagecropper_ohos 自建的 1:1 裁剪页（AvatarCropScreen）。
+    if (Platform.isOhos) {
+      if (!mounted) return;
+      final String? croppedPath = await Navigator.push<String>(
+        context,
+        MaterialPageRoute<String>(
+          builder: (_) => AvatarCropScreen(imagePath: imagePath),
+        ),
+      );
+      if (!mounted || croppedPath == null || croppedPath.isEmpty) return;
+      await _uploadAvatar(croppedPath);
+      // 上传完成后清理裁剪产生的临时文件
+      try {
+        final File cropped = File(croppedPath);
+        if (cropped.existsSync()) cropped.deleteSync();
+      } catch (e) {
+        debugPrint('删除裁剪临时文件失败: $e');
+      }
+      return;
+    }
     try {
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: imagePath,
@@ -342,26 +375,28 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         await _uploadAvatar(croppedFile.path);
       }
     } catch (e) {
+      debugPrint('图片裁剪失败: $e');
       EasyLoading.showToast('图片裁剪失败');
     }
   }
 
   Future<void> _uploadAvatar(String imagePath) async {
     EasyLoading.show(status: '上传中...');
+    String message = '头像上传失败';
     try {
       bool success = await _userService.uploadAvatar(imagePath);
       if (success) {
-        EasyLoading.showToast('头像上传成功');
         _needRefresh = true;
         await _loadUserInfo();
-      } else {
-        EasyLoading.showToast('头像上传失败');
+        message = '头像上传成功';
       }
     } catch (e) {
-      EasyLoading.showToast('头像上传失败');
-    } finally {
-      EasyLoading.dismiss();
+      debugPrint('头像上传失败: $e');
     }
+    // 先关掉 loading 再提示，否则提示会被 dismiss 立刻清掉
+    EasyLoading.dismiss();
+    if (!mounted) return;
+    EasyLoading.showToast(message);
   }
 
   Widget _buildArrowRow(String title) {
