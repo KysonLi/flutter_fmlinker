@@ -73,18 +73,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // 获取历史关联数据
   void _loadLinkHistory() async {
+    // 首屏已由 _isLoading 的全屏 loading 覆盖，此处只在静默刷新时才叠加 EasyLoading
+    final bool showLoading = !_isLoading;
+    String? errorMsg;
     try {
       // 获取unificationId
       String unificationId = await UserService().getUnificationId();
 
       if (unificationId.isEmpty) {
-        setState(() {
-          _isLoading = false;
-        });
         return;
       }
 
-      EasyLoading.show(status: '加载中...');
+      if (showLoading) {
+        EasyLoading.show(status: '加载中...');
+      }
       final response = await LinkService().getGoodsScanHistory(
         unificationId,
         page: 1,
@@ -100,21 +102,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
               data['linkInfoList'] is List) {
             linkInfoList = data['linkInfoList'];
           }
-          setState(() {
-            _linkHistory = linkInfoList;
-          });
+          if (mounted) {
+            setState(() {
+              _linkHistory = linkInfoList;
+            });
+          }
         }
       } else {
-        EasyLoading.showError(response['msg']);
+        errorMsg = response['msg'] ?? '加载失败，请稍后重试';
       }
     } catch (e) {
       debugPrint('加载历史关联数据失败: $e');
-      EasyLoading.showError('加载失败，请稍后重试');
+      errorMsg = '加载失败，请稍后重试';
     } finally {
-      EasyLoading.dismiss();
-      setState(() {
-        _isLoading = false;
-      });
+      if (showLoading) {
+        EasyLoading.dismiss();
+      }
+      // 错误提示放在 dismiss 之后，避免被 dismiss 立即清掉
+      if (errorMsg != null) {
+        EasyLoading.showError(errorMsg);
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

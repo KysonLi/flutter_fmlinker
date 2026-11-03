@@ -17,7 +17,7 @@ import 'package:fmlink/services/user_service.dart';
 /// - versionCode：版本号（String?，可空）
 ///
 /// 数据由 fetchSourceScan 拉取；底部固定工具栏提供
-/// 「链码列表 / 扫码 / 源详情」三个入口。
+/// 「源列表 / 扫码 / 源详情」三个入口。
 class ResourceListScreen extends StatefulWidget {
   final Map<String, dynamic> extra;
 
@@ -127,7 +127,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
         _loadMoreFailed = false;
         _failed = false;
         _loading = false;
-        // 链码列表接口按当前源的版本号请求更可靠
+        // 源列表接口按当前源的版本号请求更可靠
         if ((_versionCode == null || _versionCode!.isEmpty) &&
             data.versionCode != null) {
           _versionCode = data.versionCode!.toString();
@@ -220,7 +220,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
 
   // ==================== 操作 ====================
 
-  /// 链码列表 → 选择新链码后重拉资源并回顶
+  /// 源列表 → 选择新链码后重拉资源并回顶
   Future<void> _openChainCodeSheet() async {
     final SourceScanData? data = _data;
     final String serviceCode =
@@ -228,7 +228,7 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
     final String prefixCode =
         data?.prefixCode ?? data?.source?.prefixCode ?? '';
     if (serviceCode.isEmpty || prefixCode.isEmpty) {
-      EasyLoading.showToast('暂无链码列表');
+      EasyLoading.showToast('暂无源列表');
       return;
     }
 
@@ -578,9 +578,8 @@ class _ResourceListScreenState extends State<ResourceListScreen> {
           top: false,
           child: Row(
             children: <Widget>[
-              _buildAction(
-                  Icons.list_alt_outlined, '链码列表', _openChainCodeSheet),
-              _buildAction(Icons.qr_code_scanner, '扫码', _openScan),
+              _buildAction(Icons.list_alt_outlined, '源列表', _openChainCodeSheet),
+              _buildAction(Icons.crop_free, '扫码', _openScan),
               _buildAction(Icons.info_outline, '源详情', _openSourceDetail),
             ],
           ),

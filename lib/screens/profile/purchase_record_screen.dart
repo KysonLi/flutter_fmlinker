@@ -14,7 +14,7 @@ import 'package:fmlink/widgets/default_state_view.dart';
 /// 参数：userId（登录后的 unificationId）、page、pageCount
 ///
 /// 购买单位（orderBuyType）：
-/// - WHOLE_PUBLICATION：整书购买（buy_type_book 图标，进入链码列表页）
+/// - WHOLE_PUBLICATION：整书购买（buy_type_book 图标，进入源列表页）
 /// - SINGLE：单个源购买（buy_type_source 图标，按 ISLI 编码进入资源播放页）
 class PurchaseRecordScreen extends StatefulWidget {
   const PurchaseRecordScreen({super.key});
@@ -262,7 +262,7 @@ class _PurchaseRecordScreenState extends State<PurchaseRecordScreen> {
 
     final String buyType = item['orderBuyType']?.toString() ?? '';
     if (buyType == 'WHOLE_PUBLICATION') {
-      // 整书购买：进入链码列表页（源列表）
+      // 整书购买：进入源列表页
       context.push('/publication-source-list', extra: <String, dynamic>{
         'goodsId': item['goodsId']?.toString() ?? '',
         'goodsName': item['wholePublicationName']?.toString() ??

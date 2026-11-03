@@ -16,21 +16,21 @@
     "@ohos/hypium": "1.0.6"
   },
   "overrides": {
-    "image_picker_ohos": "../../../../.pub-cache/git/flutter_packages-881e0dbe8fbf67faf541574f93557f826f3ceb3e/packages/image_picker/image_picker_ohos/ohos",
-    "path_provider_ohos": "../../../../.pub-cache/git/flutter_packages-d4e49daa0acbd0bc419d58b1da27d64d44fab54b/packages/path_provider/path_provider_ohos/ohos",
-    "shared_preferences_ohos": "../../../../.pub-cache/git/flutter_packages-ce0d3d4a9c6921edf5a5e4467c3dfecb377fd684/packages/shared_preferences/shared_preferences_ohos/ohos",
-    "url_launcher_ohos": "../../../../.pub-cache/git/flutter_packages-36a61d9c960cf4ed4b684475332e18e194e5be9f/packages/url_launcher/url_launcher_ohos/ohos",
-    "video_player_ohos": "../../../../.pub-cache/git/flutter_packages-324ad5361df42f36b03a8deebc0e393495fa7b33/packages/video_player/video_player_ohos/ohos",
-    "webview_flutter_ohos": "../../../../.pub-cache/git/flutter_packages-00c270d0b60da7cca5898da0508c8374d491ff19/packages/webview_flutter/webview_flutter_ohos/ohos",
-    "permission_handler_ohos": "../../../../.pub-cache/git/flutter_permission_handler-9094b9494b311dae71fe0399d9acd546a773edef/permission_handler_ohos/ohos",
-    "sqflite": "../../../../.pub-cache/git/flutter_sqflite-b7b4b386dd31e52f8f1b7c5e17c7414a214287c4/sqflite/ohos",
+    "image_picker_ohos": "file:./har/image_picker_ohos.har",
+    "path_provider_ohos": "file:./har/path_provider_ohos.har",
+    "shared_preferences_ohos": "file:./har/shared_preferences_ohos.har",
+    "url_launcher_ohos": "file:./har/url_launcher_ohos.har",
+    "video_player_ohos": "file:./har/video_player_ohos.har",
+    "webview_flutter_ohos": "file:./har/webview_flutter_ohos.har",
+    "permission_handler_ohos": "file:./har/permission_handler_ohos.har",
+    "sqflite": "file:./har/sqflite.har",
     "@ohos/flutter_module": "file:./entry",
     "@ohos/flutter_ohos": "file:./har/flutter.har",
-    "imagecropper_ohos": "../packages/fluttertpc_image_cropper/image_cropper/ohos/ohos",
-    "mobile_scanner": "../packages/mobile_scanner/ohos",
-    "fluwx": "../../../../.pub-cache/hosted/pub.flutter-io.cn/fluwx-5.7.7/ohos",
-    "tencent_kit": "../../../../.pub-cache/hosted/pub.flutter-io.cn/tencent_kit-6.2.0/ohos",
-    "umeng_common_sdk": "../packages/umeng_common_sdk/ohos",
-    "umeng_apm_sdk": "../packages/umeng_apm_sdk/ohos"
+    "imagecropper_ohos": "file:./har/imagecropper_ohos.har",
+    "mobile_scanner": "file:./har/mobile_scanner.har",
+    "fluwx": "file:./har/fluwx.har",
+    "tencent_kit": "file:./har/tencent_kit.har",
+    "umeng_common_sdk": "file:./har/umeng_common_sdk.har",
+    "umeng_apm_sdk": "file:./har/umeng_apm_sdk.har"
   }
 }

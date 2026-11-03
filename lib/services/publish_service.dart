@@ -105,7 +105,7 @@ class PublishService {
     return await _apiService.get('/target-goods/app/v1/goods/history/$goodsId');
   }
 
-  // 获取出版物链码列表
+  // 获取出版物源列表
   Future<Map<String, dynamic>> getPublicationSourceList(
     String serviceCode,
     String prefixCode, {

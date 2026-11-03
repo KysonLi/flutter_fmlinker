@@ -556,7 +556,7 @@ class _IsliCopyrightScreenState extends State<IsliCopyrightScreen> {
     );
   }
 
-  /// 跳转链码列表页：serviceCode = isliCode 首段（'-' 分隔），prefixCode = mprCode
+  /// 跳转源列表页：serviceCode = isliCode 首段（'-' 分隔），prefixCode = mprCode
   void _openChainCodeList() {
     final IsliCopyrightData d = _data!;
     final String isliCode = (d.isliCode ?? '').trim();

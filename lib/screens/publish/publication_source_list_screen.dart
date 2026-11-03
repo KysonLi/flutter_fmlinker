@@ -117,7 +117,7 @@ class _PublicationSourceListScreenState
         _onDataLoaded();
       }
     } catch (e) {
-      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取链码列表失败'));
+      EasyLoading.showError(ErrorHandler().fromError(e, fallback: '获取源列表失败'));
     } finally {
       _isLoading = false;
       EasyLoading.dismiss();

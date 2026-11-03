@@ -760,33 +760,68 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     }
   }
 
+  /// 进入源详情（当前播放资源）
+  void _openSourceDetail() {
+    final SourceScanData? data = _data;
+    if (data == null) return;
+    final ScanResource? current = _current;
+    context.push(kResourceSourceDetailRoute, extra: <String, dynamic>{
+      'data': data.raw,
+      'isliCode': _isliCode,
+      'goodsName': data.goodsName ?? '',
+      // 播放页进入才展示点赞用户与资源信息，参数取当前播放资源
+      'fromPlay': true,
+      'resourceIndex': _index,
+      'likeQuery': <String, dynamic>{
+        'goodsId': data.goodsId,
+        'resourceId': current?.id?.toString() ?? '',
+        'resourceOldId': current?.resourceId ?? '',
+        'targetIdentifier': data.currentTarget?.targetIdentifier ?? '',
+      },
+    });
+  }
+
   void _openMore() {
     final SourceScanData? data = _data;
+    final ScanResource? current = _current;
     final int total = _resources.length;
+    final int sourceCount = data?.sourceCount ?? 0;
+    final bool needPurchase = data?.needPurchase ?? false;
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (BuildContext ctx) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (data != null && data.needPurchase)
-                _sheetItem(
-                  icon: Icons.lock_open_outlined,
-                  label: '购买当前资源',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openPurchase();
-                  },
-                ),
-              if (total > 1)
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _sheetHandle(),
+                _sheetHeader(data),
+                if (current != null) _sheetCurrentResource(current, total),
+                const SizedBox(height: 8),
                 _sheetItem(
                   icon: Icons.list_alt_outlined,
-                  label: '资源列表（共 $total 个）',
+                  label: '源列表',
+                  subtitle: '全书全部源（链码），可快速切换到其它源',
+                  trailingText: sourceCount > 0 ? '共 $sourceCount 个源' : null,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openChainList();
+                  },
+                ),
+                _sheetItem(
+                  icon: Icons.playlist_play,
+                  label: '资源列表',
+                  subtitle: total > 1 ? '当前源下的全部资源，可左右切换' : '当前源下的全部资源',
+                  trailingText: total > 0 ? '共 $total 个资源' : null,
+                  enabled: total > 0,
                   onTap: () {
                     Navigator.pop(ctx);
                     context.push(kResourceListRoute, extra: <String, dynamic>{
@@ -796,40 +831,217 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
                     });
                   },
                 ),
-              _sheetItem(
-                icon: Icons.info_outline,
-                label: '源详情',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push(kResourceSourceDetailRoute,
-                      extra: <String, dynamic>{
-                        'data': data?.raw ?? const <String, dynamic>{},
-                        'isliCode': _isliCode,
-                        'goodsName': data?.goodsName ?? '',
-                      });
-                },
-              ),
-            ],
+                if (needPurchase)
+                  _sheetItem(
+                    icon: Icons.lock_open_outlined,
+                    label: '购买当前资源',
+                    subtitle: '解锁后可查看完整内容',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openPurchase();
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
+  /// 弹窗顶部拖拽条
+  Widget _sheetHandle() {
+    return Center(
+      child: Container(
+        width: 36,
+        height: 4,
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE5E6EB),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  /// 弹窗标题：书名 + 出版信息（页码 / 链码序号 / 资源序号）
+  Widget _sheetHeader(SourceScanData? data) {
+    final String title = (data?.goodsName ?? '').trim();
+    final List<String> parts = <String>[];
+    final int? page = data?.source?.bookPageNo;
+    final int? sourceNo = data?.source?.sourceNo;
+    if (page != null && page > 0) parts.add('第$page页');
+    if (sourceNo != null && sourceNo > 0) parts.add('链码$sourceNo');
+    if (_resources.isNotEmpty) {
+      parts.add('第${_index + 1}/${_resources.length}个资源');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title.isEmpty ? '资源详情' : title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2329),
+              height: 1.4,
+            ),
+          ),
+          if (parts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                parts.join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF909399)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 弹窗内的当前资源摘要：名称 + 类型/时长/大小/点赞/缓存状态
+  Widget _sheetCurrentResource(ScanResource r, int total) {
+    final List<Widget> chips = <Widget>[];
+    if (r.type != ResourceType.unknown) {
+      chips.add(_sheetChip(ResourceTypeUi.icon(r.type), r.type.label));
+    }
+    if (r.second != null && r.second! > 0) {
+      chips.add(_sheetChip(Icons.schedule, _sheetDuration(r.second!)));
+    }
+    final String size = (r.resourceSize ?? '').trim();
+    if (size.isNotEmpty) {
+      chips.add(_sheetChip(Icons.sd_storage_outlined, size));
+    }
+    if ((r.likeCount ?? 0) > 0) {
+      chips.add(_sheetChip(Icons.favorite_border, '${r.likeCount} 赞'));
+    }
+    final CacheStatus? cacheStatus = CacheService().recordFor(r)?.statusEnum;
+    if (cacheStatus == CacheStatus.completed) {
+      chips.add(_sheetChip(Icons.check_circle_outline, '已缓存'));
+    } else if (cacheStatus == CacheStatus.downloading) {
+      chips.add(_sheetChip(Icons.downloading, '缓存中'));
+    }
+
+    final String name = (r.resourceName ?? '').trim();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            ResourceTypeUi.icon(r.type),
+            size: 20,
+            color: ResourceTypeUi.color(r.type),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  name.isEmpty
+                      ? (r.resourceNo != null ? '资源${r.resourceNo}' : '当前资源')
+                      : name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2329),
+                    height: 1.4,
+                  ),
+                ),
+                if (chips.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 6,
+                      children: chips,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sheetChip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 12, color: const Color(0xFF909399)),
+        const SizedBox(width: 3),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF909399)),
+        ),
+      ],
+    );
+  }
+
+  String _sheetDuration(num seconds) {
+    final int total = seconds.toInt();
+    final int h = total ~/ 3600;
+    final int m = (total % 3600) ~/ 60;
+    final int s = total % 60;
+    final String mm = m.toString().padLeft(2, '0');
+    final String ss = s.toString().padLeft(2, '0');
+    return h > 0 ? '$h:$mm:$ss' : '$m:$ss';
+  }
+
   Widget _sheetItem({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    String? subtitle,
+    String? trailingText,
+    bool enabled = true,
   }) {
+    final Color color =
+        enabled ? const Color(0xFF333333) : const Color(0xFFC0C4CC);
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF333333), size: 22),
+      enabled: enabled,
+      leading: Icon(icon, color: color, size: 22),
       title: Text(
         label,
-        style: const TextStyle(fontSize: 15, color: Color(0xFF333333)),
+        style: TextStyle(fontSize: 15, color: color),
       ),
-      trailing:
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF909399)),
+            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (trailingText != null)
+            Text(
+              trailingText,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF909399)),
+            ),
           const Icon(Icons.chevron_right, size: 20, color: Color(0xFFC0C4CC)),
-      onTap: onTap,
+        ],
+      ),
+      onTap: enabled ? onTap : null,
     );
   }
 
@@ -1268,7 +1480,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
     );
   }
 
-  /// 底部操作栏：链码列表 / 点赞 / 缓存
+  /// 底部操作栏：详情 / 点赞 / 缓存
   Widget _buildOpBar() {
     final ScanResource? r = _current;
     final int likeCount = r?.likeCount ?? 0;
@@ -1305,7 +1517,7 @@ class _ResourcePlayScreenState extends State<ResourcePlayScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          _opItem(Icons.view_list_outlined, '链码列表', _openChainList),
+          _opItem(Icons.info_outline, '详情', _openSourceDetail),
           _opItem(
             liked ? Icons.favorite : Icons.favorite_border,
             likeCount > 0 ? '$likeCount' : '点赞',

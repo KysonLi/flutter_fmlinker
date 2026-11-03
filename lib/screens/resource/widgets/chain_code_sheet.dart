@@ -5,9 +5,9 @@ import 'package:fmlink/services/user_service.dart';
 import 'package:fmlink/utils/device_info_util.dart';
 import 'package:fmlink/widgets/default_state_view.dart';
 
-/// 链码列表弹层（全书所有链码）API 契约
+/// 源列表弹层（全书所有链码）API 契约
 ///
-/// 由资源播放页/资源列表页的「链码列表」按钮触发；展示全书链码（按章节分组），
+/// 由资源播放页/资源列表页的「源列表」按钮触发；展示全书链码（按章节分组），
 /// 选择某条链码后切换当前资源入口 isliCode。
 ///
 /// 数据来源：PublishService().getPublicationSourceList(serviceCode, prefixCode)
@@ -38,7 +38,7 @@ class ChainCodeSelection {
 /// 弹出全书链码选择弹层（底部抽屉），返回选中的链码；取消返回 null。
 ///
 /// [serviceCode]/[prefixCode] 当前出版物的服务码/前缀码；
-/// [versionCode] 出版物版本号（可为空，为空时使用链码列表接口返回的 versionCode）；
+/// [versionCode] 出版物版本号（可为空，为空时使用源列表接口返回的 versionCode）；
 /// [currentIsliCode] 当前正在播放的链码（纯数字），用于高亮当前项。
 Future<ChainCodeSelection?> showChainCodeSheet(
   BuildContext context, {
@@ -63,7 +63,7 @@ Future<ChainCodeSelection?> showChainCodeSheet(
 /// 当前链码命中高亮色（与源列表「当前」标记一致）
 const Color _kCurrentColor = Color(0xFF00AFFE);
 
-/// 链码列表底部抽屉
+/// 源列表底部抽屉
 class _ChainCodeSheet extends StatefulWidget {
   final String serviceCode;
   final String prefixCode;
@@ -92,7 +92,7 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
   /// 按 篇/章 分组后的链码（结构同 publication_source_list_screen）
   List<Map<String, dynamic>> _groups = [];
 
-  /// 出版物名（接口 data 中有则展示，无则标题回退「链码列表」）
+  /// 出版物名（接口 data 中有则展示，无则标题回退「源列表」）
   String _goodsName = '';
 
   /// 链码总数（优先接口 sourceCount，其次按已收集条数）
@@ -187,7 +187,7 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
             setState(() {
               _failed = true;
               _loading = false;
-              _errorMsg = response['msg']?.toString() ?? '获取链码列表失败';
+              _errorMsg = response['msg']?.toString() ?? '获取源列表失败';
             });
           }
           return;
@@ -302,7 +302,7 @@ class _ChainCodeSheetState extends State<_ChainCodeSheet> {
   }
 
   Widget _buildHeader() {
-    final String title = _goodsName.isNotEmpty ? _goodsName : '链码列表';
+    final String title = _goodsName.isNotEmpty ? _goodsName : '源列表';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(

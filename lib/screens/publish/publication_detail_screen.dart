@@ -121,19 +121,23 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
   }
 
   Future<void> _loadPublicationDetail() async {
+    // 本页只保留 EasyLoading 一个 loading：
+    // EasyLoading 是全局单例，重复 show 也只会渲染一个指示器，
+    // 因此页面内不再渲染 CircularProgressIndicator，避免两层 loading 叠加。
+    EasyLoading.show(status: '加载中...');
     try {
-      EasyLoading.show(status: '加载中...');
-
       final response = await _publishService.getPublicationDetail(
         widget.goodsId,
       );
 
       if (response['status']) {
+        if (!mounted) return;
         setState(() {
           _publicationDetail = response['data'];
           _isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _errorMessage = response['msg'] ?? '加载失败';
           _isLoading = false;
@@ -141,6 +145,7 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
       }
     } catch (e) {
       debugPrint('加载出版物详情失败: $e');
+      if (!mounted) return;
       setState(() {
         _errorMessage = '加载失败，请稍后重试';
         _isLoading = false;
@@ -363,7 +368,8 @@ class _PublicationDetailScreenState extends State<PublicationDetailScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      // loading 统一由 EasyLoading 展示，这里留白，避免出现第二个转圈
+      return const SizedBox.shrink();
     }
 
     if (_errorMessage != null) {

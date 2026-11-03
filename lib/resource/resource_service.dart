@@ -119,6 +119,30 @@ class ResourceService {
     );
   }
 
+  /// 资源点赞用户列表：/target-goods/app/v1/resource/like/list
+  ///
+  /// 参数与点赞一致，全部放 query（源详情页用于展示点赞用户头像）。
+  Future<Map<String, dynamic>> fetchResourceLikeUsers({
+    required String goodsId,
+    required String resourceId,
+    required String resourceOldId,
+    required String targetIdentifier,
+    int pageIndex = 1,
+    int pageSize = 20,
+  }) async {
+    return _apiService.get(
+      '/target-goods/app/v1/resource/like/list',
+      queryParameters: <String, dynamic>{
+        'goodsId': goodsId,
+        'resourceId': resourceId,
+        'resourceOldId': resourceOldId,
+        'targetIdentifier': targetIdentifier,
+        'pageSize': pageSize.toString(),
+        'pageIndex': pageIndex.toString(),
+      },
+    );
+  }
+
   /// 取消点赞：/target-goods/app/v1/resource/unlike
   ///
   /// 参数与点赞一致，全部放 query。
