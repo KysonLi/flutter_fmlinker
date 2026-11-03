@@ -40,8 +40,8 @@ struct Index {
   }
 
   /**
-   * 与 Android/iOS 启动页保持同一套视觉：白底 + 居中图标 + 应用名称，
-   * 名称取自 app.string.app_name（zh_CN 中文，其余语言英文）。
+   * 与 Android/iOS 启动页保持同一套视觉：白底 + 靠底部居中，
+   * 左侧 56 圆角 logo，右侧中文名（上）/英文名（下），四边与 logo 对齐。
    */
   private hideSplash = (): void => {
     if (!this.showSplash) {
@@ -69,18 +69,34 @@ struct Index {
 
       if (this.showSplash) {
         Column() {
-          Image($r('app.media.app_icon'))
-            .width(120)
-            .height(120)
-            .borderRadius(27)
-          Text($r('app.string.app_name'))
-            .fontSize(22)
-            .fontColor('#333333')
-            .margin({ top: 20 })
+          Row() {
+            Image($r('app.media.app_icon'))
+              .width(56)
+              .height(56)
+              .borderRadius(10)
+            // 中文 22 与英文 17 的文本宽度几乎一致（各约 88），左右两端自然对齐；
+            // 容器高度 = logo 高度，上下 SpaceBetween 使首行贴 logo 顶、末行贴 logo 底
+            Column() {
+              Text('泛媒关联')
+                .fontSize(22)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+              Text('ISLI SCANr')
+                .fontSize(17)
+                .fontColor('#8C8C8C')
+            }
+            .height(56)
+            .justifyContent(FlexAlign.SpaceBetween)
+            .alignItems(HorizontalAlign.Start)
+            .margin({ left: 14 })
+          }
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .height('100%')
-        .justifyContent(FlexAlign.Center)
+        .justifyContent(FlexAlign.End)
+        .alignItems(HorizontalAlign.Center)
+        .padding({ bottom: 88 })
         .backgroundColor(Color.White)
         .opacity(this.splashOpacity)
       }

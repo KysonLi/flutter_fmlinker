@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 启动页：白底 + 居中「应用图标 + 应用名称」合成图。
-     splash_logo 按语言分目录：drawable/ 为英文（其它语言默认），drawable-zh/ 为中文。 -->
+<!-- 启动页：白底 + 靠底部居中的合成图（左 logo / 右中文名+英文名）。
+     图片自带底部留白（88dp），故用 bottom 对齐即可，三端视觉一致。 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@android:color/white" />
     <item>
         <bitmap
-            android:gravity="center"
+            android:gravity="bottom|center_horizontal"
             android:src="@drawable/splash_logo" />
     </item>
 </layer-list>

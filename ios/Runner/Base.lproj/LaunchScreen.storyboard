@@ -4,11 +4,10 @@
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
-        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--启动页：白底 + 应用图标 + 应用名称（名称按语言本地化，见 LaunchScreen.strings）-->
+        <!--启动页：白底 + 靠底部居中；左 logo（56/圆角10），右中文 22（上）英文 17（下），文字左右两端对齐且与 logo 上下对齐-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
@@ -16,27 +15,45 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchIcon" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-ic-on1">
-                                <rect key="frame" x="136.5" y="320" width="120" height="120"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-ct-grp">
+                                <rect key="frame" x="124.5" y="708" width="144" height="56"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchIcon" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-ic-on1">
+                                        <rect key="frame" x="0.0" y="0.0" width="56" height="56"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="56" id="Lch-ic-w01"/>
+                                            <constraint firstAttribute="height" constant="56" id="Lch-ic-h01"/>
+                                        </constraints>
+                                    </imageView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="泛媒关联" textAlignment="left" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-tx-cn1">
+                                        <rect key="frame" x="70" y="0.0" width="88" height="31"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="22"/>
+                                        <color key="textColor" red="0.2" green="0.2" blue="0.2" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="ISLI SCANr" textAlignment="left" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-tx-en1">
+                                        <rect key="frame" x="70" y="35" width="88" height="21"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                        <color key="textColor" red="0.5490196078431373" green="0.5490196078431373" blue="0.5490196078431373" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="120" id="Lch-ic-w01"/>
-                                    <constraint firstAttribute="height" constant="120" id="Lch-ic-h01"/>
+                                    <constraint firstItem="Lch-ic-on1" firstAttribute="leading" secondItem="Lch-ct-grp" secondAttribute="leading" id="Lch-in-ic1"/>
+                                    <constraint firstItem="Lch-ic-on1" firstAttribute="top" secondItem="Lch-ct-grp" secondAttribute="top" id="Lch-tp-ic1"/>
+                                    <constraint firstItem="Lch-tx-cn1" firstAttribute="leading" secondItem="Lch-ic-on1" secondAttribute="trailing" constant="14" id="Lch-ld-cn1"/>
+                                    <constraint firstItem="Lch-tx-cn1" firstAttribute="top" secondItem="Lch-ct-grp" secondAttribute="top" id="Lch-tp-cn1"/>
+                                    <constraint firstItem="Lch-tx-en1" firstAttribute="leading" secondItem="Lch-tx-cn1" secondAttribute="leading" id="Lch-ld-en1"/>
+                                    <constraint firstItem="Lch-tx-en1" firstAttribute="bottom" secondItem="Lch-ct-grp" secondAttribute="bottom" id="Lch-bt-en1"/>
+                                    <constraint firstAttribute="trailing" secondItem="Lch-tx-cn1" secondAttribute="trailing" id="Lch-tr-grp"/>
+                                    <constraint firstAttribute="height" constant="56" id="Lch-hi-grp"/>
                                 </constraints>
-                            </imageView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="ISLI SCANr" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lch-tx-t01">
-                                <rect key="frame" x="146.5" y="470" width="100" height="27"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="22"/>
-                                <color key="textColor" red="0.2" green="0.2" blue="0.2" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
+                            </view>
                         </subviews>
-                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="Lch-ic-on1" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Lch-cx-ic1"/>
-                            <constraint firstItem="Lch-ic-on1" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-86" id="Lch-ty-ic1"/>
-                            <constraint firstItem="Lch-tx-t01" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Lch-cx-tx1"/>
-                            <constraint firstItem="Lch-tx-t01" firstAttribute="top" secondItem="Lch-ic-on1" secondAttribute="bottom" constant="20" id="Lch-ty-tx1"/>
+                            <constraint firstItem="Lch-ct-grp" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Lch-cx-grp"/>
+                            <constraint firstItem="Lch-ct-grp" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" constant="-88" id="Lch-by-grp"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -46,6 +63,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchIcon" width="120" height="120"/>
+        <image name="LaunchIcon" width="56" height="56"/>
     </resources>
 </document>
