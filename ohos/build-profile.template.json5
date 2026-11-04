@@ -1,0 +1,65 @@
+// 该文件由 `dart run tool/gen_ohos_build_profile.dart` 生成，**不要直接提交**。
+// 仓库里的模板是 `ohos/build-profile.template.json5`；
+// 签名材料读写说明见 `docs/ohos-release-build.md`。
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "${SIGNING_STORE_FILE}",
+          "storePassword": "${SIGNING_STORE_PASSWORD}",
+          "keyAlias": "${SIGNING_KEY_ALIAS}",
+          "keyPassword": "${SIGNING_KEY_PASSWORD}",
+          "signAlg": "SHA256withECDSA",
+          "profile": "${SIGNING_PROFILE}",
+          "certpath": "${SIGNING_CERT_PATH}"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compileSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "targetSdkVersion": "5.0.2(14)",
+        "buildOption": {
+          "strictMode": {
+            "useNormalizedOHMUrl": true
+          }
+          // 说明：ArkTS 混淆（arkGuard）只能配置在「模块级」build-profile，
+          // 见 ohos/entry/build-profile.json5（项目级 schema 不支持 arkOptions.obfuscation）；
+          // 规则文件也在模块目录：ohos/entry/obfuscation-rules.txt
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "profile"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

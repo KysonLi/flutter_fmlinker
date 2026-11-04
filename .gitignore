@@ -75,3 +75,6 @@ GoogleService-Info.plist
 *.p12
 *.p7b
 *.csr
+
+# OHOS 构建签名配置（由 tool/gen_ohos_build_profile.dart 从本地签名材料生成，含密码，禁止提交）
+/ohos/build-profile.json5

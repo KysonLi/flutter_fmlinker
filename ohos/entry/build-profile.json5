@@ -1,4 +1,3 @@
-
 {
   "apiType": 'stageMode',
   "buildOption": {
@@ -9,7 +8,22 @@
   "targets": [
     {
       "name": "default",
-      "runtimeOS": "HarmonyOS"
+      "runtimeOS": "HarmonyOS",
+      "config": {
+        "buildOption": {
+          // ArkTS 混淆（arkGuard），默认关闭。
+          // 启用：把 enable 改为 true，并完成一次完整真机回归（插件类名/反射相关需重点验证），
+          // 保留规则见 ohos/entry/obfuscation-rules.txt
+          "arkOptions": {
+            "obfuscation": {
+              "ruleOptions": {
+                "enable": false,
+                "files": ["./obfuscation-rules.txt"]
+              }
+            }
+          }
+        }
+      }
     },
     {
       "name": "ohosTest",

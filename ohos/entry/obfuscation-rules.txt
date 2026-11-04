@@ -1,0 +1,24 @@
+# ============================================================================
+# 鸿蒙（OHOS）APK/HAP 混淆保留规则（arkGuard）
+#
+# 默认未启用：`ohos/build-profile.template.json5` 中 obfuscation.ruleOptions.enable = false。
+# 启用前请完成一次真机回归（重点：插件类名、MethodChannel 名、反射调用）。
+#
+# 使用方式：把 enable 改成 true 后重新生成 build-profile：
+#   dart run tool/gen_ohos_build_profile.dart
+# ============================================================================
+
+# Flutter 引擎与插件注册依赖类名（GeneratedPluginRegistrant 里直接 new，一般安全，
+# 但升级插件后建议重新验证），这里保持我们自己的插件类不被混淆。
+-keep-global-name
+EntryAbility
+MyAbilityStage
+SplashPlugin
+WechatPlugin
+NetworkInfoPlugin
+HuaweiAccountPlugin
+IapPlugin
+
+# 页面路由名（pages 配置里的名称）
+-keep-file-name
+Index

@@ -1,5 +1,5 @@
 name: fmlink
-description: "A new Flutter project."
+description: "泛媒关联（ISLI 链码关联阅读）客户端：扫码获取纸书关联的图文音视频资源。"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

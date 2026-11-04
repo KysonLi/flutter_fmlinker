@@ -1,7 +1,7 @@
 {
   "app": {
     "bundleName": "com.mpr.chaincode",
-    "vendor": "example",
+    "vendor": "mpreader",
     "versionCode": 1,
     "versionName": "1.0.0",
     "icon": "$media:app_icon",
