@@ -21,7 +21,14 @@ String toHttpsUrl(dynamic raw) {
   if (uri == null || uri.host.isEmpty) return url;
   if (_isLocalHost(uri.host)) return url;
 
-  return 'https://${url.substring('http://'.length)}';
+  // 关键：升级 https 时必须丢掉 http 端口。
+  // 后端下发的图片地址普遍是 `http://img.mpreader.com:80/...`，
+  // 只换 scheme 会得到 `https://img.mpreader.com:80/...`，在 80 端口做 TLS 握手必然失败。
+  final StringBuffer buffer = StringBuffer('https://')..write(uri.host);
+  buffer.write(uri.path.isEmpty ? '/' : uri.path);
+  if (uri.hasQuery) buffer.write('?${uri.query}');
+  if (uri.hasFragment) buffer.write('#${uri.fragment}');
+  return buffer.toString();
 }
 
 /// 递归升级 Map/List 中的 http 地址（用于接口返回数据的统一处理）

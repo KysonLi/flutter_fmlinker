@@ -14,6 +14,26 @@ void main() {
       );
     });
 
+    test('升级 https 时去掉 http 端口（后端下发 :80）', () {
+      expect(
+        toHttpsUrl('http://img.mpreader.com:80/image/2019/a.thumbnail.jpg'),
+        'https://img.mpreader.com/image/2019/a.thumbnail.jpg',
+      );
+      expect(
+        toHttpsUrl('http://apigateway.mpreader.com:11999/x/y'),
+        'https://apigateway.mpreader.com/x/y',
+      );
+      // 查询参数 / 路径需完整保留
+      expect(
+        toHttpsUrl('http://img.mpreader.com:80/a.jpg?x=1&y=2'),
+        'https://img.mpreader.com/a.jpg?x=1&y=2',
+      );
+    });
+
+    test('已是 https 的自定义端口保持原样', () {
+      expect(toHttpsUrl('https://a.com:8443/x.png'), 'https://a.com:8443/x.png');
+    });
+
     test('已是 https / 相对路径 / 空值原样返回', () {
       expect(toHttpsUrl('https://a.com/x.png'), 'https://a.com/x.png');
       expect(toHttpsUrl('assets/images/a.png'), 'assets/images/a.png');
